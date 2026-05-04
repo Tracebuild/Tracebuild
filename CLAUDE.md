@@ -1,10 +1,10 @@
-# KI Analyse Plattform — Projektkontext für Claude Code
+# AI Analysis Platform — Project Context for Claude Code
 
-## Was ist dieses Projekt?
+## What is this project?
 
-Eine Multi-Domain KI-Plattform zur automatischen Prüfung von technischen Dokumenten (Baupläne, Industriezeichnungen, Maschinendokumentation) gegen geltende Normen und Vorschriften.
+A multi-domain AI platform for automatically checking technical documents (building plans, industrial drawings, machine documentation) against applicable standards and regulations.
 
-**MVP-Fokus: Bau/Architektur, Markt: DACH (Schweiz zuerst)**
+**MVP focus: Construction/Architecture, Market: DACH (Switzerland first)**
 
 ---
 
@@ -14,8 +14,8 @@ Eine Multi-Domain KI-Plattform zur automatischen Prüfung von technischen Dokume
 |---|---|
 | Frontend | Next.js 14 (App Router) + Tailwind CSS |
 | Backend | FastAPI (Python 3.12) + Async |
-| Datenbank | Supabase (PostgreSQL 16 + pgvector + Storage + Auth) |
-| KI | Anthropic Claude API (claude-sonnet-4-6) |
+| Database | Supabase (PostgreSQL 16 + pgvector + Storage + Auth) |
+| AI | Anthropic Claude API (claude-sonnet-4-6) |
 | Queue | Redis + Celery |
 | Frontend Hosting | Vercel |
 | Backend Hosting | Railway |
@@ -24,19 +24,19 @@ Eine Multi-Domain KI-Plattform zur automatischen Prüfung von technischen Dokume
 
 ---
 
-## Projektstruktur (Monorepo)
+## Project Structure (Monorepo)
 
 ```
 /
 ├── frontend/          # Next.js App
 │   ├── app/
 │   │   ├── (auth)/
-│   │   ├── dashboard/         # Projekt-Übersicht (alle Boards)
-│   │   └── projects/[id]/     # Einzelnes Projekt-Board
-│   │       ├── standards/     # Teil 1: Normen
-│   │       ├── analysis/      # Teil 2: Plan-Analyse
-│   │       ├── chat/          # Teil 3: KI Chat
-│   │       └── database/      # Teil 4: Standards-DB
+│   │   ├── dashboard/         # Project overview (all boards)
+│   │   └── projects/[id]/     # Single project board
+│   │       ├── standards/     # Part 1: Standards
+│   │       ├── analysis/      # Part 2: Plan analysis
+│   │       ├── chat/          # Part 3: AI chat
+│   │       └── database/      # Part 4: Standards DB
 │   ├── components/
 │   └── lib/
 ├── backend/           # FastAPI App
@@ -48,32 +48,32 @@ Eine Multi-Domain KI-Plattform zur automatischen Prüfung von technischen Dokume
 │   │   │   ├── chat_service.py
 │   │   │   ├── project_service.py
 │   │   │   └── export_service.py
-│   │   ├── domains/           # Domain Plugin System
-│   │   │   ├── base.py        # Abstract Domain
-│   │   │   ├── bau/           # Bau/Architektur Domain
+│   │   ├── domains/           # Domain plugin system
+│   │   │   ├── base.py        # Abstract domain
+│   │   │   ├── bau/           # Construction/architecture domain
 │   │   │   ├── industrie/     # (Roadmap)
 │   │   │   └── maschinenbau/  # (Roadmap)
 │   │   ├── models/
 │   │   └── core/
-│   └── workers/       # Celery Tasks
+│   └── workers/       # Celery tasks
 ├── supabase/
 │   ├── migrations/
 │   └── seed/
-└── CLAUDE.md          # Diese Datei
+└── CLAUDE.md          # This file
 ```
 
 ---
 
-## Datenbank-Schema
+## Database Schema
 
 ```sql
--- Organisationen
+-- Organizations
 organizations (id uuid, name text, plan_tier text, created_at)
 
--- Benutzer
+-- Users
 users (id uuid, org_id → organizations, role text, email text)
 
--- Projekte (1 Board = 1 Projekt)
+-- Projects (1 board = 1 project)
 projects (
   id uuid,
   org_id → organizations,
@@ -84,7 +84,7 @@ projects (
   created_at
 )
 
--- Hochgeladene Dokumente (Pläne, Zeichnungen)
+-- Uploaded documents (plans, drawings)
 documents (
   id uuid,
   project_id → projects,
@@ -94,17 +94,17 @@ documents (
   uploaded_at
 )
 
--- Analyse-Läufe
+-- Analysis runs
 analyses (
   id uuid,
   document_id → documents,
-  result_json jsonb,    -- Rohe Claude-Antwort strukturiert
+  result_json jsonb,    -- Structured raw Claude response
   status text,          -- 'pending' | 'running' | 'done' | 'error'
   cost_usd numeric,
   created_at
 )
 
--- Einzelne Prüfpunkte pro Analyse
+-- Individual check items per analysis
 analysis_items (
   id uuid,
   analysis_id → analyses,
@@ -114,7 +114,7 @@ analysis_items (
   suggestion text
 )
 
--- Normen / Standards Datenbank
+-- Standards database
 standards (
   id uuid,
   domain text,          -- 'bau' | 'industrie' | ...
@@ -126,7 +126,7 @@ standards (
   valid_from date
 )
 
--- Chat-Verlauf pro Projekt
+-- Chat history per project
 chat_messages (
   id uuid,
   project_id → projects,
@@ -140,7 +140,7 @@ chat_messages (
 
 ## Domain Plugin System
 
-Jede Domain ist ein Modul unter `backend/app/domains/` und implementiert das `BaseDomain` Interface:
+Each domain is a module under `backend/app/domains/` implementing the `BaseDomain` interface:
 
 ```python
 class BaseDomain:
@@ -148,75 +148,75 @@ class BaseDomain:
     display_name: str
     
     def get_analysis_prompt(self, context: dict) -> str:
-        """System-Prompt für Plan-Analyse"""
+        """System prompt for plan analysis"""
         ...
     
     def get_standards_search_prompt(self, location: dict) -> str:
-        """Prompt für Normen-Recherche"""
+        """Prompt for standards research"""
         ...
     
     def parse_analysis_result(self, raw: str) -> list[AnalysisItem]:
-        """Strukturiert Claude-Output zu Analysis Items"""
+        """Parses Claude output into structured analysis items"""
         ...
 ```
 
-**Aktive Domain:** `bau` — Baupläne, SIA-Normen, kantonale Baugesetze CH/AT
+**Active domain:** `bau` — building plans, SIA standards, cantonal building codes CH/AT
 
 ---
 
-## Die 4 Produktteile
+## The 4 Product Parts
 
-### Teil 1 — Standards-Recherche
-- User gibt Standort ein (Kanton + Gemeinde)
-- Backend ruft Claude mit Web Search Tool auf
-- Claude recherchiert: Zonenreglement, RBG/RBV, kantonale Baugesetze
-- Ergebnis wird in `standards` Tabelle gespeichert + pgvector indexiert
+### Part 1 — Standards Research
+- User enters location (canton + municipality)
+- Backend calls Claude with web search tool
+- Claude researches: zoning regulations, RBG/RBV, cantonal building codes
+- Result is saved to `standards` table + indexed with pgvector
 - API: `POST /api/v1/projects/{id}/standards/research`
 
-### Teil 2 — Dokument-Analyse (Kern-Feature)
-- User lädt PDF hoch → Supabase Storage
-- Backend: PDF → Seiten-Bilder (pdf2image)
-- RAG: Relevante Normen aus pgvector holen (domain-gefiltert)
-- Claude Sonnet 4.6 mit Vision: Bilder + Normen + Domain-Prompt
-- Output: JSON mit `analysis_items` (ok/fail/warn + Vorschlag)
+### Part 2 — Document Analysis (core feature)
+- User uploads PDF → Supabase Storage
+- Backend: PDF → page images (pdf2image)
+- RAG: fetch relevant standards from pgvector (domain-filtered)
+- Claude Sonnet 4.6 with vision: images + standards + domain prompt
+- Output: JSON with `analysis_items` (ok/fail/warn + suggestion)
 - API: `POST /api/v1/projects/{id}/analyses`
 
-### Teil 3 — KI Chat
-- Normaler Chat, aber mit Projektkontext im System-Prompt
-- Kontext enthält: Normen-Set des Projekts + letzte Analyse-Ergebnisse
-- Chat-History wird in `chat_messages` persistiert
-- SSE Streaming zur Frontend
+### Part 3 — AI Chat
+- Standard chat with project context in system prompt
+- Context includes: project standards set + latest analysis results
+- Chat history persisted in `chat_messages`
+- SSE streaming to frontend
 - API: `POST /api/v1/projects/{id}/chat`
 
-### Teil 4 — Standards-Datenbank
-- Admin-Interface: Normen hochladen (PDF/Text), chunken, embedden
-- Public: Suche nach Norm, gefiltert nach Domain + Region
+### Part 4 — Standards Database
+- Admin interface: upload standards (PDF/text), chunk, embed
+- Public: search standards, filtered by domain + region
 - API: `GET /api/v1/standards?domain=bau&region=CH-ZH`
 
 ---
 
-## Anthropic Claude API Nutzung
+## Anthropic Claude API Usage
 
 ```python
 import anthropic
 
 client = anthropic.Anthropic()
 
-# Plan-Analyse (Vision)
+# Plan analysis (vision)
 response = client.messages.create(
     model="claude-sonnet-4-6",
     max_tokens=4096,
-    system=domain.get_analysis_prompt(context),  # mit Prompt Caching
+    system=domain.get_analysis_prompt(context),  # with prompt caching
     messages=[{
         "role": "user",
         "content": [
             {"type": "image", "source": {"type": "url", "url": image_url}},
-            {"type": "text", "text": "Analysiere diesen Plan gegen die beigefügten Normen."}
+            {"type": "text", "text": "Analyze this plan against the attached standards."}
         ]
     }]
 )
 
-# Normen-Recherche (Web Search)
+# Standards research (web search)
 response = client.messages.create(
     model="claude-sonnet-4-6",
     tools=[{"type": "web_search_20250305", "name": "web_search"}],
@@ -224,10 +224,10 @@ response = client.messages.create(
 )
 ```
 
-**Optimierungen:**
-- Prompt Caching auf System-Prompts (−90% Input-Kosten bei Chat)
-- Batch API für Massen-Analysen (−50% Gesamtkosten)
-- pgvector RAG damit nicht jedes Mal alle Normen mitgeschickt werden
+**Optimizations:**
+- Prompt caching on system prompts (−90% input cost for chat)
+- Batch API for bulk analyses (−50% total cost)
+- pgvector RAG so not all standards need to be sent every time
 
 ---
 
@@ -248,25 +248,80 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
-## Entwicklungs-Reihenfolge (Empfehlung)
+## Development Order (Recommended)
 
-1. **Supabase Projekt anlegen** — Schema migrieren, Auth aktivieren, Storage Bucket erstellen
-2. **Monorepo Scaffold** — Next.js + FastAPI aufsetzen, beide lokal lauffähig
-3. **Auth Flow** — Login/Register mit Supabase Auth, JWT an Backend weitergeben
-4. **Projekt-Dashboard** — CRUD für Projects, Dashboard-Ansicht
-5. **Plan-Analyse (Teil 2)** — PDF Upload → Claude → Ergebnis anzeigen (Kern-Feature)
-6. **Standards-Recherche (Teil 1)** — Standort → Claude Web Search → DB
-7. **Chat (Teil 3)** — mit Projektkontext
-8. **Standards-DB (Teil 4)** — Admin-Upload + öffentliche Suche
-9. **Export** — PDF-Report + XLSX Mängelliste
+1. **Set up Supabase project** — migrate schema, enable auth, create storage bucket
+2. **Monorepo scaffold** — set up Next.js + FastAPI, both running locally
+3. **Auth flow** — login/register with Supabase Auth, pass JWT to backend
+4. **Project dashboard** — CRUD for projects, dashboard view
+5. **Plan analysis (Part 2)** — PDF upload → Claude → display results (core feature)
+6. **Standards research (Part 1)** — location → Claude web search → DB
+7. **Chat (Part 3)** — with project context
+8. **Standards DB (Part 4)** — admin upload + public search
+9. **Export** — PDF report + XLSX defect list
 
 ---
 
-## Konventionen
+## Conventions
 
-- Python: Type Hints überall, Pydantic für alle Schemas
-- API Responses: immer `{ data: ..., error: null }` oder `{ data: null, error: "..." }`
-- Fehlerbehandlung: HTTP Exceptions mit klaren Messages
-- Alle Claude-Kosten pro Request in DB loggen (`cost_usd`)
-- Row Level Security in Supabase: User sieht nur eigene Org-Projekte
-- Domain-spezifischer Code immer in `domains/` — nie im Core
+- Python: type hints everywhere, Pydantic for all schemas
+- API responses: always `{ data: ..., error: null }` or `{ data: null, error: "..." }`
+- Error handling: HTTP exceptions with clear messages
+- Log all Claude costs per request to DB (`cost_usd`)
+- Row Level Security in Supabase: users only see their own org's projects
+- Domain-specific code always in `domains/` — never in core
+
+---
+
+## Agent Roles (Developer Army Framework)
+
+This project is developed with multiple parallel Claude roles. Every Claude session working in this repo should understand which role it is currently in and stay within the corresponding scope.
+
+### 1. CEO / Copilot (strategic, no code access)
+- Location: pinned chat in Claude.ai / Claude Desktop (no file access)
+- Task: roadmap prioritization, architecture decisions, feature scoping, prompt generation for senior/junior sessions, product-level review of results
+- **No writing code** — produces ready-made prompts for the dev roles instead
+- Initial prompt: `docs/ceo-prompt.md`
+
+### 2. Senior Developer (Claude Code locally in VS Code)
+- Location: Claude Code in local repo clone
+- Scope: complex, cross-system work
+  - Plan analysis pipeline (PDF → vision → RAG → Claude)
+  - pgvector setup + embedding pipeline
+  - Domain plugin interface (`backend/app/domains/base.py`)
+  - Celery worker architecture
+  - Supabase migrations + RLS policies
+  - Deployment debugging (Vercel/Railway)
+  - Merging + integrating junior PRs
+- Works directly on `main` or `feature/*` branches
+
+### 3. Junior Developer (Claude Code remote via GitHub)
+- Location: Claude Code session connected to GitHub repo (not local)
+- Scope: small, isolated tasks, max ~30 min work, ideally 1 file / 1 folder
+  - Individual UI components (dashboard card, upload dropzone, filter table)
+  - Individual API routes without complex business logic
+  - Form validation, loading/error states, skeletons
+  - Writing tests for existing services
+  - Adding seed data (e.g. `standards` for a single canton)
+  - Tailwind/design polish
+- Branch naming: `junior/<short-description>` (e.g. `junior/toast-notifications`)
+- **Never push directly to `main`** — always open a PR against `main`
+- PR must follow the template in `.github/pull_request_template.md`
+- CI must be green before merging
+
+### Scope Decision Guide (for CEO)
+| Symptom | Role |
+|---|---|
+| Change affects > 3 files across different layers | Senior |
+| New API route + DB migration + frontend wiring | Senior |
+| UI component in a single file | Junior |
+| Bug fix in an existing function | Junior |
+| Writing a test for an existing service | Junior |
+| Architecture/interface change | Senior |
+| Deployment or env config issue | Senior |
+
+### PR Policy
+- `main` is protected: PR + CI check + 1 review required
+- Every PR automatically gets a Vercel preview URL — review before merging
+- Junior PRs: keep them small, one PR = one feature
+- Senior may push directly to `main` in urgent cases (e.g. production hotfix), but ideally via PR as well
