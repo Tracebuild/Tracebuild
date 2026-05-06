@@ -117,11 +117,15 @@ analysis_items (
 -- Standards database
 standards (
   id uuid,
-  domain text,          -- 'bau' | 'industrie' | ...
-  region text,          -- 'CH-ZH' | 'CH-BE' | ...
-  category text,        -- 'grenzabstand' | 'gebaeudehöhe' | ...
+  domain text,              -- 'bau' | 'industrie' | ...
+  layer int,                -- 1=International, 2=Cantonal/Industry, 3=Municipal, 4=Customer
+  jurisdiction_type text,   -- 'international' | 'national' | 'cantonal' | 'municipal' | 'org'
+  jurisdiction_name text,   -- 'ZH' | 'Mels' | 'ISO' | null
+  org_id uuid → organizations (null = public standard),
+  category text,            -- 'grenzabstand' | 'gebaeudehöhe' | ...
   text text,
   source_url text,
+  source_doc text,
   embedding vector(1536),
   valid_from date
 )

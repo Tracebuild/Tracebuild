@@ -8,8 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 interface FileEntry {
-  ids: string[];          // alle DB-IDs die zu dieser Datei gehören
-  region: string;
+  ids: string[];
+  jurisdiction_name: string | null;
   category: string;
   source_url: string | null;
   text: string;
@@ -22,7 +22,9 @@ function FileCard({ entry, onDelete }: { entry: FileEntry; onDelete: (ids: strin
     <div className="bg-white border border-gray-200 rounded-xl p-4 group">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
-          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{entry.region}</span>
+          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+            {entry.jurisdiction_name ?? "—"}
+          </span>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{entry.category}</span>
           <span className="text-sm text-gray-700 font-medium truncate">📄 {entry.source_url || "—"}</span>
         </div>
@@ -58,7 +60,9 @@ const CANTONS = [
 interface Standard {
   id: string;
   domain: string;
-  region: string;
+  layer: number;
+  jurisdiction_type: string;
+  jurisdiction_name: string | null;
   category: string;
   text: string;
   source_url: string | null;
@@ -79,7 +83,7 @@ export default function StandardsPage() {
   const [sourceName, setSourceName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [filterRegion, setFilterRegion] = useState("");
+  const [filterJurisdiction, setFilterJurisdiction] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
 
   useEffect(() => {
@@ -93,7 +97,10 @@ export default function StandardsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ domain: "bau" });
-      if (filterRegion) params.set("region", `CH-${filterRegion}`);
+      if (filterJurisdiction) {
+        params.set("jurisdiction_type", "cantonal");
+        params.set("jurisdiction_name", filterJurisdiction);
+      }
       const data = await api.get<Standard[]>(`/standards?${params}`);
       setStandards(data ?? []);
     } finally {
@@ -101,7 +108,7 @@ export default function StandardsPage() {
     }
   }
 
-  useEffect(() => { loadStandards(); }, [filterRegion]);
+  useEffect(() => { loadStandards(); }, [filterJurisdiction]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
@@ -118,18 +125,20 @@ export default function StandardsPage() {
       const form = new FormData();
       form.append("file", file);
       form.append("domain", "bau");
-      form.append("region", canton);
+      form.append("layer", "2");
+      form.append("jurisdiction_type", "cantonal");
+      form.append("jurisdiction_name", canton);
       form.append("category", category.trim());
       form.append("source_name", sourceName.trim());
-      const result = await api.postForm<{ count: number; region: string; category: string }>(
+      const result = await api.postForm<{ count: number; jurisdiction_name: string; category: string }>(
         "/standards/upload", form
       );
-      setSuccess(`${result.count} Einträge gespeichert · ${result.region} · ${result.category}`);
+      setSuccess(`${result.count} Einträge gespeichert · ${result.jurisdiction_name} · ${result.category}`);
       setFile(null); setCategory(""); setSourceName("");
       if (fileRef.current) fileRef.current.value = "";
       loadStandards();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
       setUploading(false);
     }
@@ -143,12 +152,11 @@ export default function StandardsPage() {
 
   const categories = Array.from(new Set(standards.map((s) => s.category))).sort();
 
-  // Gruppiere nach Datei (source_url + region + category)
   const fileEntries: FileEntry[] = [];
   const seen = new Map<string, FileEntry>();
   for (const s of standards) {
     if (filterCategory && s.category !== filterCategory) continue;
-    const key = `${s.source_url ?? s.id}||${s.region}||${s.category}`;
+    const key = `${s.source_url ?? s.id}||${s.jurisdiction_name ?? ""}||${s.category}`;
     if (seen.has(key)) {
       const entry = seen.get(key)!;
       entry.ids.push(s.id);
@@ -157,7 +165,7 @@ export default function StandardsPage() {
     } else {
       const entry: FileEntry = {
         ids: [s.id],
-        region: s.region,
+        jurisdiction_name: s.jurisdiction_name,
         category: s.category,
         source_url: s.source_url,
         text: s.text,
@@ -205,7 +213,7 @@ export default function StandardsPage() {
                 <p className="text-sm text-blue-700 font-medium truncate">{file.name}</p>
               ) : (
                 <div>
-                  <p className="text-sm text-gray-500">PDF/ TXT</p>
+                  <p className="text-sm text-gray-500">PDF / TXT</p>
                   <p className="text-xs text-gray-400">Drag & Drop oder klicken</p>
                 </div>
               )}
@@ -250,13 +258,17 @@ export default function StandardsPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-700">
               Hochgeladene Norm-Dateien
-              {fileEntries.length > 0 && <span className="ml-2 text-gray-400 font-normal">({fileEntries.length} {fileEntries.length === 1 ? "Datei" : "Dateien"})</span>}
+              {fileEntries.length > 0 && (
+                <span className="ml-2 text-gray-400 font-normal">
+                  ({fileEntries.length} {fileEntries.length === 1 ? "Datei" : "Dateien"})
+                </span>
+              )}
             </h2>
             <div className="flex gap-2">
-              <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)}
+              <select value={filterJurisdiction} onChange={(e) => setFilterJurisdiction(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Alle Kantone</option>
-                {CANTONS.map((c) => <option key={c} value={c}>CH-{c}</option>)}
+                {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               {categories.length > 0 && (
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}

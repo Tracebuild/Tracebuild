@@ -12,7 +12,7 @@ interface Project {
 
 interface Standard {
   id: string;
-  region: string;
+  jurisdiction_name: string | null;
   category: string;
   text: string;
   source_url: string | null;
@@ -99,7 +99,7 @@ export default function StandardsPage({ params }: { params: { id: string } }) {
             <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                  {s.region}
+                  {s.jurisdiction_name ?? "—"}
                 </span>
                 <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                   {s.category}

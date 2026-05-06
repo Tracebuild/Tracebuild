@@ -11,18 +11,22 @@ TOOLS = [
     {
         "name": "get_standards",
         "description": (
-            "Holt die geltenden Normen und Vorschriften für einen bestimmten Standort "
-            "aus der Normen-Datenbank. Rufe dieses Tool auf bevor du den Plan analysierst."
+            "Fetches applicable standards and regulations for a specific location "
+            "from the standards database. Call this tool before analyzing the plan."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "region": {
+                "jurisdiction_name": {
                     "type": "string",
-                    "description": "Kanton-Code im Format 'CH-ZH', 'CH-BE' usw.",
+                    "description": "Canton abbreviation (e.g. 'ZH', 'BE') or municipality name.",
+                },
+                "jurisdiction_type": {
+                    "type": "string",
+                    "description": "'cantonal' | 'municipal' | 'national' | 'international'",
                 },
             },
-            "required": ["region"],
+            "required": ["jurisdiction_name"],
         },
     }
 ]
@@ -44,7 +48,6 @@ class AnalysisService:
     ) -> AnalysisOut:
         domain = get_domain(domain_id)
 
-        # Analyse-Eintrag anlegen
         res = (
             self.db.table("analyses")
             .insert({"document_id": str(document_id), "status": "running"})
@@ -55,9 +58,7 @@ class AnalysisService:
         try:
             canton = location.get("canton", "")
             municipality = location.get("municipality", "")
-            region = f"CH-{canton}" if canton else ""
 
-            # Datei als base64 kodieren
             encoded = base64.standard_b64encode(file_bytes).decode("utf-8")
             is_pdf = "pdf" in content_type.lower()
             if is_pdf:
@@ -93,14 +94,15 @@ class AnalysisService:
                             "text": (
                                 f"Analysiere diesen Bauplan. Standort: {location_text}.\n"
                                 f"Hole zuerst mit dem Tool 'get_standards' die geltenden Normen "
-                                f"für {region or 'diesen Standort'}, dann analysiere den Plan systematisch."
+                                f"für Kanton {canton or 'diesen Standort'} "
+                                f"(jurisdiction_name='{canton}', jurisdiction_type='cantonal'), "
+                                f"dann analysiere den Plan systematisch."
                             ),
                         },
                     ],
                 }
             ]
 
-            # Agentic loop: Claude ruft get_standards auf, wir liefern die Daten
             total_input_tokens = 0
             total_output_tokens = 0
 
@@ -125,14 +127,18 @@ class AnalysisService:
                 if response.stop_reason != "tool_use":
                     break
 
-                # Tool-Aufruf verarbeiten
                 tool_block = next(
                     b for b in response.content if b.type == "tool_use"
                 )
-                requested_region = tool_block.input.get("region", region)
+                requested_jurisdiction_name = tool_block.input.get("jurisdiction_name", canton)
+                requested_jurisdiction_type = tool_block.input.get("jurisdiction_type", "cantonal")
 
                 svc = StandardsUploadService(self.db)
-                standards = await svc.list_all(domain=domain_id, region=requested_region)
+                standards = await svc.list_all(
+                    domain=domain_id,
+                    jurisdiction_type=requested_jurisdiction_type,
+                    jurisdiction_name=requested_jurisdiction_name,
+                )
 
                 if standards:
                     tool_result = "\n\n---\n\n".join(
@@ -141,7 +147,7 @@ class AnalysisService:
                     )
                 else:
                     tool_result = (
-                        f"Keine Normen für {requested_region} in der Datenbank vorhanden. "
+                        f"Keine Normen für {requested_jurisdiction_name} in der Datenbank vorhanden. "
                         f"Nutze dein allgemeines Wissen über Schweizer Bauvorschriften."
                     )
 

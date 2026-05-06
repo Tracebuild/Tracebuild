@@ -52,11 +52,15 @@ class DocumentOut(BaseModel):
 class StandardOut(BaseModel):
     id: UUID
     domain: str
-    region: str
+    layer: int
+    jurisdiction_type: str
+    jurisdiction_name: str | None
+    org_id: UUID | None = None
     category: str
     text: str
     source_url: str | None
-    valid_from: str | None
+    source_doc: str | None = None
+    valid_from: str | None = None
 
 
 class StandardsResearchRequest(BaseModel):

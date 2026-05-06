@@ -33,8 +33,11 @@ async def list_project_standards(
     proj = _get_project(project_id, user)
     location = proj.get("location") or {}
     canton = location.get("canton", "")
-    region = f"CH-{canton}" if canton else None
 
     service = StandardsUploadService(get_supabase())
-    standards = await service.list_all(domain=proj["domain"], region=region)
+    standards = await service.list_all(
+        domain=proj["domain"],
+        jurisdiction_type="cantonal" if canton else None,
+        jurisdiction_name=canton if canton else None,
+    )
     return APIResponse(data=[s.model_dump() for s in standards])

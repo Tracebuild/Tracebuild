@@ -12,7 +12,9 @@ const CANTONS = [
 interface Standard {
   id: string;
   domain: string;
-  region: string;
+  layer: number;
+  jurisdiction_type: string;
+  jurisdiction_name: string | null;
   category: string;
   text: string;
   source_url: string | null;
@@ -27,21 +29,22 @@ export default function DatabasePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Upload-Formular State
   const [canton, setCanton] = useState("ZH");
   const [category, setCategory] = useState("");
   const [sourceName, setSourceName] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Filter
-  const [filterRegion, setFilterRegion] = useState("");
+  const [filterJurisdiction, setFilterJurisdiction] = useState("");
 
   async function loadStandards() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ domain: "bau" });
-      if (filterRegion) params.set("region", `CH-${filterRegion}`);
+      if (filterJurisdiction) {
+        params.set("jurisdiction_type", "cantonal");
+        params.set("jurisdiction_name", filterJurisdiction);
+      }
       const data = await api.get<Standard[]>(`/standards?${params}`);
       setStandards(data ?? []);
     } finally {
@@ -49,7 +52,7 @@ export default function DatabasePage() {
     }
   }
 
-  useEffect(() => { loadStandards(); }, [filterRegion]);
+  useEffect(() => { loadStandards(); }, [filterJurisdiction]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -71,22 +74,24 @@ export default function DatabasePage() {
       const form = new FormData();
       form.append("file", file);
       form.append("domain", "bau");
-      form.append("region", canton);
+      form.append("layer", "2");
+      form.append("jurisdiction_type", "cantonal");
+      form.append("jurisdiction_name", canton);
       form.append("category", category.trim());
       form.append("source_name", sourceName.trim());
 
-      const result = await api.postForm<{ count: number; region: string; category: string }>(
+      const result = await api.postForm<{ count: number; jurisdiction_name: string; category: string }>(
         "/standards/upload",
         form
       );
-      setSuccess(`${result.count} Einträge gespeichert für ${result.region} · ${result.category}`);
+      setSuccess(`${result.count} Einträge gespeichert für ${result.jurisdiction_name} · ${result.category}`);
       setFile(null);
       setCategory("");
       setSourceName("");
       if (fileRef.current) fileRef.current.value = "";
       loadStandards();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
       setUploading(false);
     }
@@ -104,7 +109,6 @@ export default function DatabasePage() {
       <div className="w-72 shrink-0">
         <h2 className="text-base font-semibold text-gray-800 mb-4">Norm hochladen</h2>
         <form onSubmit={handleUpload} className="space-y-3">
-          {/* Datei Drop-Zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -196,12 +200,12 @@ export default function DatabasePage() {
             )}
           </h2>
           <select
-            value={filterRegion}
-            onChange={(e) => setFilterRegion(e.target.value)}
+            value={filterJurisdiction}
+            onChange={(e) => setFilterJurisdiction(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Alle Kantone</option>
-            {CANTONS.map((c) => <option key={c} value={c}>CH-{c}</option>)}
+            {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
@@ -229,7 +233,7 @@ export default function DatabasePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                      {s.region}
+                      {s.jurisdiction_name ?? "—"}
                     </span>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                       {s.category}

@@ -25,13 +25,11 @@ class StandardsService:
             messages=[{"role": "user", "content": prompt}],
         )
 
-        # Letzten Text-Block extrahieren
         result_text = ""
         for block in response.content:
             if hasattr(block, "text"):
                 result_text = block.text
 
-        # JSON parsen
         try:
             if "```json" in result_text:
                 result_text = result_text.split("```json")[1].split("```")[0].strip()
@@ -39,12 +37,13 @@ class StandardsService:
         except Exception:
             standards_data = []
 
-        # In Supabase speichern
         saved: list[StandardOut] = []
         for item in standards_data:
             payload = {
                 "domain": domain_id,
-                "region": f"CH-{location.canton}",
+                "layer": 2,
+                "jurisdiction_type": "cantonal",
+                "jurisdiction_name": location.canton.upper(),
                 "category": item.get("category", "allgemein"),
                 "text": item.get("text", ""),
                 "source_url": item.get("source_url"),
@@ -56,10 +55,15 @@ class StandardsService:
         return saved
 
     async def get_standards(
-        self, domain: str, region: str | None = None
+        self,
+        domain: str,
+        jurisdiction_type: str | None = None,
+        jurisdiction_name: str | None = None,
     ) -> list[StandardOut]:
         query = self.db.table("standards").select("*").eq("domain", domain)
-        if region:
-            query = query.eq("region", region)
+        if jurisdiction_type:
+            query = query.eq("jurisdiction_type", jurisdiction_type)
+        if jurisdiction_name:
+            query = query.eq("jurisdiction_name", jurisdiction_name)
         res = query.execute()
         return [StandardOut(**row) for row in res.data]

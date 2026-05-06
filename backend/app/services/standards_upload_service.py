@@ -8,7 +8,6 @@ class StandardsUploadService:
         self.db = db
 
     def _extract_text_from_pdf(self, file_bytes: bytes) -> str:
-        """Extrahiert den gesamten Text aus einem PDF (alle Seiten)."""
         from pypdf import PdfReader
         reader = PdfReader(io.BytesIO(file_bytes))
         pages = []
@@ -24,14 +23,13 @@ class StandardsUploadService:
         file_bytes: bytes,
         filename: str,
         domain: str,
-        region: str,
+        layer: int,
+        jurisdiction_type: str,
+        jurisdiction_name: str | None,
         category: str,
         source_name: str = "",
     ) -> list[StandardOut]:
-        """
-        Speichert eine Norm-Datei als einzelnen Eintrag in der DB.
-        Eine Datei = ein Eintrag (kein Chunking).
-        """
+        """One file = one DB row (no chunking)."""
         lower = filename.lower()
 
         if lower.endswith(".pdf"):
@@ -44,23 +42,30 @@ class StandardsUploadService:
 
         row = {
             "domain": domain,
-            "region": region,
+            "layer": layer,
+            "jurisdiction_type": jurisdiction_type,
+            "jurisdiction_name": jurisdiction_name or None,
             "category": category,
-            "text": text[:100_000],  # Postgres-Limit sicherheitshalber
+            "text": text[:100_000],
             "source_url": source_name or filename,
         }
 
         res = self.db.table("standards").insert(row).execute()
-        return [StandardOut(**row) for row in (res.data or [])]
+        return [StandardOut(**r) for r in (res.data or [])]
 
     async def list_all(
-        self, domain: str | None = None, region: str | None = None
+        self,
+        domain: str | None = None,
+        jurisdiction_type: str | None = None,
+        jurisdiction_name: str | None = None,
     ) -> list[StandardOut]:
         query = self.db.table("standards").select("*").order("created_at", desc=True)
         if domain:
             query = query.eq("domain", domain)
-        if region:
-            query = query.eq("region", region)
+        if jurisdiction_type:
+            query = query.eq("jurisdiction_type", jurisdiction_type)
+        if jurisdiction_name:
+            query = query.eq("jurisdiction_name", jurisdiction_name)
         res = query.execute()
         return [StandardOut(**row) for row in (res.data or [])]
 
