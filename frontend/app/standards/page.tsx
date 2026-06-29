@@ -222,7 +222,7 @@ export default function StandardsPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Kanton</label>
               <select value={canton} onChange={(e) => setCanton(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -233,14 +233,14 @@ export default function StandardsPage() {
               </label>
               <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)}
                 placeholder="z.B. Grenzabstand, Gebäudehöhe"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Quelle (optional)</label>
               <input type="text" value={sourceName} onChange={(e) => setSourceName(e.target.value)}
                 placeholder="z.B. PBG ZH § 270"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
 
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
