@@ -140,7 +140,7 @@ export default function DatabasePage() {
             <select
               value={canton}
               onChange={(e) => setCanton(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -156,7 +156,7 @@ export default function DatabasePage() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="z.B. Grenzabstand, Gebäudehöhe"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -167,7 +167,7 @@ export default function DatabasePage() {
               value={sourceName}
               onChange={(e) => setSourceName(e.target.value)}
               placeholder="z.B. PBG ZH § 270"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 

@@ -55,7 +55,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="z.B. Einfamilienhaus Zürich"
             />
           </div>
@@ -68,7 +68,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
               <select
                 value={canton}
                 onChange={(e) => setCanton(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {CANTONS.map((c) => (
                   <option key={c} value={c}>
@@ -87,7 +87,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
                 required
                 value={municipality}
                 onChange={(e) => setMunicipality(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="z.B. Winterthur"
               />
             </div>
