@@ -2,10 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(powershell.exe -Command ':*)",
-      "Bash(powershell.exe -Command \"Start-Process -FilePath '.venv\\\\Scripts\\\\uvicorn.exe' -ArgumentList 'app.main:app','--reload','--host','0.0.0.0','--port','8000' -NoNewWindow -RedirectStandardOutput 'C:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Construction Analyzer\\\\backend\\\\uvicorn.log' -RedirectStandardError 'C:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Construction Analyzer\\\\backend\\\\uvicorn_err.log'\")",
-      "Bash(powershell.exe -Command \"Start-Sleep -Milliseconds 1500; Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Construction Analyzer\\\\backend\\\\uvicorn_err.log' -Tail 4\")",
-      "Bash(powershell.exe -Command \"Start-Sleep -Seconds 3; Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Construction Analyzer\\\\backend\\\\uvicorn_err.log' -Tail 6\")",
-      "Bash(powershell.exe -Command \"Start-Sleep -Seconds 5; \\(Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Construction Analyzer\\\\backend\\\\uvicorn_err.log'\\)[-1]\")",
+      "Bash(powershell.exe -Command \"Start-Process -FilePath '.venv\\\\Scripts\\\\uvicorn.exe' -ArgumentList 'app.main:app','--reload','--host','0.0.0.0','--port','8000' -NoNewWindow -RedirectStandardOutput 'C:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn.log' -RedirectStandardError 'C:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log'\")",
+      "Bash(powershell.exe -Command \"Start-Sleep -Milliseconds 1500; Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log' -Tail 4\")",
+      "Bash(powershell.exe -Command \"Start-Sleep -Seconds 3; Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log' -Tail 6\")",
+      "Bash(powershell.exe -Command \"Start-Sleep -Seconds 5; \\(Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log'\\)[-1]\")",
       "Bash(powershell.exe -Command \"netstat -ano | findstr ':8000'\")",
       "Bash(powershell.exe -Command \"Get-Process python | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Output 'done'\")"
     ]
