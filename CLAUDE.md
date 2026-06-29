@@ -1,4 +1,4 @@
-# AI Analysis Platform — Project Context for Claude Code
+# AI Analysis Platform — Project Context for Claude Code!
 
 ## What is this project?
 
