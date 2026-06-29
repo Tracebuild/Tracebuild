@@ -32,7 +32,7 @@ export default function LoginPage() {
 
   return (
     <div className="bg-white shadow-sm rounded-xl p-8 border border-gray-100">
-      <h1 className="text-2xl font-semibold mb-1 text-gray-900">Anmelden</h1>
+      <h1 className="text-2xl font-semibold mb-1 text-gray-900">Login</h1>
       <p className="text-sm text-gray-500 mb-6">
         Noch kein Konto?{" "}
         <Link href="/register" className="text-blue-600 hover:underline">
