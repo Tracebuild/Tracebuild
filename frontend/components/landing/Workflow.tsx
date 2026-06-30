@@ -29,12 +29,12 @@ const steps = [
 
 export default function Workflow() {
   return (
-    <section id="workflow" className="bg-[#161616] border-y border-white/[0.07] py-28 px-6">
+    <section id="workflow" className="bg-[#EBE5DC] border-y border-[#B7926A]/10 py-28 px-6">
       <div className="max-w-6xl mx-auto">
 
         <AnimatedSection className="mb-16">
-          <p className="text-xs text-[#B7926A]/70 uppercase tracking-widest mb-4">Workflow</p>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-lg">
+          <p className="text-xs text-[#B7926A] uppercase tracking-widest mb-4 font-semibold">Workflow</p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#141414] leading-tight max-w-lg">
             Von der Zeichnung zum Bericht in vier Schritten.
           </h2>
         </AnimatedSection>
@@ -44,13 +44,13 @@ export default function Workflow() {
             <AnimatedSection key={step.number} delay={i * 100}>
               <div className="flex flex-col gap-5">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-[#B7926A]/60 tabular-nums select-none">
+                  <span className="font-mono text-sm text-[#B7926A]/70 tabular-nums select-none font-bold">
                     {step.number}
                   </span>
-                  <div className="h-px flex-1 bg-zinc-800" />
+                  <div className="h-px flex-1 bg-stone-300" />
                 </div>
-                <h3 className="text-white font-semibold text-lg">{step.title}</h3>
-                <p className="text-sm text-zinc-400 leading-relaxed">{step.description}</p>
+                <h3 className="text-[#141414] font-semibold text-lg">{step.title}</h3>
+                <p className="text-sm text-stone-600 leading-relaxed">{step.description}</p>
               </div>
             </AnimatedSection>
           ))}

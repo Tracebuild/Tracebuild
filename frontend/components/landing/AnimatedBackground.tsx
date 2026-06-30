@@ -1,9 +1,8 @@
 /**
- * AnimatedBackground — technical blueprint/analysis atmosphere for the Hero section.
- * Pure CSS animations, no JS state, no dependencies, respects prefers-reduced-motion.
+ * AnimatedBackground — warm cream / light blueprint atmosphere for the Hero section.
+ * Pure CSS animations, no JS state, respects prefers-reduced-motion.
  */
 
-// Node positions (% of viewport) — kept in side-margins so hero content stays clear
 const NODES: [string, string][] = [
   ["7%",  "13%"],
   ["16%", "33%"],
@@ -19,11 +18,10 @@ const NODES: [string, string][] = [
   ["73%", "90%"],
 ];
 
-// Pairs of node indices to draw connection lines between
 const EDGES: [number, number][] = [
-  [0, 1], [1, 2], [2, 3],          // left column
-  [4, 5], [5, 6], [6, 7],          // right column
-  [1, 8], [9, 4],                  // corners to top
+  [0, 1], [1, 2], [2, 3],
+  [4, 5], [5, 6], [6, 7],
+  [1, 8], [9, 4],
 ];
 
 const NODE_DELAYS = [
@@ -38,11 +36,11 @@ export default function AnimatedBackground() {
       className="absolute inset-0 overflow-hidden pointer-events-none select-none"
       aria-hidden="true"
     >
-      {/* ── 1. Base colour ────────────────────────────────── */}
-      <div className="absolute inset-0 bg-[#0D0D0F]" />
+      {/* ── 1. Warm cream base ────────────────────────────── */}
+      <div className="absolute inset-0 bg-[#F2EDE4]" />
 
-      {/* ── 2. Fine noise grain (SVG feTurbulence) ─────────── */}
-      <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+      {/* ── 2. Fine noise grain ───────────────────────────── */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.055]" xmlns="http://www.w3.org/2000/svg">
         <filter id="bg-noise">
           <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="3" stitchTiles="stitch" />
           <feColorMatrix type="saturate" values="0" />
@@ -51,38 +49,92 @@ export default function AnimatedBackground() {
       </svg>
 
       {/* ── 3. Technical grid — minor (24 px) ─────────────── */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(183,146,106,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(183,146,106,0.05)_1px,transparent_1px)] bg-[size:24px_24px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(183,146,106,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(183,146,106,0.07)_1px,transparent_1px)] bg-[size:24px_24px]" />
 
       {/* ── 4. Technical grid — major (96 px) ─────────────── */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(183,146,106,0.09)_1px,transparent_1px),linear-gradient(to_bottom,rgba(183,146,106,0.09)_1px,transparent_1px)] bg-[size:96px_96px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(183,146,106,0.13)_1px,transparent_1px),linear-gradient(to_bottom,rgba(183,146,106,0.13)_1px,transparent_1px)] bg-[size:96px_96px]" />
 
-      {/* ── 5. Blueprint / CAD construction lines ─────────── */}
-      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-        <g
-          fill="none"
-          stroke="#B7926A"
-          strokeWidth="0.5"
-          opacity="0.07"
-        >
-          {/* Horizontal measurement lines */}
-          <line x1="0" y1="27%" x2="100%" y2="27%"
-            strokeDasharray="72 24" className="animate-dash-drift" />
-          <line x1="0" y1="62%" x2="100%" y2="62%"
-            strokeDasharray="48 36" className="animate-dash-drift" style={{ animationDelay: "-6s" }} />
-
-          {/* Vertical section lines */}
-          <line x1="22%" y1="0" x2="22%" y2="100%"
-            strokeDasharray="56 28" className="animate-dash-drift" style={{ animationDelay: "-3s" }} />
-          <line x1="78%" y1="0" x2="78%" y2="100%"
-            strokeDasharray="40 44" className="animate-dash-drift" style={{ animationDelay: "-9s" }} />
-
-          {/* Diagonal CAD guide lines (corner to corner) */}
-          <line x1="0"    y1="100%" x2="32%"  y2="0"    strokeDasharray="60 30" />
-          <line x1="100%" y1="100%" x2="68%"  y2="0"    strokeDasharray="60 30" />
+      {/* ── 5. Blueprint CAD lines + topographic + building ── */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 1440 900"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        {/* Blueprint CAD construction lines */}
+        <g fill="none" stroke="#B7926A" strokeWidth="0.6" opacity="0.14">
+          <line x1="0" y1="243" x2="1440" y2="243" strokeDasharray="72 24" className="animate-dash-drift" />
+          <line x1="0" y1="558" x2="1440" y2="558" strokeDasharray="48 36" className="animate-dash-drift" style={{ animationDelay: "-6s" }} />
+          <line x1="316" y1="0" x2="316" y2="900" strokeDasharray="56 28" className="animate-dash-drift" style={{ animationDelay: "-3s" }} />
+          <line x1="1123" y1="0" x2="1123" y2="900" strokeDasharray="40 44" className="animate-dash-drift" style={{ animationDelay: "-9s" }} />
+          <line x1="0" y1="900" x2="460" y2="0" strokeDasharray="60 30" />
+          <line x1="1440" y1="900" x2="980" y2="0" strokeDasharray="60 30" />
         </g>
 
-        {/* ── 6. Connection lines between nodes ─────────────── */}
-        <g fill="none" stroke="#B7926A" strokeWidth="0.8" opacity="0.13" strokeDasharray="3 10">
+        {/* Floor plan blueprint overlay — top-left quadrant */}
+        <g fill="none" stroke="#8B7355" strokeWidth="0.7" opacity="0.09">
+          <rect x="80" y="160" width="240" height="180" />
+          <line x1="80" y1="290" x2="320" y2="290" />
+          <line x1="195" y1="160" x2="195" y2="340" />
+          <path d="M 195 240 Q 165 240, 165 270" strokeDasharray="2 3" />
+          <line x1="80" y1="355" x2="320" y2="355" strokeDasharray="5 5" />
+          <line x1="80" y1="350" x2="80" y2="360" />
+          <line x1="320" y1="350" x2="320" y2="360" />
+          <rect x="85" y="165" width="105" height="60" />
+          <rect x="200" y="165" width="115" height="60" />
+        </g>
+
+        {/* Topographic contour lines — lower-left area */}
+        <g fill="none" stroke="#9A7A55" strokeWidth="1" opacity="0.10">
+          <path d="M -60 820 C 60 800, 220 832, 400 810 C 550 790, 720 822, 900 800" />
+          <path d="M -60 848 C 70 828, 238 860, 418 838 C 568 818, 738 850, 918 828" />
+          <path d="M -60 876 C 80 856, 256 888, 436 866 C 586 846, 756 878, 936 856" />
+          <path d="M -60 762 C 45 742, 196 770, 368 750 C 512 732, 682 762, 862 742" />
+          <path d="M -60 790 C 52 770, 208 800, 382 780 C 526 762, 696 792, 876 772" />
+          <path d="M -60 720 C 35 700, 180 728, 344 708 C 488 690, 658 720, 838 700" />
+          <path d="M -60 680 C 25 660, 162 686, 318 666 C 462 648, 632 678, 812 658" />
+        </g>
+
+        {/* Architectural building sketch — right side */}
+        <g fill="none" stroke="#8B7355" strokeWidth="0.65" opacity="0.07">
+          {/* Main building box — perspective */}
+          <path d="M 1060 140 L 1340 170 L 1340 680 L 1060 650 Z" />
+          <path d="M 1340 170 L 1440 100 L 1440 610 L 1340 680" />
+          <path d="M 1060 140 L 1160 70 L 1440 100" />
+          {/* Floor levels */}
+          <line x1="1060" y1="250" x2="1340" y2="278" />
+          <line x1="1060" y1="360" x2="1340" y2="386" />
+          <line x1="1060" y1="470" x2="1340" y2="494" />
+          <line x1="1060" y1="570" x2="1340" y2="592" />
+          {/* Right-face depth lines */}
+          <line x1="1340" y1="250" x2="1440" y2="182" />
+          <line x1="1340" y1="360" x2="1440" y2="292" />
+          <line x1="1340" y1="470" x2="1440" y2="402" />
+          <line x1="1340" y1="570" x2="1440" y2="502" />
+          {/* Window grid left face */}
+          <line x1="1150" y1="140" x2="1150" y2="650" strokeDasharray="3 4" opacity="0.6" />
+          <line x1="1240" y1="140" x2="1240" y2="650" strokeDasharray="3 4" opacity="0.6" />
+        </g>
+
+        {/* Measurement annotation dots — scattered */}
+        {([
+          [316, 243], [316, 558], [1123, 243], [1123, 558],
+          [200, 350], [480, 243], [720, 558], [960, 243],
+        ] as [number, number][]).map(([x, y], i) => (
+          <g key={i}>
+            <circle cx={x} cy={y} r="4" fill="none" stroke="#B7926A" strokeWidth="0.8" opacity="0.15" />
+            <circle cx={x} cy={y} r="1.5" fill="#B7926A" opacity="0.25" />
+          </g>
+        ))}
+
+        {/* ── Connection lines between nodes (% coords via foreignObject trick isn't possible;
+               use the SVG nodes below in a separate element) */}
+      </svg>
+
+      {/* ── 6–8. Nodes, edges, crosshairs (% coordinates) ─── */}
+      <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+        {/* Connection lines */}
+        <g fill="none" stroke="#B7926A" strokeWidth="0.8" opacity="0.18" strokeDasharray="3 10">
           {EDGES.map(([a, b], i) => (
             <line
               key={i}
@@ -92,28 +144,26 @@ export default function AnimatedBackground() {
           ))}
         </g>
 
-        {/* ── 7. Analysis nodes ─────────────────────────────── */}
+        {/* Analysis nodes */}
         {NODES.map(([cx, cy], i) => (
           <g key={i}>
-            {/* Outer ring — static, very faint */}
             <circle cx={cx} cy={cy} r="5.5"
-              fill="none" stroke="#B7926A" strokeWidth="0.5" opacity="0.07" />
-            {/* Inner dot — flickers */}
+              fill="none" stroke="#B7926A" strokeWidth="0.6" opacity="0.12" />
             <circle
               cx={cx} cy={cy} r="2"
               fill="#B7926A"
               className="animate-node-flicker"
-              style={{ animationDelay: NODE_DELAYS[i] }}
+              style={{ animationDelay: NODE_DELAYS[i], opacity: 0.45 }}
             />
           </g>
         ))}
 
-        {/* ── 8. Cross-hair markers at grid intersections ───── */}
+        {/* Crosshair markers at intersections */}
         {(["22%", "78%"] as const).map((x) =>
           (["27%", "62%"] as const).map((y) => (
-            <g key={`${x}-${y}`} stroke="#B7926A" strokeWidth="0.6" opacity="0.1">
-              <line x1={`calc(${x} - 8px)`} y1={y} x2={`calc(${x} + 8px)`} y2={y} />
-              <line x1={x} y1={`calc(${y} - 8px)`} x2={x} y2={`calc(${y} + 8px)`} />
+            <g key={`${x}-${y}`} stroke="#B7926A" strokeWidth="0.7" opacity="0.14">
+              <line x1={`calc(${x} - 10px)`} y1={y} x2={`calc(${x} + 10px)`} y2={y} />
+              <line x1={x} y1={`calc(${y} - 10px)`} x2={x} y2={`calc(${y} + 10px)`} />
             </g>
           ))
         )}
@@ -124,22 +174,16 @@ export default function AnimatedBackground() {
         className="absolute top-0 left-0 right-0 h-px animate-scan-sweep"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, transparent 15%, rgba(183,146,106,0.55) 50%, transparent 85%, transparent 100%)",
-          boxShadow: "0 0 14px 2px rgba(183,146,106,0.22)",
+            "linear-gradient(90deg, transparent 0%, transparent 15%, rgba(183,146,106,0.35) 50%, transparent 85%, transparent 100%)",
+          boxShadow: "0 0 10px 1px rgba(183,146,106,0.12)",
         }}
       />
 
-      {/* ── 10. Ambient glow blobs ─────────────────────────── */}
+      {/* ── 10. Very subtle warm glow ─────────────────────── */}
+      <div className="absolute -top-20 left-[10%] w-[600px] h-[600px] rounded-full blur-[180px] bg-[#B7926A]/[0.04] animate-glow-drift" />
       <div
-        className="absolute -top-20 left-[8%] w-[540px] h-[540px] rounded-full blur-[150px] bg-[#B7926A]/[0.07] animate-glow-drift"
-      />
-      <div
-        className="absolute top-[32%] right-[4%] w-[380px] h-[380px] rounded-full blur-[120px] bg-[#B7926A]/[0.05] animate-glow-drift-alt"
+        className="absolute bottom-0 right-[15%] w-[400px] h-[400px] rounded-full blur-[140px] bg-[#B7926A]/[0.03] animate-glow-drift-alt"
         style={{ animationDelay: "-8s" }}
-      />
-      <div
-        className="absolute bottom-0 left-[30%] w-[460px] h-[460px] rounded-full blur-[160px] bg-[#B7926A]/[0.05] animate-glow-drift"
-        style={{ animationDelay: "-5s" }}
       />
     </div>
   );
