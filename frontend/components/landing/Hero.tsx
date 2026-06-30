@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TraceBuildLogo from "./TraceBuildLogo";
+import AnimatedBackground from "./AnimatedBackground";
 
 const previewItems = [
   { status: "ok",   label: "Grenzabstand SIA 422" },
@@ -33,34 +34,8 @@ export default function Hero() {
   return (
     <section className="relative flex flex-col items-center bg-[#0D0D0F] overflow-hidden px-6">
 
-      {/* ── Grain/noise texture ───────────────────────────── */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none select-none opacity-[0.045]"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <filter id="tb-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="3" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#tb-noise)" />
-      </svg>
-
-      {/* ── Animated glow blobs (brand color) ────────────── */}
-      <div
-        className="absolute -top-24 left-[10%] w-[560px] h-[560px] rounded-full blur-[130px] bg-[#B7926A]/10 animate-glow-drift pointer-events-none"
-      />
-      <div
-        className="absolute top-[28%] right-[6%] w-[400px] h-[400px] rounded-full blur-[110px] bg-[#B7926A]/06 animate-glow-drift-alt pointer-events-none"
-        style={{ animationDelay: "-8s" }}
-      />
-      <div
-        className="absolute bottom-0 left-[32%] w-[480px] h-[480px] rounded-full blur-[140px] bg-[#B7926A]/08 animate-glow-drift pointer-events-none"
-        style={{ animationDelay: "-5s" }}
-      />
-
-      {/* ── Subtle grid ───────────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:72px_72px]" />
+      {/* ── Animated technical background ─────────────────── */}
+      <AnimatedBackground />
 
       {/* ── Hero text ─────────────────────────────────────── */}
       <div className="relative w-full max-w-4xl text-center pt-44 pb-16">
