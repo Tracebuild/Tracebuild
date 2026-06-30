@@ -1,36 +1,24 @@
+import Image from "next/image";
+
 interface Props {
   size?: "sm" | "md" | "lg";
-  light?: boolean;
+  light?: boolean; // kept for API compatibility
 }
 
-export default function TraceBuildLogo({ size = "sm", light = false }: Props) {
-  const h = size === "sm" ? 28 : size === "md" ? 38 : 52;
-  const w = Math.round(h * 0.76);
-  const textClass =
-    size === "sm" ? "text-sm" :
-    size === "md" ? "text-xl" :
-                    "text-3xl";
-
-  const leftFill  = light ? "#1A1A1A" : "#EDEAE4";
-  const traceFill = light ? "#141414" : "#F7F7F5";
+export default function TraceBuildLogo({ size = "sm" }: Props) {
+  const cls =
+    size === "sm" ? "h-9"  :  // 36px
+    size === "md" ? "h-12" :  // 48px
+                   "h-16";   // 64px
 
   return (
-    <span className="flex items-center gap-3">
-      {/* ── Icon: two building silhouettes ────────────────── */}
-      <svg width={w} height={h} viewBox="0 0 30 40" fill="none" aria-hidden="true">
-        <path d="M1 37 L1 6 L13 11 L13 37Z" fill={leftFill} />
-        <path d="M15 37 L15 8 L22 13 L22 37Z" fill="#B7926A" />
-        <path d="M11 37 L11 10 L13 11 L13 37Z" fill="#B7926A" fillOpacity="0.45" />
-      </svg>
-
-      {/* ── Divider ───────────────────────────────────────── */}
-      <span className="h-5 w-px bg-[#B7926A]/30 flex-shrink-0" />
-
-      {/* ── Wordmark ──────────────────────────────────────── */}
-      <span className={`font-bold ${textClass} tracking-tight leading-none`}>
-        <span style={{ color: traceFill }}>Trace</span>
-        <span className="text-[#B7926A]">Build</span>
-      </span>
-    </span>
+    <Image
+      src="/Logo-new.png"
+      alt="TraceBuild"
+      width={533}
+      height={400}
+      className={`w-auto object-contain ${cls}`}
+      priority
+    />
   );
 }
