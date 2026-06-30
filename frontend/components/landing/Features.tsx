@@ -1,3 +1,5 @@
+import AnimatedSection from "./AnimatedSection";
+
 const features = [
   {
     icon: "◈",
@@ -33,26 +35,26 @@ export default function Features() {
   return (
     <section id="features" className="bg-zinc-950 py-28 px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-16">
+
+        <AnimatedSection className="mb-16">
           <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">Funktionen</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-lg">
             Alles, was eine professionelle Planprüfung braucht.
           </h2>
-        </div>
+        </AnimatedSection>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {features.map(({ icon, title, description, badge }) => (
-            <div
-              key={title}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5 hover:border-zinc-600 transition-colors"
-            >
-              <span className="text-2xl text-stone-400 leading-none">{icon}</span>
-              <div className="flex flex-col gap-2">
-                <h3 className="text-white font-semibold">{title}</h3>
-                <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
+          {features.map((feature, i) => (
+            <AnimatedSection key={feature.title} delay={i * 80} className="flex">
+              <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5 hover:border-zinc-600 hover:bg-zinc-800/60 transition-all duration-300 cursor-default">
+                <span className="text-2xl text-stone-400 leading-none">{feature.icon}</span>
+                <div className="flex flex-col gap-2">
+                  <h3 className="text-white font-semibold">{feature.title}</h3>
+                  <p className="text-sm text-zinc-400 leading-relaxed">{feature.description}</p>
+                </div>
+                <p className="text-xs text-zinc-600 mt-auto font-mono">{feature.badge}</p>
               </div>
-              <p className="text-xs text-zinc-600 mt-auto font-mono">{badge}</p>
-            </div>
+            </AnimatedSection>
           ))}
         </div>
       </div>
