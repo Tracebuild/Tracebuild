@@ -33,11 +33,11 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="bg-zinc-950 py-28 px-6">
+    <section id="features" className="bg-[#0D0D0F] py-28 px-6">
       <div className="max-w-6xl mx-auto">
 
         <AnimatedSection className="mb-16">
-          <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">Funktionen</p>
+          <p className="text-xs text-[#B7926A]/70 uppercase tracking-widest mb-4">Funktionen</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-lg">
             Alles, was eine professionelle Planprüfung braucht.
           </h2>
@@ -46,8 +46,8 @@ export default function Features() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {features.map((feature, i) => (
             <AnimatedSection key={feature.title} delay={i * 80} className="flex">
-              <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-5 hover:border-zinc-600 hover:bg-zinc-800/60 transition-all duration-300 cursor-default">
-                <span className="text-2xl text-stone-400 leading-none">{feature.icon}</span>
+              <div className="flex-1 bg-[#161616] border border-white/[0.08] rounded-2xl p-6 flex flex-col gap-5 hover:border-[#B7926A]/40 hover:bg-white/[0.03] transition-all duration-300 cursor-default">
+                <span className="text-2xl text-[#B7926A] leading-none">{feature.icon}</span>
                 <div className="flex flex-col gap-2">
                   <h3 className="text-white font-semibold">{feature.title}</h3>
                   <p className="text-sm text-zinc-400 leading-relaxed">{feature.description}</p>

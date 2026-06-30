@@ -9,7 +9,7 @@ const kpis = [
 
 export default function KpiBar() {
   return (
-    <div className="bg-zinc-900 border-y border-zinc-800">
+    <div className="bg-[#161616] border-y border-white/[0.07]">
       <AnimatedSection className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
         {kpis.map(({ value, label }) => (
           <div key={label} className="text-center">
