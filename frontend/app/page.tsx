@@ -8,7 +8,7 @@ import Footer from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#0D0D0F]">
+    <div className="bg-[#F2EDE4]">
       <Navbar />
       <Hero />
       <KpiBar />
