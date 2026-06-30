@@ -1,3 +1,5 @@
+import AnimatedSection from "./AnimatedSection";
+
 const steps = [
   {
     number: "01",
@@ -29,23 +31,28 @@ export default function Workflow() {
   return (
     <section id="workflow" className="bg-zinc-900 border-y border-zinc-800 py-28 px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-16">
+
+        <AnimatedSection className="mb-16">
           <p className="text-xs text-zinc-500 uppercase tracking-widest mb-4">Workflow</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight max-w-lg">
             Von der Zeichnung zum Bericht in vier Schritten.
           </h2>
-        </div>
+        </AnimatedSection>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {steps.map(({ number, title, description }) => (
-            <div key={number} className="flex flex-col gap-5">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-sm text-zinc-600 tabular-nums select-none">{number}</span>
-                <div className="h-px flex-1 bg-zinc-800" />
+          {steps.map((step, i) => (
+            <AnimatedSection key={step.number} delay={i * 100}>
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm text-stone-500 tabular-nums select-none">
+                    {step.number}
+                  </span>
+                  <div className="h-px flex-1 bg-zinc-800" />
+                </div>
+                <h3 className="text-white font-semibold text-lg">{step.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed">{step.description}</p>
               </div>
-              <h3 className="text-white font-semibold text-lg">{title}</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">{description}</p>
-            </div>
+            </AnimatedSection>
           ))}
         </div>
       </div>
