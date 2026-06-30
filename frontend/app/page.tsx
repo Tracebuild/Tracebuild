@@ -1,15 +1,21 @@
+import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
+import KpiBar from "@/components/landing/KpiBar";
 import Features from "@/components/landing/Features";
-import Screenshots from "@/components/landing/Screenshots";
+import Workflow from "@/components/landing/Workflow";
+import Security from "@/components/landing/Security";
 import Footer from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <main>
+    <div className="bg-zinc-950">
+      <Navbar />
       <Hero />
+      <KpiBar />
       <Features />
-      <Screenshots />
+      <Workflow />
+      <Security />
       <Footer />
-    </main>
+    </div>
   );
 }
