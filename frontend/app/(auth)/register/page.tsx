@@ -26,6 +26,9 @@ export default function RegisterPage() {
       password,
       options: {
         data: { full_name: name },
+        // Verwendet die aktuelle Domain statt der statischen "Site URL" aus dem
+        // Supabase-Dashboard — vermeidet falsche Links nach Domain-Umzügen.
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     });
 
