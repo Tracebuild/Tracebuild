@@ -20,10 +20,20 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     .single();
   if (!project) return err("Projekt nicht gefunden", 404);
 
+  // PostgREST kann parent-Zeilen nicht über related-table-Filter einschränken
+  // → 2-Schritt-Query: erst Dokument-IDs holen, dann Analysen filtern
+  const { data: docs } = await admin
+    .from("documents")
+    .select("id")
+    .eq("project_id", params.id);
+
+  const docIds = (docs ?? []).map((d: { id: string }) => d.id);
+  if (docIds.length === 0) return ok([]);
+
   const { data, error } = await admin
     .from("analyses")
-    .select("*, documents(*), analysis_items(*)")
-    .eq("documents.project_id", params.id)
+    .select("*, analysis_items(*)")
+    .in("document_id", docIds)
     .order("created_at", { ascending: false });
 
   if (error) return err(error.message, 500);
@@ -124,31 +134,38 @@ export async function POST(request: Request, { params }: { params: { id: string 
       messages,
     });
 
-    // Tool-Use-Loop
+    // Tool-Use-Loop — alle tool_use-Blöcke in einer Runde beantworten
     while (response.stop_reason === "tool_use") {
-      const toolUseBlock = response.content.find((b) => b.type === "tool_use");
-      if (!toolUseBlock || toolUseBlock.type !== "tool_use") break;
+      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
+      if (toolUseBlocks.length === 0) break;
 
-      const input = toolUseBlock.input as { jurisdiction_name?: string; jurisdiction_type?: string };
-      const jName = input.jurisdiction_name ?? canton;
-      const jType = input.jurisdiction_type ?? "cantonal";
+      const toolResults = await Promise.all(
+        toolUseBlocks.map(async (block) => {
+          if (block.type !== "tool_use") return null;
+          const input = block.input as { jurisdiction_name?: string; jurisdiction_type?: string };
+          const jName = input.jurisdiction_name ?? canton;
+          const jType = input.jurisdiction_type ?? "cantonal";
 
-      const { data: standards } = await admin
-        .from("standards")
-        .select("category, text, source_url")
-        .eq("domain", project.domain)
-        .eq("jurisdiction_type", jType)
-        .eq("jurisdiction_name", jName)
-        .limit(20);
+          const { data: standards } = await admin
+            .from("standards")
+            .select("category, text, source_url")
+            .eq("domain", project.domain)
+            .eq("jurisdiction_type", jType)
+            .eq("jurisdiction_name", jName)
+            .limit(20);
+
+          return {
+            type: "tool_result" as const,
+            tool_use_id: block.id,
+            content: JSON.stringify(standards ?? []),
+          };
+        })
+      );
 
       messages.push({ role: "assistant", content: response.content });
       messages.push({
         role: "user",
-        content: [{
-          type: "tool_result",
-          tool_use_id: toolUseBlock.id,
-          content: JSON.stringify(standards ?? []),
-        }],
+        content: toolResults.filter((r): r is NonNullable<typeof r> => r !== null),
       });
 
       response = await anthropic.messages.create({
