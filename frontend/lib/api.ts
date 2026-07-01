@@ -1,25 +1,10 @@
-import { createClient } from "@/lib/supabase/client";
+const BASE = "/api/v1";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-
-async function getToken(): Promise<string> {
-  const supabase = createClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Nicht eingeloggt");
-  return token;
-}
-
-async function request<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = await getToken();
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...options.headers,
     },
   });
@@ -31,10 +16,8 @@ async function request<T>(
 }
 
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
-  const token = await getToken();
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
+  const res = await fetch(`${BASE}${path}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
   const json = await res.json();
