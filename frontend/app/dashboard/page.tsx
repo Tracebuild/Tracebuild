@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
-import LogoutButton from "@/components/LogoutButton";
 import NewProjectModal from "@/components/NewProjectModal";
 import ProjectCard from "@/components/ProjectCard";
 
@@ -23,6 +23,13 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -51,62 +58,105 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <header className="bg-[#111118] border-b border-[#1e1e2e] px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#ede9e0] flex">
+      {/* Sidebar */}
+      <aside className="w-56 shrink-0 bg-white border-r border-[#e7e2d9] flex flex-col h-screen sticky top-0">
+        <div className="px-4 py-5 border-b border-[#e7e2d9]">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 bg-[#B7926A] rounded-lg flex items-center justify-center shrink-0">
               <span className="text-white text-xs font-bold">T</span>
             </div>
-            <span className="text-slate-100 font-semibold text-sm">Tracebuild</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500">{email}</span>
-            <LogoutButton />
+            <span className="font-semibold text-stone-800 text-sm">TraceBuild</span>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-xl font-semibold text-slate-100">Projekte</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Alle deine Analyseprojekte</p>
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#f3ece3] text-[#8b6344] text-sm font-medium">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7h18M3 12h18M3 17h18" />
+            </svg>
+            Projekte
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          <Link
+            href="/standards"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-stone-500 hover:bg-stone-50 hover:text-stone-800 text-sm transition-colors"
           >
-            + Neues Projekt
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Normen-DB
+          </Link>
+        </nav>
+
+        <div className="px-3 py-4 border-t border-[#e7e2d9]">
+          <p className="px-3 text-xs text-stone-400 truncate mb-1">{email}</p>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-stone-500 hover:bg-stone-50 hover:text-stone-800 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Abmelden
           </button>
         </div>
+      </aside>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-[#111118] border border-[#1e1e2e] rounded-xl p-5 animate-pulse">
-                <div className="h-4 bg-[#1e1e2e] rounded w-3/4 mb-2" />
-                <div className="h-3 bg-[#1e1e2e] rounded w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="bg-[#111118] rounded-xl border border-[#1e1e2e] p-16 text-center">
-            <p className="text-slate-500 text-sm">Noch keine Projekte vorhanden.</p>
+      {/* Main content */}
+      <main className="flex-1 overflow-auto">
+        <div className="px-8 py-8 max-w-5xl">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-xl font-semibold text-stone-900">Projekte</h1>
+              {!loading && (
+                <p className="text-sm text-stone-500 mt-0.5">
+                  {projects.length === 0
+                    ? "Noch keine Projekte"
+                    : `${projects.length} Projekt${projects.length !== 1 ? "e" : ""}`}
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setShowModal(true)}
-              className="mt-4 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+              className="bg-[#B7926A] hover:bg-[#a67e5a] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
-              Erstes Projekt erstellen →
+              + Neues Projekt
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projects.map((p) => (
-              <ProjectCard key={p.id} project={p} onDeleted={loadProjects} />
-            ))}
-          </div>
-        )}
+
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white border border-[#e7e2d9] rounded-xl p-5 animate-pulse">
+                  <div className="h-4 bg-stone-100 rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-stone-100 rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="bg-white border border-[#e7e2d9] rounded-xl p-16 text-center">
+              <div className="w-12 h-12 bg-[#f3ece3] rounded-xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-[#B7926A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-stone-600 text-sm font-medium">Noch keine Projekte vorhanden</p>
+              <p className="text-stone-400 text-xs mt-1">Erstelle dein erstes Analyseprojekt</p>
+              <button
+                onClick={() => setShowModal(true)}
+                className="mt-4 text-sm text-[#B7926A] hover:text-[#a67e5a] font-medium transition-colors"
+              >
+                Erstes Projekt erstellen →
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((p) => (
+                <ProjectCard key={p.id} project={p} onDeleted={loadProjects} />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {showModal && (
