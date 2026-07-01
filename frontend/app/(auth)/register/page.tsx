@@ -25,7 +25,12 @@ export default function RegisterPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name } },
+      options: {
+        data: { full_name: name },
+        // Verwendet die aktuelle Domain statt der statischen "Site URL" aus dem
+        // Supabase-Dashboard — vermeidet falsche Links nach Domain-Umzügen.
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
 
     if (error) {
