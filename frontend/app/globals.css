@@ -19,3 +19,84 @@ select {
   color: #111827;
   caret-color: #111827;
 }
+
+/* ─── Keyframes ───────────────────────────────────────── */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes glowDrift {
+  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.28; }
+  33%       { transform: translate(4%,  -3%) scale(1.08); opacity: 0.45; }
+  66%       { transform: translate(-3%, 5%)  scale(0.94); opacity: 0.22; }
+}
+
+@keyframes glowDriftAlt {
+  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.18; }
+  50%       { transform: translate(-6%, -5%) scale(1.14); opacity: 0.38; }
+}
+
+/* Scan line sweeps top → bottom of the hero section */
+@keyframes scanSweep {
+  0%   { transform: translateY(0);     opacity: 0;    }
+  4%   { opacity: 0.8; }
+  92%  { opacity: 0.4; }
+  100% { transform: translateY(200vh); opacity: 0;    }
+}
+
+/* Node pulse — opacity only (composited, performant) */
+@keyframes nodeFlicker {
+  0%, 100% { opacity: 0.18; }
+  50%       { opacity: 0.60; }
+}
+
+/* Blueprint dash offset — makes dashes appear to move */
+@keyframes dashDrift {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -120; }
+}
+
+/* ─── Utility classes ─────────────────────────────────── */
+
+@layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-float {
+    animation: floatY 6s ease-in-out infinite;
+  }
+  .animate-glow-drift {
+    animation: glowDrift 16s ease-in-out infinite;
+  }
+  .animate-glow-drift-alt {
+    animation: glowDriftAlt 20s ease-in-out infinite;
+  }
+  .animate-scan-sweep {
+    animation: scanSweep 14s linear infinite;
+  }
+  .animate-node-flicker {
+    animation: nodeFlicker 3.5s ease-in-out infinite;
+  }
+  .animate-dash-drift {
+    animation: dashDrift 18s linear infinite;
+  }
+}
+
+/* ─── Reduced motion ──────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
