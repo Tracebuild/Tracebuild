@@ -16,7 +16,7 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+      className="text-sm text-slate-500 hover:text-slate-100 transition-colors"
     >
       Abmelden
     </button>
