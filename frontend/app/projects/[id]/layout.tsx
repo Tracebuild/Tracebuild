@@ -21,15 +21,15 @@ export default function ProjectLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <header className="bg-[#111118] border-b border-[#1e1e2e] px-6">
+    <div className="min-h-screen bg-[#ede9e0]">
+      <header className="bg-white border-b border-[#e7e2d9] px-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-4 py-4">
-            <Link
-              href="/dashboard"
-              className="text-sm text-slate-500 hover:text-slate-100 transition-colors"
-            >
-              ← Dashboard
+          <div className="flex items-center gap-3 py-3.5">
+            <Link href="/dashboard" className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors group">
+              <div className="w-6 h-6 bg-[#B7926A] rounded flex items-center justify-center shrink-0">
+                <span className="text-white text-xs font-bold">T</span>
+              </div>
+              <span className="text-sm">← Dashboard</span>
             </Link>
           </div>
           <div className="flex gap-0">
@@ -41,8 +41,8 @@ export default function ProjectLayout({
                   href={tab.href}
                   className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                     active
-                      ? "border-indigo-500 text-indigo-400"
-                      : "border-transparent text-slate-500 hover:text-slate-200 hover:border-slate-700"
+                      ? "border-[#B7926A] text-[#8b6344]"
+                      : "border-transparent text-stone-500 hover:text-stone-900 hover:border-stone-300"
                   }`}
                 >
                   {tab.label}

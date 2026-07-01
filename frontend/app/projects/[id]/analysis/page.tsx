@@ -19,9 +19,9 @@ interface Analysis {
 }
 
 const STATUS_CONFIG = {
-  ok:   { label: "Konform",  bg: "bg-green-500/10",  text: "text-green-400",  badge: "bg-green-500/20 text-green-400",  dot: "bg-green-500" },
-  fail: { label: "Verstoss", bg: "bg-red-500/10",    text: "text-red-400",    badge: "bg-red-500/20 text-red-400",      dot: "bg-red-500"   },
-  warn: { label: "Unklar",   bg: "bg-amber-500/10",  text: "text-amber-400",  badge: "bg-amber-500/20 text-amber-400",  dot: "bg-amber-500" },
+  ok:   { label: "Konform",  bg: "bg-green-50",   text: "text-green-700",  badge: "bg-green-100 text-green-700",   dot: "bg-green-500"  },
+  fail: { label: "Verstoss", bg: "bg-red-50",     text: "text-red-700",    badge: "bg-red-100 text-red-700",       dot: "bg-red-500"    },
+  warn: { label: "Unklar",   bg: "bg-amber-50",   text: "text-amber-700",  badge: "bg-amber-100 text-amber-700",   dot: "bg-amber-500"  },
 };
 
 export default function AnalysisPage({ params }: { params: { id: string } }) {
@@ -87,8 +87,8 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           onClick={() => !uploading && fileRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
             dragOver
-              ? "border-indigo-500 bg-indigo-500/10"
-              : "border-[#1e1e2e] hover:border-indigo-500/50 hover:bg-[#111118]"
+              ? "border-[#B7926A] bg-[#f3ece3]"
+              : "border-[#e7e2d9] hover:border-[#c8a882] hover:bg-[#faf8f5]"
           } ${uploading ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           <input
@@ -100,28 +100,28 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           />
           {uploading ? (
             <div className="space-y-2">
-              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs text-slate-400">Claude analysiert…</p>
-              <p className="text-xs text-slate-600">Das dauert ca. 30 Sek.</p>
+              <div className="w-6 h-6 border-2 border-[#B7926A] border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-stone-500">Claude analysiert…</p>
+              <p className="text-xs text-stone-400">Das dauert ca. 30 Sek.</p>
             </div>
           ) : (
             <div className="space-y-1">
               <p className="text-2xl">📄</p>
-              <p className="text-sm font-medium text-slate-300">Dokument hochladen</p>
-              <p className="text-xs text-slate-600">PDF oder Bild, Drag & Drop</p>
+              <p className="text-sm font-medium text-stone-700">Dokument hochladen</p>
+              <p className="text-xs text-stone-400">PDF oder Bild, Drag & Drop</p>
             </div>
           )}
         </div>
 
         {error && (
-          <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">
+          <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
 
         {analyses.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-slate-600 uppercase tracking-wide px-1">
+            <p className="text-xs font-medium text-stone-400 uppercase tracking-wide px-1">
               Bisherige Analysen
             </p>
             {analyses.map((a) => (
@@ -130,14 +130,14 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                 onClick={() => setSelected(a)}
                 className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
                   selected?.id === a.id
-                    ? "border-indigo-500/50 bg-indigo-600/10 text-indigo-400"
-                    : "border-[#1e1e2e] hover:border-slate-700 text-slate-400"
+                    ? "border-[#c8a882] bg-[#f9f5f0] text-stone-800"
+                    : "border-[#e7e2d9] hover:border-stone-300 bg-white text-stone-600"
                 }`}
               >
-                <p className="font-medium truncate text-slate-200">
+                <p className="font-medium truncate text-stone-800">
                   {new Date(a.created_at).toLocaleDateString("de-CH")}
                 </p>
-                <p className="text-xs text-slate-600 mt-0.5">
+                <p className="text-xs text-stone-400 mt-0.5">
                   {(a.items ?? []).length} Prüfpunkte
                   {a.cost_usd != null && ` · $${a.cost_usd.toFixed(4)}`}
                 </p>
@@ -147,13 +147,13 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      {/* Hauptbereich */}
+      {/* Main */}
       <div className="flex-1 min-w-0">
         {!selected ? (
           <div className="h-64 flex items-center justify-center">
             <div className="text-center">
               <p className="text-4xl mb-3">🏗</p>
-              <p className="text-slate-500 text-sm">
+              <p className="text-stone-400 text-sm">
                 Lade einen Bauplan hoch um die Analyse zu starten.
               </p>
             </div>
@@ -164,7 +164,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               {(["fail", "warn", "ok"] as const).map((s) => {
                 const cfg = STATUS_CONFIG[s];
                 return (
-                  <div key={s} className={`${cfg.bg} border border-current/10 rounded-xl p-4`}>
+                  <div key={s} className={`${cfg.bg} rounded-xl p-4 border border-current/10`}>
                     <p className={`text-2xl font-bold ${cfg.text}`}>{counts![s]}</p>
                     <p className={`text-sm ${cfg.text} opacity-80`}>{cfg.label}</p>
                   </div>
@@ -174,7 +174,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
 
             <div className="space-y-2">
               {items.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-8">
+                <p className="text-sm text-stone-400 text-center py-8">
                   Keine Prüfpunkte gefunden.
                 </p>
               ) : (
@@ -183,17 +183,17 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                   return (
                     <div
                       key={item.id}
-                      className={`${cfg.bg} border border-[#1e1e2e] rounded-xl p-4`}
+                      className={`${cfg.bg} border border-current/10 rounded-xl p-4`}
                     >
                       <div className="flex items-start gap-3">
                         <span className={`${cfg.badge} text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1.5`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
                           {cfg.label}
                         </span>
                         <div className="min-w-0">
                           <p className={`text-sm font-medium ${cfg.text}`}>{item.note}</p>
                           {item.suggestion && (
-                            <p className="text-sm text-slate-500 mt-1">
+                            <p className="text-sm text-stone-500 mt-1">
                               💡 {item.suggestion}
                             </p>
                           )}

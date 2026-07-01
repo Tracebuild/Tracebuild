@@ -103,13 +103,13 @@ export default function DatabasePage() {
     setStandards((prev) => prev.filter((s) => s.id !== id));
   }
 
-  const inputCls = "w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-sm text-slate-100 caret-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500";
+  const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
 
   return (
     <div className="flex gap-6">
       {/* Upload-Panel */}
       <div className="w-72 shrink-0">
-        <h2 className="text-base font-semibold text-slate-100 mb-4">Norm hochladen</h2>
+        <h2 className="text-base font-semibold text-stone-800 mb-4">Norm hochladen</h2>
         <form onSubmit={handleUpload} className="space-y-3">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -117,7 +117,7 @@ export default function DatabasePage() {
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-              dragOver ? "border-indigo-500 bg-indigo-500/10" : "border-[#1e1e2e] hover:border-indigo-500/50"
+              dragOver ? "border-[#B7926A] bg-[#f3ece3]" : "border-[#e7e2d9] hover:border-[#c8a882]"
             }`}
           >
             <input
@@ -128,24 +128,24 @@ export default function DatabasePage() {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
             {file ? (
-              <p className="text-sm text-indigo-400 font-medium truncate">{file.name}</p>
+              <p className="text-sm text-[#8b6344] font-medium truncate">{file.name}</p>
             ) : (
               <div>
                 <p className="text-xl mb-1">📋</p>
-                <p className="text-sm text-slate-500">PDF oder TXT wählen</p>
+                <p className="text-sm text-stone-500">PDF oder TXT wählen</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Kanton</label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
             <select value={canton} onChange={(e) => setCanton(e.target.value)} className={inputCls}>
               {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">
+            <label className="block text-xs font-medium text-stone-600 mb-1">
               Kategorie <span className="text-red-500">*</span>
             </label>
             <input
@@ -159,7 +159,7 @@ export default function DatabasePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Quelle (optional)</label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Quelle (optional)</label>
             <input
               type="text"
               value={sourceName}
@@ -170,16 +170,16 @@ export default function DatabasePage() {
           </div>
 
           {error && (
-            <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}
           {success && (
-            <p className="text-xs text-green-400 bg-green-500/10 rounded-lg px-3 py-2">{success}</p>
+            <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{success}</p>
           )}
 
           <button
             type="submit"
             disabled={uploading || !file}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            className="w-full bg-[#B7926A] hover:bg-[#a67e5a] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {uploading ? "Wird verarbeitet…" : "Hochladen & speichern"}
           </button>
@@ -189,10 +189,10 @@ export default function DatabasePage() {
       {/* Standards-Liste */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-slate-100">
+          <h2 className="text-base font-semibold text-stone-800">
             Normen-Datenbank
             {standards.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-slate-500">
+              <span className="ml-2 text-sm font-normal text-stone-400">
                 ({standards.length} Einträge)
               </span>
             )}
@@ -200,7 +200,7 @@ export default function DatabasePage() {
           <select
             value={filterJurisdiction}
             onChange={(e) => setFilterJurisdiction(e.target.value)}
-            className="bg-[#111118] border border-[#1e1e2e] rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] bg-white"
           >
             <option value="">Alle Kantone</option>
             {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -210,41 +210,41 @@ export default function DatabasePage() {
         {loading ? (
           <div className="space-y-2">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-[#111118] border border-[#1e1e2e] rounded-xl p-4 animate-pulse">
-                <div className="h-3 bg-[#1e1e2e] rounded w-1/4 mb-2" />
-                <div className="h-3 bg-[#1e1e2e] rounded w-3/4" />
+              <div key={i} className="bg-white border border-[#e7e2d9] rounded-xl p-4 animate-pulse">
+                <div className="h-3 bg-stone-100 rounded w-1/4 mb-2" />
+                <div className="h-3 bg-stone-100 rounded w-3/4" />
               </div>
             ))}
           </div>
         ) : standards.length === 0 ? (
-          <div className="bg-[#111118] border border-[#1e1e2e] rounded-xl p-12 text-center">
-            <p className="text-slate-500 text-sm">Noch keine Normen in der Datenbank.</p>
-            <p className="text-slate-600 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
+          <div className="bg-white border border-[#e7e2d9] rounded-xl p-12 text-center">
+            <p className="text-stone-400 text-sm">Noch keine Normen in der Datenbank.</p>
+            <p className="text-stone-300 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {standards.map((s) => (
               <div
                 key={s.id}
-                className="bg-[#111118] border border-[#1e1e2e] rounded-xl p-4 flex gap-3 group"
+                className="bg-white border border-[#e7e2d9] rounded-xl p-4 flex gap-3 group"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-indigo-600/10 text-indigo-400 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-[#f3ece3] text-[#8b6344] px-2 py-0.5 rounded-full font-medium">
                       {s.jurisdiction_name ?? "—"}
                     </span>
-                    <span className="text-xs bg-[#1e1e2e] text-slate-400 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
                       {s.category}
                     </span>
                     {s.source_url && (
-                      <span className="text-xs text-slate-600 truncate">{s.source_url}</span>
+                      <span className="text-xs text-stone-400 truncate">{s.source_url}</span>
                     )}
                   </div>
-                  <p className="text-sm text-slate-300 line-clamp-2">{s.text}</p>
+                  <p className="text-sm text-stone-700 line-clamp-2">{s.text}</p>
                 </div>
                 <button
                   onClick={() => handleDelete(s.id)}
-                  className="text-slate-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
+                  className="text-stone-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
                   title="Löschen"
                 >
                   ×

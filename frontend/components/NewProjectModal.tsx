@@ -40,16 +40,16 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
     }
   }
 
-  const inputCls = "w-full bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-sm text-slate-100 caret-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500";
+  const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#111118] border border-[#1e1e2e] rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h2 className="text-base font-semibold text-slate-100 mb-5">Neues Projekt</h2>
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl border border-[#e7e2d9] w-full max-w-md p-6">
+        <h2 className="text-base font-semibold text-stone-900 mb-5">Neues Projekt</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Projektname</label>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Projektname</label>
             <input
               type="text"
               required
@@ -62,7 +62,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Kanton</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
               <select
                 value={canton}
                 onChange={(e) => setCanton(e.target.value)}
@@ -74,7 +74,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1">Gemeinde</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Gemeinde</label>
               <input
                 type="text"
                 required
@@ -87,28 +87,28 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Domain</label>
-            <div className="bg-[#0a0a0f] border border-[#1e1e2e] rounded-lg px-3 py-2 text-sm text-slate-500">
+            <label className="block text-xs font-medium text-stone-600 mb-1">Domain</label>
+            <div className="border border-stone-200 rounded-lg px-3 py-2 text-sm bg-stone-50 text-stone-400">
               Bau / Architektur
             </div>
           </div>
 
           {error && (
-            <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
           )}
 
           <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-[#1e1e2e] text-slate-400 py-2 rounded-lg text-sm font-medium hover:text-slate-100 hover:border-slate-600 transition-colors"
+              className="flex-1 border border-stone-200 text-stone-600 py-2 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              className="flex-1 bg-[#B7926A] hover:bg-[#a67e5a] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {loading ? "Wird erstellt..." : "Erstellen"}
             </button>
