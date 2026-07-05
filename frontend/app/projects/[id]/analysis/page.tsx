@@ -47,6 +47,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "fail" | "warn">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -200,55 +201,115 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* ── Aktueller Stand (summary table) ── */}
-        {typesWithAnalyses.length > 0 && (
-          <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-[#f0ece6]">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Aktueller Stand</p>
-            </div>
-            <div className="divide-y divide-[#f7f5f2]">
-              {typesWithAnalyses.map((type) => {
-                const latest = latestByType[type];
-                const count = analyses.filter((a) => a.planType === type).length;
-                const latestItems = latest.items;
-                const f = latestItems.filter((i) => i.status === "fail").length;
-                const w = latestItems.filter((i) => i.status === "warn").length;
-                const o = latestItems.filter((i) => i.status === "ok").length;
-                const overallStatus = f > 0 ? "kritisch" : w > 0 ? "warnung" : "konform";
-                const statusStyle = {
-                  kritisch: "bg-red-50 text-red-700 border-red-100",
-                  warnung:  "bg-amber-50 text-amber-700 border-amber-100",
-                  konform:  "bg-green-50 text-green-700 border-green-100",
-                };
-                const statusLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+        {/* ── Offene Punkte (filtered issue view) ── */}
+        {typesWithAnalyses.length > 0 && (() => {
+          const totalFail = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "fail").length ?? 0), 0);
+          const totalWarn = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "warn").length ?? 0), 0);
 
-                return (
-                  <button
-                    key={type}
-                    onClick={() => openPlanType(type)}
-                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-[#faf8f5] transition-colors text-left group"
-                  >
-                    <span className="flex-1 text-sm font-medium text-stone-800 truncate group-hover:text-[#8b6344] transition-colors">
-                      {type}
-                    </span>
-                    <span className="text-xs font-semibold text-stone-400 w-7 shrink-0">V{count}</span>
-                    <span className="text-xs text-stone-400 w-16 shrink-0 text-right">
-                      {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                    </span>
-                    <div className="flex items-center gap-3 w-24 shrink-0">
-                      {f > 0 && <span className="flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{f}</span>}
-                      {w > 0 && <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{w}</span>}
-                      {o > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{o}</span>}
+          return (
+            <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
+              {/* Header + filter tabs */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ece6]">
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Offene Punkte</p>
+                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
+                  {([
+                    { key: "all",  label: `Alle (${totalFail + totalWarn})` },
+                    { key: "fail", label: `Verstösse (${totalFail})` },
+                    { key: "warn", label: `Warnungen (${totalWarn})` },
+                  ] as const).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setFilter(key)}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                        filter === key
+                          ? "bg-white text-stone-800 shadow-sm"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Per-plan-type sections */}
+              <div className="divide-y divide-[#f7f5f2]">
+                {typesWithAnalyses.map((type) => {
+                  const latest = latestByType[type];
+                  const count = analyses.filter((a) => a.planType === type).length;
+                  const allItems = latest.items;
+                  const visibleItems = allItems.filter(i =>
+                    filter === "all" ? i.status !== "ok" : i.status === filter
+                  );
+                  const fCount = allItems.filter(i => i.status === "fail").length;
+                  const wCount = allItems.filter(i => i.status === "warn").length;
+                  const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
+                  const badgeStyle = {
+                    kritisch: "bg-red-50 text-red-700 border-red-100",
+                    warnung:  "bg-amber-50 text-amber-700 border-amber-100",
+                    konform:  "bg-green-50 text-green-700 border-green-100",
+                  };
+                  const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+
+                  return (
+                    <div key={type}>
+                      {/* Plan type header row */}
+                      <button
+                        onClick={() => openPlanType(type)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
+                      >
+                        <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">
+                          {type}
+                        </span>
+                        <span className="text-xs text-stone-400">V{count}</span>
+                        <span className="text-xs text-stone-400">
+                          {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
+                          {badgeLabel[overallStatus]}
+                        </span>
+                        <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+
+                      {/* Items */}
+                      {visibleItems.length === 0 ? (
+                        <div className="px-4 pb-3">
+                          <p className="text-xs text-stone-300 italic">
+                            {filter === "fail" ? "Keine Verstösse" : filter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="px-4 pb-3 space-y-1.5">
+                          {visibleItems.map((item) => {
+                            const cfg = STATUS_CONFIG[item.status];
+                            return (
+                              <div key={item.id} className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2.5`}>
+                                <div className="flex items-start gap-2">
+                                  <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                    {cfg.label}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className={`text-sm font-medium ${cfg.text}`}>{item.note}</p>
+                                    {item.suggestion && (
+                                      <p className="text-xs text-stone-500 mt-1 leading-relaxed">💡 {item.suggestion}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${statusStyle[overallStatus]}`}>
-                      {statusLabel[overallStatus]}
-                    </span>
-                  </button>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {allPlanTypes.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-[#ddd8cf] rounded-2xl p-16 text-center">
