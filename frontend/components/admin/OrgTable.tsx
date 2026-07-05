@@ -40,10 +40,11 @@ export default function OrgTable({ orgs, lastActivityMap, onOpen, onEdit, onDele
               const { label, cls } = planMeta[org.planTier];
               const lastAct = lastActivityMap[org.name];
               const created = new Date(org.createdAt).toLocaleDateString("de-CH");
+              const isInactive = org.status === "inactive";
               return (
                 <tr
                   key={org.id}
-                  className={`hover:bg-stone-50/70 transition-colors ${idx < orgs.length - 1 ? "border-b border-stone-100" : ""}`}
+                  className={`hover:bg-stone-50/70 transition-colors ${idx < orgs.length - 1 ? "border-b border-stone-100" : ""} ${isInactive ? "opacity-60" : ""}`}
                 >
                   {/* Organisation */}
                   <td className="px-5 py-4">
@@ -81,10 +82,17 @@ export default function OrgTable({ orgs, lastActivityMap, onOpen, onEdit, onDele
 
                   {/* Status */}
                   <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
-                      Aktiv
-                    </span>
+                    {isInactive ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500">
+                        <span className="w-1.5 h-1.5 rounded-full bg-stone-400 flex-shrink-0" />
+                        Inaktiv
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                        Aktiv
+                      </span>
+                    )}
                   </td>
 
                   {/* Actions */}
