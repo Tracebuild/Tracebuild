@@ -32,7 +32,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const { data, error } = await admin
     .from("analyses")
-    .select("*, analysis_items(*)")
+    .select("*, documents(doc_type), analysis_items(*)")
     .in("document_id", docIds)
     .order("created_at", { ascending: false });
 
@@ -59,6 +59,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   if (!file) return err("Keine Datei hochgeladen");
+  const docType = (formData.get("doc_type") as string | null) || "Grundriss";
 
   const fileBytes = Buffer.from(await file.arrayBuffer());
   const base64Data = fileBytes.toString("base64");
@@ -78,7 +79,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // 2. Dokument-Eintrag in DB
   const { data: doc, error: docError } = await admin
     .from("documents")
-    .insert({ project_id: params.id, file_url: fileUrl, doc_type: "grundriss" })
+    .insert({ project_id: params.id, file_url: fileUrl, doc_type: docType })
     .select()
     .single();
   if (docError) return err(docError.message, 500);

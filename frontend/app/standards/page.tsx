@@ -93,7 +93,7 @@ export default function StandardsPage() {
     });
   }, [router]);
 
-  async function loadStandards() {
+  const loadStandards = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ domain: "bau" });
@@ -106,9 +106,9 @@ export default function StandardsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filterJurisdiction]);
 
-  useEffect(() => { loadStandards(); }, [filterJurisdiction]);
+  useEffect(() => { loadStandards(); }, [loadStandards]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setDragOver(false);
