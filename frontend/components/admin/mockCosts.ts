@@ -57,5 +57,5 @@ export function fmtMonth(m: string): string {
 }
 
 export function availableMonths(costs: OrgCost[]): string[] {
-  return [...new Set(costs.map(c => c.month))].sort().reverse();
+  return Array.from(new Set(costs.map(c => c.month))).sort().reverse();
 }
