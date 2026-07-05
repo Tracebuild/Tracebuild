@@ -4,6 +4,7 @@ export interface Organization {
   planTier: "free" | "pro" | "enterprise";
   createdAt: string;
   isDefault?: boolean;
+  status?: "active" | "inactive";
 }
 
 export interface Activity {

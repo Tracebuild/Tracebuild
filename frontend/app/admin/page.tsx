@@ -192,7 +192,7 @@ export default function AdminPage() {
   }
 
   /* Modal handlers */
-  function handleSave(data: { name: string; planTier: Organization["planTier"] }) {
+  function handleSave(data: { name: string; planTier: Organization["planTier"]; status: "active" | "inactive" }) {
     if (editTarget) {
       saveOrgs(orgs.map(o => o.id === editTarget.id ? { ...o, ...data } : o));
       trackActivity("org_edited", data.name);
@@ -201,6 +201,7 @@ export default function AdminPage() {
         id: crypto.randomUUID(),
         name: data.name,
         planTier: data.planTier,
+        status: data.status,
         createdAt: new Date().toISOString(),
         isDefault: false,
       }]);
