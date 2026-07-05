@@ -5,6 +5,7 @@ import type { Organization } from "./types";
 interface Props {
   orgs: Organization[];
   lastActivityMap: Record<string, string | undefined>;
+  costMap?: Record<string, number | undefined>;  // orgId → totalCost (aktueller Monat)
   onOpen: (org: Organization) => void;
   onEdit: (org: Organization) => void;
   onDelete: (org: Organization) => void;
@@ -16,7 +17,7 @@ const planMeta = {
   enterprise: { label: "Enterprise", cls: "bg-[#B7926A]/10 text-[#9E7A52]" },
 } as const;
 
-export default function OrgTable({ orgs, lastActivityMap, onOpen, onEdit, onDelete }: Props) {
+export default function OrgTable({ orgs, lastActivityMap, costMap, onOpen, onEdit, onDelete }: Props) {
   return (
     <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden">
       <div className="overflow-x-auto">
@@ -64,6 +65,11 @@ export default function OrgTable({ orgs, lastActivityMap, onOpen, onEdit, onDele
                         <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide mt-0.5 ${cls}`}>
                           {label}
                         </span>
+                        {costMap?.[org.id] !== undefined && (
+                          <p className="text-[10px] text-stone-400 tabular-nums mt-0.5">
+                            CHF {(costMap[org.id] as number).toFixed(2)}&thinsp;/&thinsp;Monat
+                          </p>
+                        )}
                       </div>
                     </div>
                   </td>

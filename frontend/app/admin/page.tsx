@@ -7,6 +7,8 @@ import AdminNav from "@/components/admin/AdminNav";
 import OrgTable from "@/components/admin/OrgTable";
 import OrgModal from "@/components/admin/OrgModal";
 import ActivityFeed from "@/components/admin/ActivityFeed";
+import CostTable from "@/components/admin/CostTable";
+import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths } from "@/components/admin/mockCosts";
 import type { Organization, Activity, LastOpenedOrg } from "@/components/admin/types";
 
 /* ── Storage keys ──────────────────────────────────────────── */
@@ -66,21 +68,68 @@ function todayStr(): string {
 }
 
 /* ── KPI card ──────────────────────────────────────────────── */
-function KpiCard({ label, value, note }: { label: string; value: string; note?: string }) {
+function KpiCard({ label, value, note, accent }: {
+  label: string; value: string; note?: string; accent?: boolean;
+}) {
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl p-5 flex flex-col">
-      <p className="text-2xl font-bold text-[#141414] tracking-tight">{value}</p>
+    <div className={`bg-white border rounded-2xl p-5 flex flex-col ${accent ? "border-[#B7926A]/30" : "border-stone-200"}`}>
+      <p className={`text-2xl font-bold tracking-tight ${accent ? "text-[#9E7A52]" : "text-[#141414]"}`}>{value}</p>
       <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-2">{label}</p>
       {note && <p className="text-[11px] text-stone-400 mt-0.5">{note}</p>}
     </div>
   );
 }
 
+/* ── Search input ──────────────────────────────────────────── */
+function SearchInput({ value, onChange, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div className="relative">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
+        width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3"/>
+        <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      </svg>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder ?? "Suchen..."}
+        className="w-full pl-8 pr-8 py-2.5 text-sm border border-stone-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors placeholder:text-stone-400"
+      />
+      {value && (
+        <button
+          onClick={() => onChange("")}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
+        >
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Section header ────────────────────────────────────────── */
+function SectionHeader({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-px flex-1 bg-stone-100" />
+      <div className="text-center">
+        <span className="text-xs font-semibold text-stone-400 uppercase tracking-widest px-3">{title}</span>
+        {sub && <p className="text-[11px] text-stone-400 mt-0.5">{sub}</p>}
+      </div>
+      <div className="h-px flex-1 bg-stone-100" />
+    </div>
+  );
+}
+
 /* ── Delete modal ──────────────────────────────────────────── */
 function DeleteModal({ org, onConfirm, onClose }: {
-  org: Organization;
-  onConfirm: () => void;
-  onClose: () => void;
+  org: Organization; onConfirm: () => void; onClose: () => void;
 }) {
   return (
     <div
@@ -100,16 +149,12 @@ function DeleteModal({ org, onConfirm, onClose }: {
           Diese Aktion kann nicht rückgängig gemacht werden.
         </p>
         <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
-          >
+          <button onClick={onClose}
+            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
             Abbrechen
           </button>
-          <button
-            onClick={onConfirm}
-            className="flex-1 bg-red-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-red-700 active:scale-[0.97] transition-all"
-          >
+          <button onClick={onConfirm}
+            className="flex-1 bg-red-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-red-700 active:scale-[0.97] transition-all">
             Löschen
           </button>
         </div>
@@ -122,6 +167,7 @@ function DeleteModal({ org, onConfirm, onClose }: {
 export default function AdminPage() {
   const router = useRouter();
 
+  /* Org state */
   const [userName, setUserName]         = useState("");
   const [userEmail, setUserEmail]       = useState("");
   const [orgs, setOrgs]                 = useState<Organization[]>([DEFAULT_ORG]);
@@ -132,6 +178,10 @@ export default function AdminPage() {
   const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
   const [activities, setActivities]     = useState<Activity[]>([]);
   const [lastOpened, setLastOpened]     = useState<LastOpenedOrg | null>(null);
+
+  /* Cost state */
+  const [costMonth, setCostMonth]   = useState(currentMonth);
+  const [costSearch, setCostSearch] = useState("");
 
   /* Auth */
   useEffect(() => {
@@ -165,9 +215,7 @@ export default function AdminPage() {
   /* Activity tracking */
   function trackActivity(type: Activity["type"], orgName: string) {
     const entry: Activity = {
-      id: crypto.randomUUID(),
-      type,
-      orgName,
+      id: crypto.randomUUID(), type, orgName,
       timestamp: new Date().toISOString(),
     };
     setActivities(prev => {
@@ -180,9 +228,7 @@ export default function AdminPage() {
   /* Open org → dashboard */
   function handleOpen(org: Organization) {
     const lo: LastOpenedOrg = {
-      id: org.id,
-      name: org.name,
-      planTier: org.planTier,
+      id: org.id, name: org.name, planTier: org.planTier,
       timestamp: new Date().toISOString(),
     };
     setLastOpened(lo);
@@ -216,7 +262,7 @@ export default function AdminPage() {
     setDeleteTarget(null);
   }
 
-  /* Derived state */
+  /* Org derived */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orgs.filter(o => o.name.toLowerCase().includes(q));
@@ -225,12 +271,39 @@ export default function AdminPage() {
   const lastActivityMap = useMemo<Record<string, string | undefined>>(() => {
     const map: Record<string, string> = {};
     for (const a of activities) {
-      if (!map[a.orgName]) {
-        map[a.orgName] = new Date(a.timestamp).toLocaleDateString("de-CH");
-      }
+      if (!map[a.orgName]) map[a.orgName] = new Date(a.timestamp).toLocaleDateString("de-CH");
     }
     return map;
   }, [activities]);
+
+  /* Cost derived */
+  const costMonths = useMemo(() => availableMonths(MOCK_COSTS), []);
+
+  const filteredCosts = useMemo(() => {
+    const q = costSearch.toLowerCase();
+    return MOCK_COSTS
+      .filter(c => c.month === costMonth)
+      .filter(c => !q || c.orgName.toLowerCase().includes(q));
+  }, [costMonth, costSearch]);
+
+  const costKPIs = useMemo(() => {
+    const month = MOCK_COSTS.filter(c => c.month === costMonth);
+    return {
+      total:        month.reduce((s, c) => s + c.totalCost, 0),
+      analyse:      month.reduce((s, c) => s + c.analyseCost, 0),
+      storage:      month.reduce((s, c) => s + c.storageCost + c.databaseCost, 0),
+      analyseCount: month.reduce((s, c) => s + c.analyseCount, 0),
+    };
+  }, [costMonth]);
+
+  /* orgId → totalCost for current month (used in OrgTable) */
+  const orgCostMap = useMemo<Record<string, number | undefined>>(() => {
+    const map: Record<string, number> = {};
+    MOCK_COSTS.filter(c => c.month === costMonth).forEach(c => {
+      map[c.orgId] = c.totalCost;
+    });
+    return map;
+  }, [costMonth]);
 
   return (
     <>
@@ -238,7 +311,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* ── Greeting + last opened quick action ── */}
+        {/* ── Greeting + last opened ── */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-medium text-stone-400 uppercase tracking-widest mb-1">
@@ -252,9 +325,7 @@ export default function AdminPage() {
           {hydrated && lastOpened && (
             <div className="flex-shrink-0 flex items-center gap-4 bg-white border border-stone-200 rounded-2xl px-5 py-3.5">
               <div>
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">
-                  Zuletzt geöffnet
-                </p>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Zuletzt geöffnet</p>
                 <p className="text-sm font-semibold text-[#141414] mt-0.5">{lastOpened.name}</p>
               </div>
               <div className="h-7 w-px bg-stone-200" />
@@ -271,96 +342,133 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── KPI row ── */}
+        {/* ── KPI row 1 — Übersicht ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Organisationen"   value={hydrated ? orgs.length.toString() : "—"} />
-          <KpiCard label="Projekte"         value="—" note="Bald verfügbar" />
-          <KpiCard label="Benutzer"         value="—" note="Bald verfügbar" />
+          <KpiCard label="Organisationen"     value={hydrated ? orgs.length.toString() : "—"} />
+          <KpiCard label="Projekte"           value="—" note="Bald verfügbar" />
+          <KpiCard label="Benutzer"           value="—" note="Bald verfügbar" />
           <KpiCard label="Laufende Prüfungen" value="—" note="Bald verfügbar" />
         </div>
 
-        {/* ── Table + Activity sidebar ── */}
+        {/* ── KPI row 2 — Kosten ── */}
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
+            Kosten — {fmtMonth(costMonth)}
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              label="Gesamtkosten"
+              value={costKPIs.total > 0 ? `CHF ${costKPIs.total.toFixed(2)}` : "—"}
+              accent
+            />
+            <KpiCard
+              label="Analyse-Kosten"
+              value={costKPIs.analyse > 0 ? `CHF ${costKPIs.analyse.toFixed(2)}` : "—"}
+              accent
+            />
+            <KpiCard
+              label="Storage / DB"
+              value={costKPIs.storage > 0 ? `CHF ${costKPIs.storage.toFixed(2)}` : "—"}
+              accent
+            />
+            <KpiCard
+              label="Anzahl Analysen"
+              value={costKPIs.analyseCount > 0 ? costKPIs.analyseCount.toString() : "—"}
+              note={fmtMonth(costMonth)}
+            />
+          </div>
+        </div>
+
+        {/* ── Main content: left col (orgs + costs) + right col (activity) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-          {/* Org section */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-8">
 
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-[#141414]">Organisationen</h2>
-                <p className="text-xs text-stone-400 mt-0.5">
-                  {filtered.length} {filtered.length === 1 ? "Eintrag" : "Einträge"}
-                  {search ? ` für „${search}"` : ""}
-                </p>
+            {/* ── Organisationen ── */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-[#141414]">Organisationen</h2>
+                  <p className="text-xs text-stone-400 mt-0.5">
+                    {filtered.length} {filtered.length === 1 ? "Eintrag" : "Einträge"}
+                    {search ? ` für „${search}"` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="flex-1 sm:w-52">
+                    <SearchInput value={search} onChange={setSearch} placeholder="Organisation suchen..." />
+                  </div>
+                  <button
+                    onClick={() => { setEditTarget(null); setModalOpen(true); }}
+                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#B7926A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#9E7A52] active:scale-[0.97] transition-all shadow-sm shadow-[#B7926A]/25 whitespace-nowrap"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                      <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                    Neue Organisation
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                {/* Search */}
-                <div className="relative flex-1 sm:w-52">
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
-                    width="13" height="13" viewBox="0 0 13 13" fill="none"
-                  >
-                    <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3"/>
-                    <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  </svg>
-                  <input
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Suchen..."
-                    className="w-full pl-8 pr-8 py-2.5 text-sm border border-stone-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors placeholder:text-stone-400"
-                  />
+              {!hydrated ? (
+                <div className="bg-white border border-stone-200 rounded-2xl h-48 animate-pulse" />
+              ) : filtered.length === 0 ? (
+                <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
+                  <p className="text-stone-500 text-sm font-medium">Keine Organisationen gefunden</p>
                   {search && (
-                    <button
-                      onClick={() => setSearch("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
-                      title="Zurücksetzen"
-                    >
-                      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                        <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                      </svg>
+                    <button onClick={() => setSearch("")} className="mt-2 text-sm text-[#B7926A] hover:underline">
+                      Filter zurücksetzen
                     </button>
                   )}
                 </div>
-
-                {/* New org button */}
-                <button
-                  onClick={() => { setEditTarget(null); setModalOpen(true); }}
-                  className="flex-shrink-0 flex items-center gap-1.5 bg-[#B7926A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#9E7A52] active:scale-[0.97] transition-all shadow-sm shadow-[#B7926A]/25 whitespace-nowrap"
-                >
-                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                    <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                  </svg>
-                  Neue Organisation
-                </button>
-              </div>
+              ) : (
+                <OrgTable
+                  orgs={filtered}
+                  lastActivityMap={lastActivityMap}
+                  costMap={orgCostMap}
+                  onOpen={handleOpen}
+                  onEdit={org => { setEditTarget(org); setModalOpen(true); }}
+                  onDelete={org => setDeleteTarget(org)}
+                />
+              )}
             </div>
 
-            {/* Table */}
-            {!hydrated ? (
-              <div className="bg-white border border-stone-200 rounded-2xl h-48 animate-pulse" />
-            ) : filtered.length === 0 ? (
-              <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
-                <p className="text-stone-500 text-sm font-medium">Keine Organisationen gefunden</p>
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="mt-2 text-sm text-[#B7926A] hover:underline"
+            {/* ── Kostenübersicht ── */}
+            <div className="space-y-4">
+              <SectionHeader title="Kostenübersicht" />
+
+              {/* Cost toolbar */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-[#141414]">Kosten pro Organisation</h2>
+                  <p className="text-xs text-stone-400 mt-0.5">
+                    {filteredCosts.length} {filteredCosts.length === 1 ? "Eintrag" : "Einträge"}
+                    {costSearch ? ` für „${costSearch}"` : ""}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {/* Month select */}
+                  <select
+                    value={costMonth}
+                    onChange={e => setCostMonth(e.target.value)}
+                    className="border border-stone-300 rounded-xl px-3 py-2.5 text-sm text-stone-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors"
                   >
-                    Filter zurücksetzen
-                  </button>
-                )}
+                    {costMonths.map(m => (
+                      <option key={m} value={m}>{fmtMonth(m)}</option>
+                    ))}
+                  </select>
+
+                  {/* Org search */}
+                  <div className="flex-1 sm:w-44">
+                    <SearchInput value={costSearch} onChange={setCostSearch} placeholder="Organisation..." />
+                  </div>
+                </div>
               </div>
-            ) : (
-              <OrgTable
-                orgs={filtered}
-                lastActivityMap={lastActivityMap}
-                onOpen={handleOpen}
-                onEdit={org => { setEditTarget(org); setModalOpen(true); }}
-                onDelete={org => setDeleteTarget(org)}
-              />
-            )}
+
+              <CostTable costs={filteredCosts} />
+            </div>
           </div>
 
           {/* Activity sidebar */}

@@ -20,3 +20,16 @@ export interface LastOpenedOrg {
   planTier: Organization["planTier"];
   timestamp: string;
 }
+
+export interface OrgCost {
+  orgId: string;
+  orgName: string;
+  month: string;          // "YYYY-MM"
+  analyseCount: number;
+  analyseCost: number;    // CHF — Claude API
+  storageCost: number;    // CHF — Supabase Storage
+  databaseCost: number;   // CHF — Supabase DB
+  totalCost: number;      // CHF — Summe
+  currency: "CHF";
+  status: "laufend" | "final";
+}
