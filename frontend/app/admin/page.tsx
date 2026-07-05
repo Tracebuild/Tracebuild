@@ -89,11 +89,13 @@ export default function AdminPage() {
   const [editTarget, setEditTarget] = useState<Organization | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
 
-  /* Auth + email */
+  /* Auth + email; mark this user as admin for the return FAB */
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace("/login"); return; }
-      setUserEmail(data.user.email ?? "");
+      const email = data.user.email ?? "";
+      setUserEmail(email);
+      if (email) localStorage.setItem("tb_admin_email", email);
     });
   }, [router]);
 
