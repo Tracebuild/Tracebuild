@@ -46,6 +46,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,14 +63,20 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     });
   }, [params.id]);
 
-  // Plan types from analyses (ordered by first occurrence), with locally-created ones prepended
+  // Close 3-dot menu when clicking anywhere outside
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const close = () => setMenuOpenId(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [menuOpenId]);
+
   const analysisTypes = Array.from(new Set(analyses.map((a) => a.planType)));
   const allPlanTypes = [
     ...localPlanTypes.filter((t) => !analysisTypes.includes(t)),
     ...analysisTypes,
   ];
 
-  // Latest analysis per plan type (analyses already sorted newest-first)
   const latestByType: Record<string, AnalysisWithDoc> = {};
   for (const a of analyses) {
     if (!latestByType[a.planType]) latestByType[a.planType] = a;
@@ -91,6 +98,16 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     setNewTypeName("");
     setShowNewTypeInput(false);
     openPlanType(name);
+  }
+
+  async function deleteAnalysis(analysisId: string) {
+    try {
+      await api.delete(`/projects/${params.id}/analyses/${analysisId}`);
+      setAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
+      if (selectedAnalysis?.id === analysisId) setSelectedAnalysis(null);
+    } catch {
+      // silently ignore — version stays in list if delete fails
+    }
   }
 
   async function runAnalysis(file: File) {
@@ -129,6 +146,8 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
 
   // ── OVERVIEW ──────────────────────────────────────────────
   if (view === "overview") {
+    const typesWithAnalyses = allPlanTypes.filter((t) => !!latestByType[t]);
+
     return (
       <div>
         <div className="flex items-center justify-between mb-6">
@@ -178,6 +197,56 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
             >
               ×
             </button>
+          </div>
+        )}
+
+        {/* ── Aktueller Stand (summary table) ── */}
+        {typesWithAnalyses.length > 0 && (
+          <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-[#f0ece6]">
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Aktueller Stand</p>
+            </div>
+            <div className="divide-y divide-[#f7f5f2]">
+              {typesWithAnalyses.map((type) => {
+                const latest = latestByType[type];
+                const count = analyses.filter((a) => a.planType === type).length;
+                const latestItems = latest.items;
+                const f = latestItems.filter((i) => i.status === "fail").length;
+                const w = latestItems.filter((i) => i.status === "warn").length;
+                const o = latestItems.filter((i) => i.status === "ok").length;
+                const overallStatus = f > 0 ? "kritisch" : w > 0 ? "warnung" : "konform";
+                const statusStyle = {
+                  kritisch: "bg-red-50 text-red-700 border-red-100",
+                  warnung:  "bg-amber-50 text-amber-700 border-amber-100",
+                  konform:  "bg-green-50 text-green-700 border-green-100",
+                };
+                const statusLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+
+                return (
+                  <button
+                    key={type}
+                    onClick={() => openPlanType(type)}
+                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-[#faf8f5] transition-colors text-left group"
+                  >
+                    <span className="flex-1 text-sm font-medium text-stone-800 truncate group-hover:text-[#8b6344] transition-colors">
+                      {type}
+                    </span>
+                    <span className="text-xs font-semibold text-stone-400 w-7 shrink-0">V{count}</span>
+                    <span className="text-xs text-stone-400 w-16 shrink-0 text-right">
+                      {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                    </span>
+                    <div className="flex items-center gap-3 w-24 shrink-0">
+                      {f > 0 && <span className="flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{f}</span>}
+                      {w > 0 && <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{w}</span>}
+                      {o > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{o}</span>}
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${statusStyle[overallStatus]}`}>
+                      {statusLabel[overallStatus]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -233,21 +302,9 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                         {count} Version{count !== 1 ? "en" : ""} · {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                       </p>
                       <div className="flex items-center gap-3">
-                        {failCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-red-600">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{failCount}
-                          </span>
-                        )}
-                        {warnCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{warnCount}
-                          </span>
-                        )}
-                        {okCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{okCount}
-                          </span>
-                        )}
+                        {failCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{failCount}</span>}
+                        {warnCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{warnCount}</span>}
+                        {okCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{okCount}</span>}
                       </div>
                     </>
                   ) : (
@@ -298,32 +355,64 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               const w = aItems.filter((i) => i.status === "warn").length;
               const o = aItems.filter((i) => i.status === "ok").length;
               return (
-                <button
-                  key={a.id}
-                  onClick={() => setSelectedAnalysis(a)}
-                  className={`text-left px-3 py-3 rounded-xl border transition-all ${
-                    isActive
-                      ? "border-[#B7926A] bg-[#fdf8f3] shadow-sm"
-                      : "border-[#e7e2d9] bg-white hover:border-[#c8a882] hover:bg-[#faf8f5]"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <p className={`text-xs font-semibold uppercase tracking-wide ${isActive ? "text-[#8b6344]" : "text-stone-400"}`}>
-                      V{typeAnalyses.length - idx}
+                <div key={a.id} className="relative">
+                  <button
+                    onClick={() => setSelectedAnalysis(a)}
+                    className={`w-full text-left px-3 py-3 rounded-xl border transition-all ${
+                      isActive
+                        ? "border-[#B7926A] bg-[#fdf8f3] shadow-sm"
+                        : "border-[#e7e2d9] bg-white hover:border-[#c8a882] hover:bg-[#faf8f5]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className={`text-xs font-semibold uppercase tracking-wide ${isActive ? "text-[#8b6344]" : "text-stone-400"}`}>
+                        V{typeAnalyses.length - idx}
+                      </p>
+                      {/* 3-dot menu button */}
+                      <div
+                        onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === a.id ? null : a.id); }}
+                        className="w-5 h-5 flex items-center justify-center rounded hover:bg-black/5 cursor-pointer"
+                      >
+                        <svg className="w-3.5 h-3.5 text-stone-400" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-stone-800">
+                      {new Date(a.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                     </p>
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#B7926A]" />}
-                  </div>
-                  <p className="text-sm font-medium text-stone-800">
-                    {new Date(a.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                  </p>
-                  {aItems.length > 0 && (
-                    <div className="flex items-center gap-2 mt-1.5">
-                      {f > 0 && <span className="flex items-center gap-0.5 text-xs text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{f}</span>}
-                      {w > 0 && <span className="flex items-center gap-0.5 text-xs text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{w}</span>}
-                      {o > 0 && <span className="flex items-center gap-0.5 text-xs text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{o}</span>}
+                    {aItems.length > 0 && (
+                      <div className="flex items-center gap-2 mt-1.5">
+                        {f > 0 && <span className="flex items-center gap-0.5 text-xs text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{f}</span>}
+                        {w > 0 && <span className="flex items-center gap-0.5 text-xs text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{w}</span>}
+                        {o > 0 && <span className="flex items-center gap-0.5 text-xs text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{o}</span>}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Dropdown menu */}
+                  {menuOpenId === a.id && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-1 z-20 bg-white border border-stone-200 rounded-xl shadow-lg py-1 min-w-[140px]"
+                    >
+                      <button
+                        onClick={() => {
+                          setMenuOpenId(null);
+                          deleteAnalysis(a.id);
+                        }}
+                        className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Version löschen
+                      </button>
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </>
