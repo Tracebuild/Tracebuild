@@ -48,6 +48,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [dragOver, setDragOver] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "fail" | "warn">("all");
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -284,21 +285,38 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                         <div className="px-4 pb-3 space-y-1.5">
                           {visibleItems.map((item) => {
                             const cfg = STATUS_CONFIG[item.status];
+                            const isOpen = expandedItems.has(item.id);
                             return (
-                              <div key={item.id} className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2.5`}>
+                              <button
+                                key={item.id}
+                                onClick={() => setExpandedItems((prev) => {
+                                  const next = new Set(prev);
+                                  isOpen ? next.delete(item.id) : next.add(item.id);
+                                  return next;
+                                })}
+                                className={`w-full text-left ${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2.5 transition-all`}
+                              >
                                 <div className="flex items-start gap-2">
                                   <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
                                     {cfg.label}
                                   </span>
-                                  <div className="min-w-0">
-                                    <p className={`text-sm font-medium ${cfg.text}`}>{item.note}</p>
-                                    {item.suggestion && (
-                                      <p className="text-xs text-stone-500 mt-1 leading-relaxed">💡 {item.suggestion}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`text-sm font-medium ${cfg.text} ${isOpen ? "" : "line-clamp-1"}`}>
+                                      {item.note}
+                                    </p>
+                                    {isOpen && item.suggestion && (
+                                      <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">💡 {item.suggestion}</p>
                                     )}
                                   </div>
+                                  <svg
+                                    className={`w-3.5 h-3.5 ${cfg.text} opacity-50 shrink-0 mt-0.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                  >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
                                 </div>
-                              </div>
+                              </button>
                             );
                           })}
                         </div>
