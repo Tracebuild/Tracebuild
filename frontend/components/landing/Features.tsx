@@ -46,7 +46,14 @@ export default function Features() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {features.map((feature, i) => (
             <AnimatedSection key={feature.title} delay={i * 80} className="flex">
-              <div className="flex-1 bg-white border border-stone-200 rounded-2xl p-6 flex flex-col gap-5 hover:border-[#B7926A]/50 hover:shadow-md transition-all duration-300 cursor-default">
+              <div className="group relative flex-1 bg-white border border-stone-200 rounded-2xl p-6 flex flex-col gap-5 overflow-hidden hover:border-[#B7926A]/30 hover:-translate-y-1 hover:shadow-elevated transition-all duration-300 cursor-default">
+
+                {/* Bronze shimmer along top edge on hover */}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 top-0 h-px scale-x-0 bg-gradient-to-r from-transparent via-[#B7926A] to-transparent transition-transform duration-500 group-hover:scale-x-100"
+                />
+
                 <span className="text-2xl text-[#B7926A] leading-none">{feature.icon}</span>
                 <div className="flex flex-col gap-2">
                   <h3 className="text-[#141414] font-semibold">{feature.title}</h3>
