@@ -35,8 +35,8 @@ export default function Security() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {trustPoints.map((point, i) => (
             <AnimatedSection key={point.title} delay={i * 100}>
-              <div className="bg-white border border-stone-200 rounded-2xl p-8 hover:border-[#B7926A]/40 hover:shadow-md transition-all duration-300">
-                <div className="w-8 h-8 bg-stone-100 border border-stone-200 rounded-lg mb-6 flex items-center justify-center">
+              <div className="group bg-white border border-stone-200 rounded-2xl p-8 hover:border-[#B7926A]/40 hover:-translate-y-1 hover:shadow-elevated transition-all duration-300">
+                <div className="w-8 h-8 bg-stone-100 border border-stone-200 rounded-lg mb-6 flex items-center justify-center transition-colors group-hover:bg-[#B7926A]/10 group-hover:border-[#B7926A]/30">
                   <span className="text-[#B7926A] text-xs font-bold">✓</span>
                 </div>
                 <h3 className="text-[#141414] font-semibold mb-3">{point.title}</h3>

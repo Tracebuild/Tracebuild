@@ -28,7 +28,7 @@ export default function Footer() {
                 <a
                   key={href}
                   href={href}
-                  className="text-sm text-stone-600 hover:text-[#141414] transition-colors"
+                  className="text-sm text-stone-600 hover:text-[#B7926A] transition-colors"
                 >
                   {label}
                 </a>
@@ -36,7 +36,7 @@ export default function Footer() {
             </div>
             <div className="flex flex-col gap-3">
               <span className="text-xs text-stone-400 uppercase tracking-widest mb-1 font-semibold">Konto</span>
-              <Link href="/login" className="text-sm text-stone-600 hover:text-[#141414] transition-colors">
+              <Link href="/login" className="text-sm text-stone-600 hover:text-[#B7926A] transition-colors">
                 Login
               </Link>
             </div>
