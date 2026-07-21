@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import TraceBuildLogo from "./TraceBuildLogo";
+import Image from "next/image";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -27,10 +27,10 @@ export default function Navbar() {
               maxWidth: 420,
               borderRadius: 999,
               border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(11,10,9,0.78)",
+              background: "rgba(30,25,19,0.75)",
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
               padding: "0 18px",
             }
           : {
@@ -40,18 +40,25 @@ export default function Navbar() {
             }
         ),
       }}>
-        {/* Logo on a light chip so it stays readable on dark */}
-        <div style={{
-          background: "rgba(255,255,255,0.95)",
-          borderRadius: 8, padding: "3px 10px",
-          display: "inline-flex",
-        }}>
-          <TraceBuildLogo size="sm" />
+        {/* Logo mark + wordmark */}
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <Image
+            src="/tracebuild-logo.png"
+            alt="TraceBuild"
+            width={120}
+            height={40}
+            style={{ height: 28, width: "auto", objectFit: "contain", display: "block" }}
+            priority
+          />
+          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>
+            <span style={{ color: "#F5F1EA" }}>Trace</span>
+            <span style={{ color: "#D9B692" }}>Build</span>
+          </span>
         </div>
 
         <Link
           href="/login"
-          className="hover:bg-white/[0.08] hover:border-white/[0.35]"
+          className="hover:bg-white/[0.08] hover:border-white/[0.32]"
           style={{
             fontSize: 14, color: "#F5F1EA",
             border: "1px solid rgba(255,255,255,0.18)",
