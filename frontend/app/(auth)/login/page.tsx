@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import TraceBuildLogo from "@/components/landing/TraceBuildLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,23 +32,45 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white/88 backdrop-blur-md rounded-2xl shadow-2xl shadow-stone-900/10 border border-stone-200/70 p-8">
+    <div style={{
+      background: "rgba(30,25,19,0.75)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      borderRadius: 16,
+      boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      padding: 32,
+    }}>
 
       {/* ── Branding ─────────────────────────────────────── */}
-      <div className="flex flex-col items-center mb-8">
-        <TraceBuildLogo size="md" light />
-        <div className="mt-6 text-center">
-          <h1 className="text-xl font-bold text-[#141414]">Willkommen zurück</h1>
-          <p className="text-sm text-stone-500 mt-1">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+        <Image
+          src="/tracebuild-logo.png"
+          alt="TraceBuild"
+          width={100}
+          height={32}
+          style={{ height: 32, width: "auto", objectFit: "contain" }}
+          priority
+        />
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <h1 style={{
+            fontFamily: "Archivo, Arial, sans-serif",
+            fontSize: 20, fontWeight: 700,
+            color: "#F5F1EA", margin: 0,
+            letterSpacing: "-0.01em",
+          }}>
+            Willkommen zurück
+          </h1>
+          <p style={{ fontSize: 14, color: "#C4B9A8", margin: "4px 0 0" }}>
             Melde dich bei deinem Konto an
           </p>
         </div>
       </div>
 
       {/* ── Form ─────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#C4B9A8", marginBottom: 6 }}>
             E-Mail
           </label>
           <input
@@ -56,13 +78,21 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors bg-white/70"
             placeholder="name@firma.ch"
+            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#D9B692]/35 focus:border-[#D9B692] placeholder:text-[#948A7A]"
+            style={{
+              width: "100%", boxSizing: "border-box",
+              border: "1px solid rgba(255,255,255,0.16)",
+              borderRadius: 8, padding: "10px 14px",
+              fontSize: 14, color: "#F5F1EA",
+              background: "rgba(255,255,255,0.05)",
+              transition: "border-color 0.15s, box-shadow 0.15s",
+            }}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#C4B9A8", marginBottom: 6 }}>
             Passwort
           </label>
           <input
@@ -70,13 +100,27 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors bg-white/70"
             placeholder="••••••••"
+            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#D9B692]/35 focus:border-[#D9B692] placeholder:text-[#948A7A]"
+            style={{
+              width: "100%", boxSizing: "border-box",
+              border: "1px solid rgba(255,255,255,0.16)",
+              borderRadius: 8, padding: "10px 14px",
+              fontSize: 14, color: "#F5F1EA",
+              background: "rgba(255,255,255,0.05)",
+              transition: "border-color 0.15s, box-shadow 0.15s",
+            }}
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+          <p style={{
+            fontSize: 14, color: "#fca5a5",
+            background: "rgba(220,38,38,0.12)",
+            border: "1px solid rgba(220,38,38,0.35)",
+            borderRadius: 8, padding: "10px 14px",
+            margin: 0,
+          }}>
             {error}
           </p>
         )}
@@ -84,16 +128,30 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#B7926A] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#9E7A52] disabled:opacity-50 active:scale-[0.98] transition-all duration-150 mt-2"
+          className="hover:bg-[#D9B692] active:scale-[0.98]"
+          style={{
+            width: "100%",
+            background: "#B7926A", color: "#0E0D0C",
+            padding: "10px 0", border: "none",
+            borderRadius: 8, fontSize: 14, fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.5 : 1,
+            transition: "all 0.15s",
+            marginTop: 8,
+          }}
         >
           {loading ? "Anmelden..." : "Anmelden →"}
         </button>
       </form>
 
       {/* ── Footer link ───────────────────────────────────── */}
-      <p className="text-center text-sm text-stone-500 mt-6">
+      <p style={{ textAlign: "center", fontSize: 14, color: "#948A7A", margin: "24px 0 0" }}>
         Noch kein Konto?{" "}
-        <Link href="/register" className="text-[#B7926A] font-medium hover:underline">
+        <Link
+          href="/register"
+          className="hover:text-[#D9B692]"
+          style={{ color: "#D9B692", fontWeight: 500, textDecoration: "none", transition: "color 0.15s" }}
+        >
           Registrieren
         </Link>
       </p>
