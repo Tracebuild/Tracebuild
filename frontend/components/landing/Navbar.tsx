@@ -4,12 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import TraceBuildLogo from "./TraceBuildLogo";
 
-const navLinks = [
-  { label: "Features",   href: "#features" },
-  { label: "Workflow",   href: "#workflow" },
-  { label: "Sicherheit", href: "#sicherheit" },
-];
-
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
@@ -21,33 +15,50 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50">
-      <div
-        className={`mx-auto flex items-center justify-between transition-all duration-300 ${
-          scrolled
-            ? "mt-2 sm:mt-3 h-14 max-w-6xl rounded-full border border-stone-200/70 bg-white/80 backdrop-blur-xl shadow-elevated px-4 sm:px-5"
-            : "h-16 max-w-6xl bg-white/90 backdrop-blur-sm border-b border-stone-200/80 px-6"
-        }`}
-      >
-        <Link href="/">
-          <TraceBuildLogo size="sm" light />
-        </Link>
-
-        <div className="hidden md:flex items-center gap-8">
-          {navLinks.map(({ label, href }) => (
-            <a
-              key={href}
-              href={href}
-              className="text-sm text-stone-600 hover:text-[#141414] transition-colors font-medium"
-            >
-              {label}
-            </a>
-          ))}
+    <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 90 }}>
+      <div style={{
+        margin: "0 auto",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        transition: "all 0.35s cubic-bezier(.16,1,.3,1)",
+        ...(scrolled
+          ? {
+              marginTop: 12,
+              height: 58,
+              maxWidth: 420,
+              borderRadius: 999,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(11,10,9,0.78)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+              padding: "0 18px",
+            }
+          : {
+              height: 80,
+              maxWidth: 1080,
+              padding: "0 28px",
+            }
+        ),
+      }}>
+        {/* Logo on a light chip so it stays readable on dark */}
+        <div style={{
+          background: "rgba(255,255,255,0.95)",
+          borderRadius: 8, padding: "3px 10px",
+          display: "inline-flex",
+        }}>
+          <TraceBuildLogo size="sm" />
         </div>
 
         <Link
           href="/login"
-          className="text-sm text-stone-700 border border-stone-300 rounded-lg px-4 py-2 hover:border-[#B7926A]/70 hover:text-[#B7926A] transition-colors font-medium"
+          className="hover:bg-white/[0.08] hover:border-white/[0.35]"
+          style={{
+            fontSize: 14, color: "#F5F1EA",
+            border: "1px solid rgba(255,255,255,0.18)",
+            borderRadius: 8, padding: "9px 20px",
+            fontWeight: 500, textDecoration: "none",
+            transition: "all 0.2s ease",
+          }}
         >
           Login
         </Link>

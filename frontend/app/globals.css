@@ -61,6 +61,26 @@ h1, h2, h3, h4, h5, h6 {
   to   { stroke-dashoffset: -120; }
 }
 
+/* Scroll-story scan band — sweeps top → bottom of blueprint */
+@keyframes scanMove {
+  0%   { transform: translateY(-10%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(340%); opacity: 0; }
+}
+
+/* Error marker dot pulse */
+@keyframes markerPulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(217, 182, 146, 0.5); }
+  50%       { box-shadow: 0 0 0 9px rgba(217, 182, 146, 0); }
+}
+
+/* Hero scroll cue bounce */
+@keyframes bounceCue {
+  0%, 100% { transform: translateY(0);   opacity: 0.5; }
+  50%       { transform: translateY(7px); opacity: 1; }
+}
+
 /* ─── Utility classes ─────────────────────────────────── */
 
 @layer utilities {
@@ -84,6 +104,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   .animate-dash-drift {
     animation: dashDrift 18s linear infinite;
+  }
+  .animate-bounce-cue {
+    animation: bounceCue 2.2s ease-in-out infinite;
   }
 }
 
