@@ -1,10 +1,10 @@
 import Link from "next/link";
-import TraceBuildLogo from "./TraceBuildLogo";
+import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer style={{
-      background: "#0B0A09",
+      background: "#18140F",
       borderTop: "1px solid rgba(255,255,255,0.07)",
     }}>
       <div style={{
@@ -14,23 +14,29 @@ export default function Footer() {
         justifyContent: "space-between",
         flexWrap: "wrap", gap: 16,
       }}>
-        <div style={{
-          background: "#FAF8F5",
-          borderRadius: 8, padding: "4px 10px",
-          display: "inline-flex",
-        }}>
-          <TraceBuildLogo size="sm" />
+        {/* Logo mark + wordmark */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Image
+            src="/tracebuild-logo.png"
+            alt="TraceBuild"
+            width={120}
+            height={40}
+            style={{ height: 24, width: "auto", objectFit: "contain", display: "block" }}
+          />
+          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em" }}>
+            <span style={{ color: "#F5F1EA" }}>Trace</span>
+            <span style={{ color: "#D9B692" }}>Build</span>
+          </span>
         </div>
 
         <Link href="/login" style={{
-          fontSize: 14, color: "#A79C8C",
-          textDecoration: "none",
-          transition: "color 0.2s ease",
+          fontSize: 14, color: "#C4B9A8",
+          textDecoration: "none", transition: "color 0.2s ease",
         }}>
           Login
         </Link>
 
-        <p style={{ fontSize: 12, color: "#5c564c", margin: 0 }}>
+        <p style={{ fontSize: 12, color: "#6f6759", margin: 0 }}>
           © {new Date().getFullYear()} TraceBuild. Alle Rechte vorbehalten.
         </p>
       </div>
