@@ -6,13 +6,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div style={{
       position: "relative", minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 16, background: "#18140F", overflow: "hidden",
+      padding: 16, background: "#222F30", overflow: "hidden",
     }}>
       {/* Ambient glow — outer wrapper centers it, inner div animates */}
       <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
         <div className="animate-glow-drift" style={{
           width: 900, height: 900,
-          background: "radial-gradient(circle,rgba(183,146,106,0.22) 0%,rgba(183,146,106,0) 70%)",
+          background: "radial-gradient(circle,rgba(206,247,158,0.22) 0%,rgba(206,247,158,0) 70%)",
         }} />
       </div>
 
@@ -38,7 +38,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         />
         <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>
           <span style={{ color: "#F5F1EA" }}>Trace</span>
-          <span style={{ color: "#D9B692" }}>Build</span>
+          <span style={{ color: "#CEF79E" }}>Build</span>
         </span>
       </Link>
 

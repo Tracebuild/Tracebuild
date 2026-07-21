@@ -33,7 +33,7 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      background: "rgba(30,25,19,0.75)",
+      background: "rgba(15,22,22,0.75)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
       borderRadius: 16,
@@ -79,7 +79,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@firma.ch"
-            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#D9B692]/35 focus:border-[#D9B692] placeholder:text-[#948A7A]"
+            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#CEF79E]/35 focus:border-[#CEF79E] placeholder:text-[#948A7A]"
             style={{
               width: "100%", boxSizing: "border-box",
               border: "1px solid rgba(255,255,255,0.16)",
@@ -101,7 +101,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#D9B692]/35 focus:border-[#D9B692] placeholder:text-[#948A7A]"
+            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#CEF79E]/35 focus:border-[#CEF79E] placeholder:text-[#948A7A]"
             style={{
               width: "100%", boxSizing: "border-box",
               border: "1px solid rgba(255,255,255,0.16)",
@@ -128,10 +128,10 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="hover:bg-[#D9B692] active:scale-[0.98]"
+          className="hover:bg-[#b8ef7a] active:scale-[0.98]"
           style={{
             width: "100%",
-            background: "#B7926A", color: "#0E0D0C",
+            background: "#CEF79E", color: "#222F30",
             padding: "10px 0", border: "none",
             borderRadius: 8, fontSize: 14, fontWeight: 600,
             cursor: loading ? "not-allowed" : "pointer",
@@ -149,8 +149,8 @@ export default function LoginPage() {
         Noch kein Konto?{" "}
         <Link
           href="/register"
-          className="hover:text-[#D9B692]"
-          style={{ color: "#D9B692", fontWeight: 500, textDecoration: "none", transition: "color 0.15s" }}
+          className="hover:text-[#b8ef7a]"
+          style={{ color: "#CEF79E", fontWeight: 500, textDecoration: "none", transition: "color 0.15s" }}
         >
           Registrieren
         </Link>
