@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import ScrollStory from "@/components/landing/ScrollStory";
@@ -35,21 +34,16 @@ export default function LandingPage() {
           pointerEvents: "none",
         }} />
 
-        {/* Logo + label */}
+        {/* Brand badge */}
         <div className="animate-fade-up" style={{
           position: "relative",
-          display: "flex", alignItems: "center", gap: 10,
-          marginBottom: 28,
+          display: "inline-flex", alignItems: "center",
+          gap: 8, marginBottom: 28,
+          background: "rgba(206,247,158,0.08)",
+          border: "1px solid rgba(206,247,158,0.25)",
+          borderRadius: 999, padding: "6px 18px",
         }}>
-          <Image
-            src="/tracebuild-logo.png"
-            alt="TraceBuild"
-            width={80}
-            height={30}
-            style={{ height: 30, width: "auto", objectFit: "contain", display: "block" }}
-            priority
-          />
-          <span style={{ fontSize: 15, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C9CBBE", fontWeight: 500 }}>
+          <span style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: ACCENT, fontWeight: 600 }}>
             TraceBuild
           </span>
         </div>
