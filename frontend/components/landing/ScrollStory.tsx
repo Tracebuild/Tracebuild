@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 
 const STAGES = 8;
-const BG = "#18140F";
+const BG = "#222F30";
 const RAIL_LABELS = ["Bauplan", "KI-Analyse", "Fehler", "Normen", "Korrektur", "Dashboard", "Bericht", "Workflow"];
 
 type PinState = "before" | "fixed" | "after";
@@ -146,7 +146,7 @@ export default function ScrollStory() {
         <div className="animate-glow-drift-alt" style={{
           position: "absolute", top: "-10%", right: "-10%",
           width: 800, height: 800,
-          background: "radial-gradient(circle,rgba(183,146,106,0.14) 0%,rgba(183,146,106,0) 70%)",
+          background: "radial-gradient(circle,rgba(206,247,158,0.14) 0%,rgba(206,247,158,0) 70%)",
           pointerEvents: "none",
         }} />
 
@@ -160,7 +160,7 @@ export default function ScrollStory() {
             <button key={label} onClick={() => goToStage(i)} style={{
               background: "none", border: "none", cursor: "pointer", padding: 0,
               fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
-              color: activeStage === i ? "#D9B692" : "rgba(167,156,140,0.4)",
+              color: activeStage === i ? "#CEF79E" : "rgba(201,203,190,0.35)",
               transition: "color 0.4s ease", fontFamily: "inherit",
             }}>{label}</button>
           ))}
@@ -205,7 +205,7 @@ export default function ScrollStory() {
 
                 {/* North arrow */}
                 <circle cx="398" cy="38" r="12" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-                <path d="M 398 28 L 402 42 L 398 38 L 394 42 Z" fill="#D9B692" />
+                <path d="M 398 28 L 402 42 L 398 38 L 394 42 Z" fill="#CEF79E" />
                 <text x="398" y="18" fill="#B8AC9A" fontSize="8" textAnchor="middle" fontFamily="ui-monospace,monospace">N</text>
 
                 {/* Scale bar */}
@@ -277,7 +277,7 @@ export default function ScrollStory() {
                 </g>
 
                 {/* Dynamic scan line */}
-                <rect x="20" y={scanLineY} width="400" height="2.5" fill="#D9B692"
+                <rect x="20" y={scanLineY} width="400" height="2.5" fill="#CEF79E"
                   opacity={scanActive ? 1 : 0}
                   style={{ transition: "opacity 0.2s ease" }}
                 />
@@ -289,7 +289,7 @@ export default function ScrollStory() {
                   position: "absolute",
                   left: 8, top: `${((scanLineY - 20) / 280 * 100).toFixed(1)}%`,
                   transform: "translateY(-100%)",
-                  fontFamily: "ui-monospace,monospace", fontSize: 9, color: "#D9B692",
+                  fontFamily: "ui-monospace,monospace", fontSize: 9, color: "#CEF79E",
                   background: "rgba(32,26,19,0.92)", padding: "3px 7px", borderRadius: 5,
                   whiteSpace: "nowrap", zIndex: 6,
                 }}>
@@ -338,8 +338,8 @@ export default function ScrollStory() {
                   position: "absolute", left: `${x}%`, top: `${y}%`,
                   transform: `translate(-50%,-50%) translateY(${sh(l3, at) ? 0 : 10}px)`,
                   background: "rgba(28,22,16,0.97)",
-                  border: "1px solid rgba(217,182,146,0.55)",
-                  color: "#E8C9A0", fontSize: 10, fontWeight: 700,
+                  border: "1px solid rgba(206,247,158,0.35)",
+                  color: "#CEF79E", fontSize: 10, fontWeight: 700,
                   letterSpacing: "0.04em", padding: "5px 11px", borderRadius: 999,
                   whiteSpace: "nowrap",
                   opacity: sh(l3, at),
@@ -402,7 +402,7 @@ export default function ScrollStory() {
                 }}>
                   <svg viewBox="0 0 60 60" style={{ width: 70, height: 70, flexShrink: 0 }}>
                     <circle cx="30" cy="30" r="22" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
-                    <circle cx="30" cy="30" r="22" fill="none" stroke="#B7926A" strokeWidth="9"
+                    <circle cx="30" cy="30" r="22" fill="none" stroke="#CEF79E" strokeWidth="9"
                       strokeDasharray="138.2" strokeDashoffset={(138.2 - donutD).toFixed(1)}
                       style={{ transition: "stroke-dashoffset 0.3s linear" }}
                       transform="rotate(-90 30 30)" />
@@ -431,7 +431,7 @@ export default function ScrollStory() {
             <div style={{ background: "#fff", borderRadius: 16, boxShadow: "0 50px 100px -20px rgba(0,0,0,0.5)", padding: 30, width: "100%" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, opacity: sh(l6, 0.05) }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(183,146,106,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#B7926A", fontSize: 14 }}>▤</div>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(206,247,158,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#CEF79E", fontSize: 14 }}>▤</div>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "#141414" }}>Prüfbericht.pdf</span>
                 </div>
                 <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 5, background: "rgba(16,185,129,0.12)", color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em", opacity: sh(l6, 0.92) }}>Bereit</span>
@@ -460,13 +460,13 @@ export default function ScrollStory() {
                 <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{
                     padding: "12px 26px", borderRadius: 10,
-                    background: "rgba(183,146,106,0.1)", border: "1px solid rgba(217,182,146,0.35)",
+                    background: "rgba(206,247,158,0.1)", border: "1px solid rgba(206,247,158,0.35)",
                     color: "#F5F1EA", fontSize: 14, fontWeight: 600,
                     opacity: sh(l7, at), transform: `translateY(${sh(l7, at) ? 0 : 10}px)`,
                     transition: "opacity 0.5s ease, transform 0.5s ease",
                   }}>{label}</div>
                   {idx < FLOW_NODES.length - 1 && (
-                    <div style={{ width: 1, height: 26, background: "linear-gradient(#D9B692,rgba(217,182,146,0.2))", opacity: sh(l7, at + 0.1), transition: "opacity 0.5s ease" }} />
+                    <div style={{ width: 1, height: 26, background: "linear-gradient(#CEF79E,rgba(206,247,158,0.2))", opacity: sh(l7, at + 0.1), transition: "opacity 0.5s ease" }} />
                   )}
                 </div>
               ))}

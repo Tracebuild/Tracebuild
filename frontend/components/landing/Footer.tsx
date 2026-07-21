@@ -3,40 +3,37 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer style={{
-      background: "#18140F",
-      borderTop: "1px solid rgba(255,255,255,0.07)",
-    }}>
+    <footer style={{ position: "relative", background: "#000000" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "rgba(255,255,255,0.08)" }} />
       <div style={{
         maxWidth: 1080, margin: "0 auto",
-        padding: "40px 24px 32px",
+        padding: "48px 24px 36px",
         display: "flex", alignItems: "center",
         justifyContent: "space-between",
         flexWrap: "wrap", gap: 16,
       }}>
-        {/* Logo mark + wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Image
             src="/tracebuild-logo.png"
             alt="TraceBuild"
-            width={120}
-            height={40}
+            width={80}
+            height={28}
             style={{ height: 24, width: "auto", objectFit: "contain", display: "block" }}
           />
-          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.01em" }}>
-            <span style={{ color: "#F5F1EA" }}>Trace</span>
-            <span style={{ color: "#D9B692" }}>Build</span>
+          <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>
+            <span style={{ color: "#F7F5F1" }}>Trace</span>
+            <span style={{ color: "#CEF79E" }}>Build</span>
           </span>
         </div>
 
         <Link href="/login" style={{
-          fontSize: 14, color: "#C4B9A8",
-          textDecoration: "none", transition: "color 0.2s ease",
+          fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase",
+          color: "#C9CBBE", textDecoration: "none",
         }}>
           Login
         </Link>
 
-        <p style={{ fontSize: 12, color: "#6f6759", margin: 0 }}>
+        <p style={{ fontSize: 12, color: "#65686C", margin: 0 }}>
           © {new Date().getFullYear()} TraceBuild. Alle Rechte vorbehalten.
         </p>
       </div>

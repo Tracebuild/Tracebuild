@@ -19,24 +19,32 @@ export default function Navbar() {
       <div style={{
         margin: "0 auto",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        transition: "all 0.35s cubic-bezier(.16,1,.3,1)",
+        gap: 28,
+        transition: "all 0.45s cubic-bezier(.52,.01,0,1)",
         ...(scrolled
           ? {
               marginTop: 12,
-              height: 58,
-              maxWidth: 420,
-              borderRadius: 999,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(30,25,19,0.75)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              boxShadow: "0 8px 30px rgba(0,0,0,0.3)",
-              padding: "0 18px",
+              height: 56,
+              maxWidth: 760,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(15,15,16,0.6)",
+              backdropFilter: "blur(24px) saturate(140%)",
+              WebkitBackdropFilter: "blur(24px) saturate(140%)",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.4)",
+              padding: "0 20px",
             }
           : {
-              height: 80,
-              maxWidth: 1080,
-              padding: "0 28px",
+              marginTop: 14,
+              height: 72,
+              maxWidth: 1160,
+              borderRadius: 14,
+              background: "rgba(15,15,16,0.32)",
+              backdropFilter: "blur(16px) saturate(130%)",
+              WebkitBackdropFilter: "blur(16px) saturate(130%)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+              padding: "0 26px",
             }
         ),
       }}>
@@ -45,26 +53,54 @@ export default function Navbar() {
           <Image
             src="/tracebuild-logo.png"
             alt="TraceBuild"
-            width={120}
-            height={40}
-            style={{ height: 28, width: "auto", objectFit: "contain", display: "block" }}
+            width={80}
+            height={28}
+            style={{ height: 26, width: "auto", objectFit: "contain", display: "block" }}
             priority
           />
-          <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>
-            <span style={{ color: "#F5F1EA" }}>Trace</span>
-            <span style={{ color: "#D9B692" }}>Build</span>
+          <span style={{ fontSize: 17, fontWeight: 500, letterSpacing: "-0.01em" }}>
+            <span style={{ color: "#F7F5F1" }}>Trace</span>
+            <span style={{ color: "#CEF79E" }}>Build</span>
           </span>
         </div>
 
+        {/* Nav links (desktop only) */}
+        <nav className="hidden lg:flex" style={{ alignItems: "center", gap: 36 }}>
+          {[
+            { href: "#workflow",    label: "Plananalyse" },
+            { href: "#sicherheit", label: "Sicherheit" },
+          ].map(({ href, label }) => (
+            <a key={href} href={href} style={{
+              fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase",
+              color: "#C9CBBE", fontWeight: 500,
+              textDecoration: "none",
+              transition: "color 0.3s cubic-bezier(.52,.01,0,1)",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#F7F5F1")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#C9CBBE")}
+            >{label}</a>
+          ))}
+        </nav>
+
         <Link
           href="/login"
-          className="hover:bg-white/[0.08] hover:border-white/[0.32]"
           style={{
-            fontSize: 14, color: "#F5F1EA",
-            border: "1px solid rgba(255,255,255,0.18)",
-            borderRadius: 8, padding: "9px 20px",
+            fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase",
+            color: "#F7F5F1",
+            border: "1px solid rgba(255,255,255,0.22)",
+            borderRadius: 6, padding: "9px 18px",
             fontWeight: 500, textDecoration: "none",
-            transition: "all 0.2s ease",
+            transition: "all 0.3s cubic-bezier(.52,.01,0,1)",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)";
+            (e.currentTarget as HTMLElement).style.borderColor = "#CEF79E";
+            (e.currentTarget as HTMLElement).style.color = "#CEF79E";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = "";
+            (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.22)";
+            (e.currentTarget as HTMLElement).style.color = "#F7F5F1";
           }}
         >
           Login

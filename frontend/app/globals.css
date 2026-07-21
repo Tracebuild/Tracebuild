@@ -31,14 +31,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes glowDrift {
-  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.28; }
-  33%       { transform: translate(4%,  -3%) scale(1.08); opacity: 0.45; }
-  66%       { transform: translate(-3%, 5%)  scale(0.94); opacity: 0.22; }
+  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.5; }
+  50%       { transform: translate(5%,  -4%) scale(1.15); opacity: 0.8; }
 }
 
 @keyframes glowDriftAlt {
-  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.18; }
-  50%       { transform: translate(-6%, -5%) scale(1.14); opacity: 0.38; }
+  0%, 100% { transform: translate(0%,  0%)  scale(1);    opacity: 0.3; }
+  50%       { transform: translate(-6%, 5%)  scale(1.2);  opacity: 0.55; }
+}
+
+@keyframes slowSpin {
+  from { transform: rotateY(0deg) rotateZ(0deg); }
+  to   { transform: rotateY(360deg) rotateZ(6deg); }
 }
 
 /* Scan line sweeps top → bottom of the hero section */
@@ -71,8 +75,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Error marker dot pulse */
 @keyframes markerPulse {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(217, 182, 146, 0.5); }
-  50%       { box-shadow: 0 0 0 9px rgba(217, 182, 146, 0); }
+  0%, 100% { box-shadow: 0 0 0 0   rgba(206, 247, 158, 0.5); }
+  50%       { box-shadow: 0 0 0 9px rgba(206, 247, 158, 0); }
 }
 
 /* Hero scroll cue bounce */
@@ -107,6 +111,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   .animate-bounce-cue {
     animation: bounceCue 2.2s ease-in-out infinite;
+  }
+  .animate-slow-spin {
+    animation: slowSpin 42s linear infinite;
   }
 }
 
