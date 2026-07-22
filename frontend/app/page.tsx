@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import ScrollProgressBar from "@/components/landing/ScrollProgressBar";
@@ -44,14 +43,12 @@ export default function LandingPage() {
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
             <a
               href="#preise"
-              onClick={e => { e.preventDefault(); document.querySelector("#preise")?.scrollIntoView({ behavior: "smooth" }); }}
               style={{ background: ACC, color: BG, padding: "15px 30px", borderRadius: 10, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600, textDecoration: "none", transition: `all .5s ${EASE}` }}
             >
               Preise ansehen
             </a>
             <a
               href="#story"
-              onClick={e => { e.preventDefault(); document.querySelector("#story")?.scrollIntoView({ behavior: "smooth" }); }}
               style={{ whiteSpace: "nowrap", color: FG, background: "rgba(255,255,255,0.05)", backdropFilter: "blur(12px)", border: "1px solid rgba(245,243,238,0.16)", padding: "15px 30px", borderRadius: 10, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 500, textDecoration: "none", transition: `all .5s ${EASE}` }}
             >
               Wie es funktioniert
@@ -116,8 +113,7 @@ export default function LandingPage() {
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: 12 }}>
                   {["Bis 30 Pläne / Monat","SIA-Normabgleich","PDF-Prüfberichte"].map(f => <li key={f} style={{ fontSize: 14, color: "#C7CAC3" }}>{f}</li>)}
                 </ul>
-                <a href="#kontakt" onClick={e => { e.preventDefault(); document.querySelector("#kontakt")?.scrollIntoView({ behavior: "smooth" }); }}
-                   style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, border: "1px solid rgba(245,243,238,0.2)", color: FG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 500, textDecoration: "none", transition: `all .5s ${EASE}` }}>
+                <a href="#kontakt" style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, border: "1px solid rgba(245,243,238,0.2)", color: FG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 500, textDecoration: "none", transition: `all .5s ${EASE}` }}>
                   Anfragen
                 </a>
               </div>
@@ -133,8 +129,7 @@ export default function LandingPage() {
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: 12 }}>
                   {["Bis 150 Pläne / Monat","SIA + kantonale Normen","Bis 10 Teammitglieder","Feste Ansprechperson"].map(f => <li key={f} style={{ fontSize: 14, color: "#EDEFEA" }}>{f}</li>)}
                 </ul>
-                <a href="#kontakt" onClick={e => { e.preventDefault(); document.querySelector("#kontakt")?.scrollIntoView({ behavior: "smooth" }); }}
-                   style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, background: ACC, color: BG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 600, textDecoration: "none", transition: `all .5s ${EASE}` }}>
+                <a href="#kontakt" style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, background: ACC, color: BG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 600, textDecoration: "none", transition: `all .5s ${EASE}` }}>
                   Anfragen
                 </a>
               </div>
@@ -149,8 +144,7 @@ export default function LandingPage() {
                 <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", display: "flex", flexDirection: "column", gap: 12 }}>
                   {["Unbegrenzte Pläne","BIM- & IFC-Anbindung","SLA & dedizierter Support"].map(f => <li key={f} style={{ fontSize: 14, color: "#C7CAC3" }}>{f}</li>)}
                 </ul>
-                <a href="#kontakt" onClick={e => { e.preventDefault(); document.querySelector("#kontakt")?.scrollIntoView({ behavior: "smooth" }); }}
-                   style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, border: "1px solid rgba(245,243,238,0.2)", color: FG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 500, textDecoration: "none", transition: `all .5s ${EASE}` }}>
+                <a href="#kontakt" style={{ display: "block", textAlign: "center", padding: 13, borderRadius: 10, border: "1px solid rgba(245,243,238,0.2)", color: FG, fontSize: 13, letterSpacing: "0.03em", textTransform: "uppercase", fontWeight: 500, textDecoration: "none", transition: `all .5s ${EASE}` }}>
                   Kontaktieren
                 </a>
               </div>
@@ -206,8 +200,7 @@ export default function LandingPage() {
             <p style={{ fontSize: 16, color: "#9A9D96", lineHeight: 1.65, margin: "0 0 40px" }}>
               Schreib uns, was du vorhast — wir melden uns meist innerhalb eines Werktags.
             </p>
-            <a href="#kontakt" onClick={e => { e.preventDefault(); document.querySelector("#kontakt")?.scrollIntoView({ behavior: "smooth" }); }}
-               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: ACC, color: BG, padding: "16px 36px", borderRadius: 10, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600, textDecoration: "none", transition: `all .5s ${EASE}` }}>
+            <a href="#kontakt" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: ACC, color: BG, padding: "16px 36px", borderRadius: 10, fontSize: 13, letterSpacing: "0.04em", textTransform: "uppercase", fontWeight: 600, textDecoration: "none", transition: `all .5s ${EASE}` }}>
               Projekt starten →
             </a>
           </RevealSection>

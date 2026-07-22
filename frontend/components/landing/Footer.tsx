@@ -20,8 +20,7 @@ export default function Footer() {
             <span style={{ fontSize: 14, color: "#9A9D96" }}>© {new Date().getFullYear()} TraceBuild</span>
           </div>
           <div style={{ display: "flex", gap: 32 }}>
-            <a href="#preise"  onClick={e => { e.preventDefault(); document.querySelector("#preise")?.scrollIntoView({ behavior: "smooth" }); }}
-               style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Preise</a>
+            <a href="#preise" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Preise</a>
             <a href="mailto:jonas@tracebuild.ch"
                style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Kontakt</a>
             <Link href="/login" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Login</Link>
