@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -115,6 +119,27 @@ h1, h2, h3, h4, h5, h6 {
   .animate-slow-spin {
     animation: slowSpin 42s linear infinite;
   }
+}
+
+/* ─── Auth form ───────────────────────────────────────── */
+
+::selection { background: #CEF79E; color: #0C0D0C; }
+
+.tb-input::placeholder { color: #6C6F68; }
+.tb-input:focus {
+  outline: none;
+  border-color: #CEF79E !important;
+  box-shadow: 0 0 0 3px rgba(206,247,158,0.15);
+}
+
+.tb-btn:hover:not(:disabled) {
+  background: #B3E888 !important;
+  transform: translateY(-2px);
+}
+
+.tb-back:hover {
+  border-color: rgba(245,243,238,0.35) !important;
+  background: rgba(255,255,255,0.08) !important;
 }
 
 /* ─── Reduced motion ──────────────────────────────────── */

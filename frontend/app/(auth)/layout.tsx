@@ -6,44 +6,39 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div style={{
       position: "relative", minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 16, background: "#222F30", overflow: "hidden",
+      padding: 16, background: "#0C0D0C", color: "#F5F3EE", overflow: "hidden",
     }}>
-      {/* Ambient glow — outer wrapper centers it, inner div animates */}
-      <div style={{ position: "absolute", top: "-20%", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
-        <div className="animate-glow-drift" style={{
-          width: 900, height: 900,
-          background: "radial-gradient(circle,rgba(206,247,158,0.22) 0%,rgba(206,247,158,0) 70%)",
-        }} />
-      </div>
+      {/* Ambient glows — matching landing page */}
+      <div style={{ position: "absolute", top: "-10%", left: "-10%", width: "60vw", height: "60vw", maxWidth: 900, maxHeight: 900, background: "radial-gradient(circle,rgba(58,110,95,0.16) 0%,rgba(58,110,95,0) 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: "-15%", right: "-10%", width: "55vw", height: "55vw", maxWidth: 800, maxHeight: 800, background: "radial-gradient(circle,rgba(58,110,95,0.13) 0%,rgba(58,110,95,0) 70%)", pointerEvents: "none" }} />
 
       {/* Back to landing */}
       <Link
         href="/"
-        className="hover:bg-white/[0.08] hover:border-white/[0.32]"
+        className="tb-back"
         style={{
-          position: "absolute", top: 24, left: 24, zIndex: 20,
+          position: "absolute", top: 20, left: 20, zIndex: 20,
           display: "flex", alignItems: "center", gap: 9,
-          textDecoration: "none",
-          border: "1px solid rgba(255,255,255,0.18)",
-          borderRadius: 8, padding: "9px 16px",
-          transition: "all 0.2s ease",
+          textDecoration: "none", color: "#F5F3EE",
+          border: "1px solid rgba(245,243,238,0.16)",
+          borderRadius: 10, padding: "9px 16px",
+          transition: "border-color .3s ease, background .3s ease",
         }}
       >
         <Image
           src="/tracebuild-logo.png"
-          alt=""
+          alt="TraceBuild"
           width={80}
           height={28}
-          style={{ height: 20, width: "auto", objectFit: "contain" }}
+          style={{ height: 22, width: "auto", objectFit: "contain" }}
         />
-        <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>
-          <span style={{ color: "#F5F1EA" }}>Trace</span>
-          <span style={{ color: "#CEF79E" }}>Build</span>
+        <span style={{ fontSize: 14, fontWeight: 500, letterSpacing: "-0.01em" }}>
+          Trace<span style={{ color: "#CEF79E" }}>Build</span>
         </span>
       </Link>
 
       {/* Card slot */}
-      <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 448 }}>
+      <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 440 }}>
         {children}
       </div>
     </div>
