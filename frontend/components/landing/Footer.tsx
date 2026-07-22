@@ -3,34 +3,27 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer style={{ position: "relative" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px" }}>
-        <div style={{
-          borderTop: "1px solid rgba(245,243,238,0.12)",
-          padding: "36px 0",
-          display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 24,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Image
-              src="/tracebuild-logo.png"
-              alt="TraceBuild"
-              width={80} height={20}
-              style={{ height: 20, width: "auto", objectFit: "contain" }}
-            />
-            <span style={{ fontSize: 14, color: "#9A9D96" }}>© {new Date().getFullYear()} TraceBuild</span>
-          </div>
-          <div style={{ display: "flex", gap: 32 }}>
-<<<<<<< HEAD
-            <a href="#preise" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Preise</a>
-            <a href="mailto:jonas@tracebuild.ch" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Kontakt</a>
-=======
-            <a href="#preise"  onClick={e => { e.preventDefault(); document.querySelector("#preise")?.scrollIntoView({ behavior: "smooth" }); }}
-               style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Preise</a>
-            <a href="mailto:jonas@tracebuild.ch"
-               style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Kontakt</a>
->>>>>>> 99450e6ecafed412f13da4d67470fdba00030784
-            <Link href="/login" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Login</Link>
-          </div>
+    <footer style={{ position: "relative", background: "#000000" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "rgba(255,255,255,0.08)" }} />
+      <div style={{
+        maxWidth: 1080, margin: "0 auto",
+        padding: "48px 24px 36px",
+        display: "flex", alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap", gap: 16,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Image
+            src="/tracebuild-logo.png"
+            alt="TraceBuild"
+            width={80}
+            height={28}
+            style={{ height: 24, width: "auto", objectFit: "contain", display: "block" }}
+          />
+          <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>
+            <span style={{ color: "#F7F5F1" }}>Trace</span>
+            <span style={{ color: "#CEF79E" }}>Build</span>
+          </span>
         </div>
       </div>
     </footer>
