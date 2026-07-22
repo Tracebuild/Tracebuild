@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Image from "next/image";
 
 type Pin = "before" | "fixed" | "after";
@@ -59,7 +59,7 @@ export default function DashboardStory() {
   const findingT    = (at: number) => c01((beatF - at) / 0.3);
   const reportGlow  = c01((beatF - 3.5) / 0.4);
 
-  const pinStyle: React.CSSProperties =
+  const pinStyle: CSSProperties =
     pin === "fixed"  ? { position: "fixed",    top: 0,      left: 0, width: "100%", height: "100vh" } :
     pin === "after"  ? { position: "absolute", top: pinTop, left: 0, width: "100%", height: "100vh" } :
                        { position: "absolute", top: 0,      left: 0, width: "100%", height: "100vh" };

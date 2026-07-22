@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 
 const STAGES = 8;
 const BG = "#222F30";
@@ -133,7 +133,7 @@ export default function ScrollStory() {
     window.scrollTo({ top: window.scrollY + rect.top + (i / STAGES) * (rect.height - window.innerHeight) + 4, behavior: "smooth" });
   };
 
-  const pinStyle: React.CSSProperties =
+  const pinStyle: CSSProperties =
     pin === "fixed"  ? { position: "fixed",    top: 0,      left: 0, width: "100%", height: "100vh" } :
     pin === "after"  ? { position: "absolute", top: pinTop, left: 0, width: "100%", height: "100vh" } :
                        { position: "absolute", top: 0,      left: 0, width: "100%", height: "100vh" };
