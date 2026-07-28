@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import TraceBuildLogo from "@/components/landing/TraceBuildLogo";
 
 export default function ProjectLayout({
   children,
@@ -25,11 +26,9 @@ export default function ProjectLayout({
       <header className="bg-white border-b border-[#e7e2d9] px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 py-3.5">
-            <Link href="/dashboard" className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors group">
-              <div className="w-6 h-6 bg-[#B7926A] rounded flex items-center justify-center shrink-0">
-                <span className="text-white text-xs font-bold">T</span>
-              </div>
-              <span className="text-sm">← Dashboard</span>
+            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-75 transition-opacity">
+              <TraceBuildLogo size="sm" />
+              <span className="text-sm text-stone-400">← Dashboard</span>
             </Link>
           </div>
           <div className="flex gap-0">

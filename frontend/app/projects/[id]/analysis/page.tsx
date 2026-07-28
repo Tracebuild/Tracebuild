@@ -48,7 +48,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [dragOver, setDragOver] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "fail" | "warn">("all");
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [overviewOpen, setOverviewOpen] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -209,122 +209,130 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
 
           return (
             <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
-              {/* Header + filter tabs */}
+              {/* Header: collapse toggle left, filter tabs right */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ece6]">
-                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Offene Punkte</p>
-                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
-                  {([
-                    { key: "all",  label: `Alle (${totalFail + totalWarn})` },
-                    { key: "fail", label: `Verstösse (${totalFail})` },
-                    { key: "warn", label: `Warnungen (${totalWarn})` },
-                  ] as const).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setFilter(key)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                        filter === key
-                          ? "bg-white text-stone-800 shadow-sm"
-                          : "text-stone-500 hover:text-stone-700"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  onClick={() => setOverviewOpen((o) => !o)}
+                  className="flex items-center gap-2 group"
+                >
+                  <svg
+                    className={`w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-all ${overviewOpen ? "rotate-0" : "-rotate-90"}`}
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <span className="text-xs font-semibold text-stone-400 group-hover:text-stone-600 uppercase tracking-wide transition-colors">
+                    Offene Punkte
+                  </span>
+                </button>
+
+                {overviewOpen && (
+                  <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
+                    {([
+                      { key: "all",  label: `Alle (${totalFail + totalWarn})` },
+                      { key: "fail", label: `Verstösse (${totalFail})` },
+                      { key: "warn", label: `Warnungen (${totalWarn})` },
+                    ] as const).map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setFilter(key)}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                          filter === key
+                            ? "bg-white text-stone-800 shadow-sm"
+                            : "text-stone-500 hover:text-stone-700"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Per-plan-type sections */}
-              <div className="divide-y divide-[#f7f5f2]">
-                {typesWithAnalyses.map((type) => {
-                  const latest = latestByType[type];
-                  const count = analyses.filter((a) => a.planType === type).length;
-                  const allItems = latest.items;
-                  const visibleItems = allItems.filter(i =>
-                    filter === "all" ? i.status !== "ok" : i.status === filter
-                  );
-                  const fCount = allItems.filter(i => i.status === "fail").length;
-                  const wCount = allItems.filter(i => i.status === "warn").length;
-                  const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
-                  const badgeStyle = {
-                    kritisch: "bg-red-50 text-red-700 border-red-100",
-                    warnung:  "bg-amber-50 text-amber-700 border-amber-100",
-                    konform:  "bg-green-50 text-green-700 border-green-100",
-                  };
-                  const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+              {/* Scrollable content — hidden when collapsed */}
+              {overviewOpen && (
+                <div className="overflow-y-auto max-h-[380px] divide-y divide-[#f7f5f2]">
+                  {typesWithAnalyses.map((type) => {
+                    const latest = latestByType[type];
+                    const count = analyses.filter((a) => a.planType === type).length;
+                    const allItems = latest.items;
+                    const visibleItems = allItems.filter(i =>
+                      filter === "all" ? i.status !== "ok" : i.status === filter
+                    );
+                    const fCount = allItems.filter(i => i.status === "fail").length;
+                    const wCount = allItems.filter(i => i.status === "warn").length;
+                    const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
+                    const badgeStyle = {
+                      kritisch: "bg-red-50 text-red-700 border-red-100",
+                      warnung:  "bg-amber-50 text-amber-700 border-amber-100",
+                      konform:  "bg-green-50 text-green-700 border-green-100",
+                    };
+                    const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
 
-                  return (
-                    <div key={type}>
-                      {/* Plan type header row */}
-                      <button
-                        onClick={() => openPlanType(type)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
-                      >
-                        <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">
-                          {type}
-                        </span>
-                        <span className="text-xs text-stone-400">V{count}</span>
-                        <span className="text-xs text-stone-400">
-                          {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                        </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
-                          {badgeLabel[overallStatus]}
-                        </span>
-                        <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
+                    return (
+                      <div key={type}>
+                        {/* Plan type header — clicks into plan detail */}
+                        <button
+                          onClick={() => openPlanType(type)}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
+                        >
+                          <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">
+                            {type}
+                          </span>
+                          <span className="text-xs text-stone-400">V{count}</span>
+                          <span className="text-xs text-stone-400">
+                            {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                          </span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
+                            {badgeLabel[overallStatus]}
+                          </span>
+                          <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
 
-                      {/* Items */}
-                      {visibleItems.length === 0 ? (
-                        <div className="px-4 pb-3">
-                          <p className="text-xs text-stone-300 italic">
-                            {filter === "fail" ? "Keine Verstösse" : filter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="px-4 pb-3 space-y-1.5">
-                          {visibleItems.map((item) => {
-                            const cfg = STATUS_CONFIG[item.status];
-                            const isOpen = expandedItems.has(item.id);
-                            return (
-                              <button
-                                key={item.id}
-                                onClick={() => setExpandedItems((prev) => {
-                                  const next = new Set(prev);
-                                  isOpen ? next.delete(item.id) : next.add(item.id);
-                                  return next;
-                                })}
-                                className={`w-full text-left ${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2.5 transition-all`}
-                              >
-                                <div className="flex items-start gap-2">
-                                  <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1`}>
+                        {/* Items — title only, arrow navigates to plan */}
+                        {visibleItems.length === 0 ? (
+                          <div className="px-4 pb-3">
+                            <p className="text-xs text-stone-300 italic">
+                              {filter === "fail" ? "Keine Verstösse" : filter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="px-4 pb-3 space-y-1">
+                            {visibleItems.map((item) => {
+                              const cfg = STATUS_CONFIG[item.status];
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2 flex items-center gap-2`}
+                                >
+                                  <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1`}>
                                     <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
                                     {cfg.label}
                                   </span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className={`text-sm font-medium ${cfg.text} ${isOpen ? "" : "line-clamp-1"}`}>
-                                      {item.note}
-                                    </p>
-                                    {isOpen && item.suggestion && (
-                                      <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">💡 {item.suggestion}</p>
-                                    )}
-                                  </div>
-                                  <svg
-                                    className={`w-3.5 h-3.5 ${cfg.text} opacity-50 shrink-0 mt-0.5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                  <p className={`text-sm font-medium ${cfg.text} flex-1 min-w-0 line-clamp-1`}>
+                                    {item.note}
+                                  </p>
+                                  <button
+                                    onClick={() => openPlanType(type)}
+                                    className="shrink-0 text-stone-300 hover:text-[#B7926A] transition-colors ml-1"
+                                    title="Plan öffnen"
                                   >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                  </svg>
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </button>
                                 </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })()}

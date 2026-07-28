@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 import NewProjectModal from "@/components/NewProjectModal";
 import ProjectCard from "@/components/ProjectCard";
+import TraceBuildLogo from "@/components/landing/TraceBuildLogo";
 
 interface Project {
   id: string;
@@ -62,12 +63,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="w-56 shrink-0 bg-white border-r border-[#e7e2d9] flex flex-col h-screen sticky top-0">
         <div className="px-4 py-5 border-b border-[#e7e2d9]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-[#B7926A] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white text-xs font-bold">T</span>
-            </div>
-            <span className="font-semibold text-stone-800 text-sm">TraceBuild</span>
-          </div>
+          <TraceBuildLogo size="sm" />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
