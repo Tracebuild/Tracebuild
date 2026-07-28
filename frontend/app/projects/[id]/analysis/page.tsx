@@ -2,13 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import {
+  type AnalysisItem,
+  type Category,
+  type Confidence,
+  CATEGORY_LABELS,
+  CONFIDENCE_LABELS,
+  CONFIDENCE_STYLE,
+} from "@/lib/domains/bau";
 
-interface AnalysisItem {
-  id: string;
-  status: "ok" | "fail" | "warn";
-  note: string;
-  suggestion: string | null;
-}
+// ── Config maps ───────────────────────────────────────────────────────────────
+
+const STATUS_CONFIG = {
+  ok:   { label: "Konform",  title: "Konforme Punkte", bg: "bg-green-50",  text: "text-green-700",  badge: "bg-green-100 text-green-700",  dot: "bg-green-500",  border: "border-green-200" },
+  fail: { label: "Verstoss", title: "Verstösse",        bg: "bg-red-50",    text: "text-red-700",    badge: "bg-red-100 text-red-700",      dot: "bg-red-500",    border: "border-red-200"   },
+  warn: { label: "Unklar",   title: "Unklare Punkte",   bg: "bg-amber-50",  text: "text-amber-700",  badge: "bg-amber-100 text-amber-700",  dot: "bg-amber-500",  border: "border-amber-200" },
+} as const;
+
+// ── Interfaces ────────────────────────────────────────────────────────────────
 
 interface AnalysisWithDoc {
   id: string;
@@ -29,11 +40,79 @@ interface RawGetAnalysis {
   items?: AnalysisItem[];
 }
 
-const STATUS_CONFIG = {
-  ok:   { label: "Konform",  title: "Konforme Punkte", bg: "bg-green-50",  text: "text-green-700",  badge: "bg-green-100 text-green-700",  dot: "bg-green-500",  border: "border-green-200" },
-  fail: { label: "Verstoss", title: "Verstösse",        bg: "bg-red-50",    text: "text-red-700",    badge: "bg-red-100 text-red-700",      dot: "bg-red-500",    border: "border-red-200"   },
-  warn: { label: "Unklar",   title: "Unklare Punkte",   bg: "bg-amber-50",  text: "text-amber-700",  badge: "bg-amber-100 text-amber-700",  dot: "bg-amber-500",  border: "border-amber-200" },
-} as const;
+// ── CheckCard ─────────────────────────────────────────────────────────────────
+
+function CheckCard({ item }: { item: AnalysisItem }) {
+  const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.warn;
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className={`${cfg.bg} border ${cfg.border} rounded-xl p-4`}>
+      <div className="flex items-start gap-3">
+        {/* Status badge */}
+        <span className={`${cfg.badge} text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1.5`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+          {cfg.label}
+        </span>
+
+        <div className="flex-1 min-w-0">
+          {/* Norm title */}
+          {item.norm_title && (
+            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-0.5 truncate">
+              {item.norm_title}
+            </p>
+          )}
+
+          {/* Finding */}
+          <p className={`text-sm font-medium ${cfg.text} leading-snug`}>{item.note}</p>
+
+          {/* Suggestion */}
+          {item.suggestion && (
+            <div className="mt-2 flex items-start gap-1.5">
+              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              <p className="text-sm text-stone-500 leading-relaxed">{item.suggestion}</p>
+            </div>
+          )}
+
+          {/* Meta row: category, confidence, page */}
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
+            {item.category && (
+              <span className="text-xs bg-white/60 text-stone-500 px-2 py-0.5 rounded-full border border-stone-200">
+                {CATEGORY_LABELS[item.category as Category] ?? item.category}
+              </span>
+            )}
+            {item.confidence && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CONFIDENCE_STYLE[item.confidence as Confidence] ?? "bg-stone-100 text-stone-500"}`}>
+                Konfidenz: {CONFIDENCE_LABELS[item.confidence as Confidence] ?? item.confidence}
+              </span>
+            )}
+            {item.page_reference != null && (
+              <span className="text-xs text-stone-400">
+                S. {item.page_reference}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Expand / collapse for long suggestions */}
+        {item.suggestion && item.suggestion.length > 120 && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 p-1 text-stone-300 hover:text-stone-500 transition-colors"
+          >
+            <svg className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [analyses, setAnalyses] = useState<AnalysisWithDoc[]>([]);
@@ -47,8 +126,9 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "fail" | "warn">("all");
+  const [overviewFilter, setOverviewFilter] = useState<"all" | "fail" | "warn">("all");
   const [overviewOpen, setOverviewOpen] = useState(true);
+  const [detailFilter, setDetailFilter] = useState<"all" | "fail" | "warn" | "ok">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,7 +145,6 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     });
   }, [params.id]);
 
-  // Close 3-dot menu when clicking anywhere outside
   useEffect(() => {
     if (!menuOpenId) return;
     const close = () => setMenuOpenId(null);
@@ -90,6 +169,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     setSelectedPlanType(name);
     setSelectedAnalysis(null);
     setView("plantype");
+    setDetailFilter("all");
     setError(null);
   }
 
@@ -107,9 +187,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
       await api.delete(`/projects/${params.id}/analyses/${analysisId}`);
       setAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
       if (selectedAnalysis?.id === analysisId) setSelectedAnalysis(null);
-    } catch {
-      // silently ignore — version stays in list if delete fails
-    }
+    } catch { /* ignore */ }
   }
 
   async function runAnalysis(file: File) {
@@ -135,6 +213,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
       setAnalyses((prev) => [analysis, ...prev]);
       setLocalPlanTypes((prev) => prev.filter((t) => t !== selectedPlanType));
       setSelectedAnalysis(analysis);
+      setDetailFilter("all");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Analyse fehlgeschlagen");
     } finally {
@@ -146,9 +225,12 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     if (files?.[0]) runAnalysis(files[0]);
   }
 
-  // ── OVERVIEW ──────────────────────────────────────────────
+  // ── OVERVIEW ──────────────────────────────────────────────────────────────
+
   if (view === "overview") {
     const typesWithAnalyses = allPlanTypes.filter((t) => !!latestByType[t]);
+    const totalFail = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "fail").length ?? 0), 0);
+    const totalWarn = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "warn").length ?? 0), 0);
 
     return (
       <div>
@@ -202,140 +284,123 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* ── Offene Punkte (filtered issue view) ── */}
-        {typesWithAnalyses.length > 0 && (() => {
-          const totalFail = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "fail").length ?? 0), 0);
-          const totalWarn = typesWithAnalyses.reduce((n, t) => n + (latestByType[t]?.items.filter(i => i.status === "warn").length ?? 0), 0);
-
-          return (
-            <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
-              {/* Header: collapse toggle left, filter tabs right */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ece6]">
-                <button
-                  onClick={() => setOverviewOpen((o) => !o)}
-                  className="flex items-center gap-2 group"
+        {/* Offene Punkte overview */}
+        {typesWithAnalyses.length > 0 && (
+          <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ece6]">
+              <button
+                onClick={() => setOverviewOpen((o) => !o)}
+                className="flex items-center gap-2 group"
+              >
+                <svg
+                  className={`w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-all ${overviewOpen ? "rotate-0" : "-rotate-90"}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 >
-                  <svg
-                    className={`w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-all ${overviewOpen ? "rotate-0" : "-rotate-90"}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                  <span className="text-xs font-semibold text-stone-400 group-hover:text-stone-600 uppercase tracking-wide transition-colors">
-                    Offene Punkte
-                  </span>
-                </button>
-
-                {overviewOpen && (
-                  <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
-                    {([
-                      { key: "all",  label: `Alle (${totalFail + totalWarn})` },
-                      { key: "fail", label: `Verstösse (${totalFail})` },
-                      { key: "warn", label: `Warnungen (${totalWarn})` },
-                    ] as const).map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setFilter(key)}
-                        className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                          filter === key
-                            ? "bg-white text-stone-800 shadow-sm"
-                            : "text-stone-500 hover:text-stone-700"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Scrollable content — hidden when collapsed */}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span className="text-xs font-semibold text-stone-400 group-hover:text-stone-600 uppercase tracking-wide transition-colors">
+                  Offene Punkte
+                </span>
+              </button>
               {overviewOpen && (
-                <div className="overflow-y-auto max-h-[380px] divide-y divide-[#f7f5f2]">
-                  {typesWithAnalyses.map((type) => {
-                    const latest = latestByType[type];
-                    const count = analyses.filter((a) => a.planType === type).length;
-                    const allItems = latest.items;
-                    const visibleItems = allItems.filter(i =>
-                      filter === "all" ? i.status !== "ok" : i.status === filter
-                    );
-                    const fCount = allItems.filter(i => i.status === "fail").length;
-                    const wCount = allItems.filter(i => i.status === "warn").length;
-                    const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
-                    const badgeStyle = {
-                      kritisch: "bg-red-50 text-red-700 border-red-100",
-                      warnung:  "bg-amber-50 text-amber-700 border-amber-100",
-                      konform:  "bg-green-50 text-green-700 border-green-100",
-                    };
-                    const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
-
-                    return (
-                      <div key={type}>
-                        {/* Plan type header — clicks into plan detail */}
-                        <button
-                          onClick={() => openPlanType(type)}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
-                        >
-                          <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">
-                            {type}
-                          </span>
-                          <span className="text-xs text-stone-400">V{count}</span>
-                          <span className="text-xs text-stone-400">
-                            {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                          </span>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
-                            {badgeLabel[overallStatus]}
-                          </span>
-                          <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-
-                        {/* Items — title only, arrow navigates to plan */}
-                        {visibleItems.length === 0 ? (
-                          <div className="px-4 pb-3">
-                            <p className="text-xs text-stone-300 italic">
-                              {filter === "fail" ? "Keine Verstösse" : filter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="px-4 pb-3 space-y-1">
-                            {visibleItems.map((item) => {
-                              const cfg = STATUS_CONFIG[item.status];
-                              return (
-                                <div
-                                  key={item.id}
-                                  className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2 flex items-center gap-2`}
-                                >
-                                  <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
-                                    {cfg.label}
-                                  </span>
-                                  <p className={`text-sm font-medium ${cfg.text} flex-1 min-w-0 line-clamp-1`}>
-                                    {item.note}
-                                  </p>
-                                  <button
-                                    onClick={() => openPlanType(type)}
-                                    className="shrink-0 text-stone-300 hover:text-[#B7926A] transition-colors ml-1"
-                                    title="Plan öffnen"
-                                  >
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
+                  {([
+                    { key: "all",  label: `Alle (${totalFail + totalWarn})` },
+                    { key: "fail", label: `Verstösse (${totalFail})` },
+                    { key: "warn", label: `Warnungen (${totalWarn})` },
+                  ] as const).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setOverviewFilter(key)}
+                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                        overviewFilter === key
+                          ? "bg-white text-stone-800 shadow-sm"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          );
-        })()}
+            {overviewOpen && (
+              <div className="overflow-y-auto max-h-[380px] divide-y divide-[#f7f5f2]">
+                {typesWithAnalyses.map((type) => {
+                  const latest = latestByType[type];
+                  const count = analyses.filter((a) => a.planType === type).length;
+                  const allItems = latest.items;
+                  const visibleItems = allItems.filter(i =>
+                    overviewFilter === "all" ? i.status !== "ok" : i.status === overviewFilter
+                  );
+                  const fCount = allItems.filter(i => i.status === "fail").length;
+                  const wCount = allItems.filter(i => i.status === "warn").length;
+                  const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
+                  const badgeStyle = {
+                    kritisch: "bg-red-50 text-red-700 border-red-100",
+                    warnung:  "bg-amber-50 text-amber-700 border-amber-100",
+                    konform:  "bg-green-50 text-green-700 border-green-100",
+                  };
+                  const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+
+                  return (
+                    <div key={type}>
+                      <button
+                        onClick={() => openPlanType(type)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
+                      >
+                        <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">{type}</span>
+                        <span className="text-xs text-stone-400">V{count}</span>
+                        <span className="text-xs text-stone-400">
+                          {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
+                          {badgeLabel[overallStatus]}
+                        </span>
+                        <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                      {visibleItems.length === 0 ? (
+                        <div className="px-4 pb-3">
+                          <p className="text-xs text-stone-300 italic">
+                            {overviewFilter === "fail" ? "Keine Verstösse" : overviewFilter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="px-4 pb-3 space-y-1">
+                          {visibleItems.map((item) => {
+                            const cfg = STATUS_CONFIG[item.status];
+                            return (
+                              <div key={item.id} className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2 flex items-center gap-2`}>
+                                <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                                  {cfg.label}
+                                </span>
+                                {item.norm_title && (
+                                  <span className="text-xs text-stone-400 shrink-0 hidden sm:inline truncate max-w-[120px]">{item.norm_title}</span>
+                                )}
+                                <p className={`text-sm font-medium ${cfg.text} flex-1 min-w-0 line-clamp-1`}>{item.note}</p>
+                                <button
+                                  onClick={() => openPlanType(type)}
+                                  className="shrink-0 text-stone-300 hover:text-[#B7926A] transition-colors ml-1"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {allPlanTypes.length === 0 ? (
           <div className="bg-white border-2 border-dashed border-[#ddd8cf] rounded-2xl p-16 text-center">
@@ -347,10 +412,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
             </div>
             <p className="text-sm font-medium text-stone-600">Keine Planarten vorhanden</p>
             <p className="text-xs text-stone-400 mt-1">Füge eine Planart hinzu um mit der Analyse zu beginnen</p>
-            <button
-              onClick={() => setShowNewTypeInput(true)}
-              className="mt-4 text-sm text-[#B7926A] hover:text-[#a67e5a] font-medium transition-colors"
-            >
+            <button onClick={() => setShowNewTypeInput(true)} className="mt-4 text-sm text-[#B7926A] hover:text-[#a67e5a] font-medium transition-colors">
               + Erste Planart erstellen
             </button>
           </div>
@@ -362,12 +424,8 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               const latestItems = latest?.items ?? [];
               const failCount = latestItems.filter((i) => i.status === "fail").length;
               const warnCount = latestItems.filter((i) => i.status === "warn").length;
-              const okCount = latestItems.filter((i) => i.status === "ok").length;
-              const borderColor = !latest
-                ? "border-[#e7e2d9]"
-                : failCount > 0 ? "border-red-200"
-                : warnCount > 0 ? "border-amber-200"
-                : "border-green-200";
+              const okCount   = latestItems.filter((i) => i.status === "ok").length;
+              const borderColor = !latest ? "border-[#e7e2d9]" : failCount > 0 ? "border-red-200" : warnCount > 0 ? "border-amber-200" : "border-green-200";
 
               return (
                 <button
@@ -376,9 +434,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                   className={`text-left bg-white border ${borderColor} rounded-xl p-4 hover:shadow-sm transition-all group`}
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <p className="font-semibold text-stone-800 truncate group-hover:text-[#8b6344] transition-colors">
-                      {type}
-                    </p>
+                    <p className="font-semibold text-stone-800 truncate group-hover:text-[#8b6344] transition-colors">{type}</p>
                     <svg className="w-4 h-4 text-stone-300 group-hover:text-[#B7926A] transition-colors shrink-0 ml-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -391,7 +447,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                       <div className="flex items-center gap-3">
                         {failCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{failCount}</span>}
                         {warnCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{warnCount}</span>}
-                        {okCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{okCount}</span>}
+                        {okCount   > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{okCount}</span>}
                       </div>
                     </>
                   ) : (
@@ -406,13 +462,18 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     );
   }
 
-  // ── PLAN TYPE DETAIL ──────────────────────────────────────
+  // ── PLAN TYPE DETAIL ───────────────────────────────────────────────────────
+
   const items = selectedAnalysis?.items ?? [];
   const counts = selectedAnalysis ? {
     ok:   items.filter((i) => i.status === "ok").length,
     fail: items.filter((i) => i.status === "fail").length,
     warn: items.filter((i) => i.status === "warn").length,
   } : null;
+
+  const filteredItems = detailFilter === "all"
+    ? items
+    : items.filter((i) => i.status === detailFilter);
 
   return (
     <div className="flex gap-5 min-h-[520px]">
@@ -444,7 +505,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               return (
                 <div key={a.id} className="relative">
                   <button
-                    onClick={() => setSelectedAnalysis(a)}
+                    onClick={() => { setSelectedAnalysis(a); setDetailFilter("all"); }}
                     className={`w-full text-left px-3 py-3 rounded-xl border transition-all ${
                       isActive
                         ? "border-[#B7926A] bg-[#fdf8f3] shadow-sm"
@@ -455,7 +516,6 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                       <p className={`text-xs font-semibold uppercase tracking-wide ${isActive ? "text-[#8b6344]" : "text-stone-400"}`}>
                         V{typeAnalyses.length - idx}
                       </p>
-                      {/* 3-dot menu button */}
                       <div
                         onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === a.id ? null : a.id); }}
                         className="w-5 h-5 flex items-center justify-center rounded hover:bg-black/5 cursor-pointer"
@@ -478,18 +538,13 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                       </div>
                     )}
                   </button>
-
-                  {/* Dropdown menu */}
                   {menuOpenId === a.id && (
                     <div
                       onClick={(e) => e.stopPropagation()}
                       className="absolute right-0 top-1 z-20 bg-white border border-stone-200 rounded-xl shadow-lg py-1 min-w-[140px]"
                     >
                       <button
-                        onClick={() => {
-                          setMenuOpenId(null);
-                          deleteAnalysis(a.id);
-                        }}
+                        onClick={() => { setMenuOpenId(null); deleteAnalysis(a.id); }}
                         className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -508,7 +563,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
 
       {/* Main area */}
       <div className="flex-1 min-w-0">
-        {!selectedAnalysis && (
+        {!selectedAnalysis ? (
           <>
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -525,8 +580,8 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               {uploading ? (
                 <div className="space-y-4">
                   <div className="w-12 h-12 border-2 border-stone-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-base font-semibold text-stone-700">Claude analysiert…</p>
-                  <p className="text-sm text-stone-400">Das dauert ca. 30 Sekunden</p>
+                  <p className="text-base font-semibold text-stone-700">Claude analysiert gegen Normen…</p>
+                  <p className="text-sm text-stone-400">Das dauert ca. 30–60 Sekunden</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -549,13 +604,12 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 text-center">{error}</p>
             )}
           </>
-        )}
-
-        {selectedAnalysis && (() => {
+        ) : (() => {
           const vIdx = typeAnalyses.findIndex((a) => a.id === selectedAnalysis.id);
-          const vNr = typeAnalyses.length - vIdx;
+          const vNr  = typeAnalyses.length - vIdx;
           return (
             <div className="space-y-5">
+              {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-0.5">
@@ -581,45 +635,57 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                 </button>
               </div>
 
+              {/* Summary badges */}
               <div className="grid grid-cols-3 gap-3">
                 {(["fail", "warn", "ok"] as const).map((s) => {
                   const cfg = STATUS_CONFIG[s];
                   return (
-                    <div key={s} className={`${cfg.bg} border ${cfg.border} rounded-xl p-4`}>
+                    <button
+                      key={s}
+                      onClick={() => setDetailFilter(detailFilter === s ? "all" : s)}
+                      className={`${cfg.bg} border ${cfg.border} rounded-xl p-4 text-left transition-all hover:shadow-sm ${detailFilter === s ? "ring-2 ring-offset-1 ring-current" : ""}`}
+                    >
                       <div className="flex items-center gap-1.5 mb-3">
                         <span className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
                         <p className={`text-xs font-semibold ${cfg.text} uppercase tracking-wider`}>{cfg.title}</p>
                       </div>
                       <p className={`text-3xl font-bold ${cfg.text}`}>{counts![s]}</p>
                       <p className={`text-xs mt-1 ${cfg.text} opacity-70`}>{counts![s] === 1 ? "Prüfpunkt" : "Prüfpunkte"}</p>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
 
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1 w-fit">
+                {([
+                  { key: "all",  label: `Alle (${items.length})` },
+                  { key: "fail", label: `Verstösse (${counts!.fail})` },
+                  { key: "warn", label: `Warnungen (${counts!.warn})` },
+                  { key: "ok",   label: `Konform (${counts!.ok})` },
+                ] as const).map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setDetailFilter(key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      detailFilter === key
+                        ? "bg-white text-stone-800 shadow-sm"
+                        : "text-stone-500 hover:text-stone-700"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Item list */}
               <div className="space-y-2">
-                {items.length === 0 ? (
-                  <p className="text-sm text-stone-400 text-center py-10">Keine Prüfpunkte gefunden.</p>
+                {filteredItems.length === 0 ? (
+                  <p className="text-sm text-stone-400 text-center py-10">Keine Prüfpunkte in dieser Kategorie.</p>
                 ) : (
-                  items.map((item) => {
-                    const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.warn;
-                    return (
-                      <div key={item.id} className={`${cfg.bg} border ${cfg.border} rounded-xl p-4`}>
-                        <div className="flex items-start gap-3">
-                          <span className={`${cfg.badge} text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1.5`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
-                            {cfg.label}
-                          </span>
-                          <div className="min-w-0">
-                            <p className={`text-sm font-medium ${cfg.text}`}>{item.note}</p>
-                            {item.suggestion && (
-                              <p className="text-sm text-stone-500 mt-1.5 leading-relaxed">💡 {item.suggestion}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                  filteredItems.map((item) => (
+                    <CheckCard key={item.id} item={item} />
+                  ))
                 )}
               </div>
             </div>
