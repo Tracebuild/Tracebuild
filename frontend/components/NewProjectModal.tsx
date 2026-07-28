@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
 const CANTONS = [
@@ -14,25 +15,69 @@ interface Props {
   onCreated: () => void;
 }
 
+interface CreateProjectResponse {
+  project: { id: string };
+  assigned_norms_count: number;
+  zone: string | null;
+}
+
 export default function NewProjectModal({ onClose, onCreated }: Props) {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [canton, setCanton] = useState("ZH");
   const [municipality, setMunicipality] = useState("");
+  const [parcelNumber, setParcelNumber] = useState("");
+  const [bauzone, setBauzone] = useState("");
+  const [bauzoneAutoFilled, setBauzoneAutoFilled] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Debounced geoportal preview while typing
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!parcelNumber.trim() || !municipality.trim()) return;
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    lookupTimer.current = setTimeout(async () => {
+      setLookingUp(true);
+      try {
+        const result = await api.post<{ bauzone: string | null }>(
+          "/geoportal/lookup",
+          { parcel_number: parcelNumber, municipality }
+        );
+        if (result?.bauzone) {
+          setBauzone(result.bauzone);
+          setBauzoneAutoFilled(true);
+        } else {
+          setBauzoneAutoFilled(false);
+        }
+      } catch {
+        setBauzoneAutoFilled(false);
+      } finally {
+        setLookingUp(false);
+      }
+    }, 800);
+    return () => {
+      if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    };
+  }, [parcelNumber, municipality]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await api.post("/projects", {
+      const result = await api.post<CreateProjectResponse>("/projects", {
         name,
         domain: "bau",
         location: { canton, municipality, country: "CH" },
+        parcel_number: parcelNumber || null,
+        bauzone: bauzone || null,
       });
       onCreated();
       onClose();
+      router.push(`/projects/${result.project.id}/norms`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unbekannter Fehler");
     } finally {
@@ -40,7 +85,8 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
     }
   }
 
-  const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
+  const inputCls =
+    "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
 
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
@@ -74,7 +120,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Gemeinde</label>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Ortschaft / Gemeinde</label>
               <input
                 type="text"
                 required
@@ -83,6 +129,49 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
                 className={inputCls}
                 placeholder="z.B. Winterthur"
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1">
+              Parzellennummer
+              <span className="ml-1 font-normal text-stone-400">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={parcelNumber}
+              onChange={(e) => { setParcelNumber(e.target.value); setBauzoneAutoFilled(false); }}
+              className={inputCls}
+              placeholder="z.B. 1234"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1">
+              Bauzone
+              <span className="ml-1 font-normal text-stone-400">(optional — wird automatisch erkannt)</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={bauzone}
+                onChange={(e) => { setBauzone(e.target.value); setBauzoneAutoFilled(false); }}
+                className={inputCls}
+                placeholder="z.B. W2, G, I"
+              />
+              {lookingUp && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-[#B7926A] border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {bauzoneAutoFilled && !lookingUp && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-emerald-600">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Geoportal
+                </div>
+              )}
             </div>
           </div>
 
