@@ -1,6 +1,8 @@
 from uuid import UUID
 from supabase import Client
 from app.models.schemas import ProjectCreate, ProjectOut
+from app.services.geoportal_service import lookup_parcel
+from app.services.norm_assignment_service import assign_norms_to_project
 
 
 class ProjectService:
@@ -27,15 +29,37 @@ class ProjectService:
         return ProjectOut(**res.data) if res.data else None
 
     async def create_project(self, org_id: UUID, data: ProjectCreate) -> ProjectOut:
+        loc = data.location
+
+        # Try geoportal lookup when a parcel number is provided
+        bauzone = data.bauzone
+        if data.parcel_number and not bauzone:
+            geo = await lookup_parcel(data.parcel_number, loc.municipality)
+            bauzone = geo.get("bauzone")
+
         payload = {
             "org_id": str(org_id),
             "name": data.name,
             "domain": data.domain,
-            "location": data.location.model_dump(),
+            "location": loc.model_dump(),
             "status": "active",
+            "parcel_number": data.parcel_number,
+            "bauzone": bauzone,
         }
         res = self.db.table("projects").insert(payload).execute()
-        return ProjectOut(**res.data[0])
+        project = ProjectOut(**res.data[0])
+
+        # Auto-assign matching norms
+        assign_norms_to_project(
+            self.db,
+            project_id=str(project.id),
+            org_id=str(org_id),
+            canton=loc.canton,
+            municipality=loc.municipality,
+            domain=data.domain,
+        )
+
+        return project
 
     async def delete_project(self, project_id: UUID) -> None:
         self.db.table("projects").delete().eq("id", str(project_id)).execute()

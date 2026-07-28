@@ -24,6 +24,8 @@ class ProjectCreate(BaseModel):
     name: str
     domain: str = "bau"
     location: LocationSchema
+    parcel_number: str | None = None
+    bauzone: str | None = None
 
 
 class ProjectOut(BaseModel):
@@ -33,6 +35,8 @@ class ProjectOut(BaseModel):
     domain: str
     location: dict[str, Any]
     status: str
+    parcel_number: str | None = None
+    bauzone: str | None = None
     created_at: datetime
 
 
@@ -69,12 +73,44 @@ class StandardsResearchRequest(BaseModel):
 
 # ── Analyses ─────────────────────────────────────────────────────────────────
 
+VALID_CATEGORIES = frozenset(
+    {"grenzabstand", "gebaeudehöhe", "erschliessung", "brandschutz", "parkierung", "andere"}
+)
+VALID_STATUSES = frozenset({"ok", "fail", "warn"})
+VALID_CONFIDENCES = frozenset({"high", "medium", "low"})
+
+
+class AnalysisCheckItem(BaseModel):
+    """Structured output from Claude — one check point per norm."""
+    check_id: str
+    norm_id: str | None = None
+    norm_title: str
+    category: str           # must be one of VALID_CATEGORIES
+    status: str             # ok | fail | warn
+    finding: str            # what Claude saw in the plan
+    suggestion: str | None  # only for fail/warn
+    confidence: str         # high | medium | low
+    page_reference: int | None = None
+
+    def normalize(self) -> "AnalysisCheckItem":
+        return self.model_copy(update={
+            "category":   self.category   if self.category   in VALID_CATEGORIES  else "andere",
+            "status":     self.status     if self.status     in VALID_STATUSES    else "warn",
+            "confidence": self.confidence if self.confidence in VALID_CONFIDENCES else "medium",
+        })
+
+
 class AnalysisItemOut(BaseModel):
     id: UUID
     analysis_id: UUID
     standard_id: UUID | None
+    norm_id: UUID | None = None
+    norm_title: str | None = None
+    category: str | None = None
+    confidence: str | None = None
+    page_reference: int | None = None
     status: str  # 'ok' | 'fail' | 'warn'
-    note: str
+    note: str    # stores the 'finding' text
     suggestion: str | None
 
 
