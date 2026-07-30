@@ -1,27 +1,30 @@
 "use client";
 
-import type { Activity } from "./types";
+import type { Activity, ActivityType } from "./types";
 
-const cfg = {
-  org_created: {
-    label: "Erstellt",
-    dot: "bg-emerald-500",
-    text: "text-emerald-700",
-    bg:  "bg-emerald-50",
-  },
-  org_opened: {
-    label: "Geöffnet",
-    dot: "bg-sky-500",
-    text: "text-sky-700",
-    bg:  "bg-sky-50",
-  },
-  org_edited: {
-    label: "Bearbeitet",
-    dot: "bg-[#B7926A]",
-    text: "text-[#9E7A52]",
-    bg:  "bg-[#B7926A]/10",
-  },
-} as const;
+interface ActivityCfg {
+  label: string;
+  dot: string;
+  text: string;
+  bg: string;
+}
+
+const cfg: Record<ActivityType, ActivityCfg> = {
+  org_created:       { label: "Org erstellt",       dot: "bg-emerald-500",  text: "text-emerald-700",  bg: "bg-emerald-50"     },
+  org_opened:        { label: "Geöffnet",            dot: "bg-sky-500",      text: "text-sky-700",      bg: "bg-sky-50"         },
+  org_edited:        { label: "Bearbeitet",          dot: "bg-[#B7926A]",    text: "text-[#9E7A52]",    bg: "bg-[#B7926A]/10"   },
+  org_closed:        { label: "Org geschlossen",     dot: "bg-stone-500",    text: "text-stone-600",    bg: "bg-stone-100"      },
+  org_archived:      { label: "Archiviert",          dot: "bg-stone-300",    text: "text-stone-500",    bg: "bg-stone-50"       },
+  org_paused:        { label: "Pausiert",            dot: "bg-amber-400",    text: "text-amber-700",    bg: "bg-amber-50"       },
+  user_invited:      { label: "Benutzer eingeladen", dot: "bg-violet-500",   text: "text-violet-700",   bg: "bg-violet-50"      },
+  project_created:   { label: "Projekt erstellt",    dot: "bg-indigo-500",   text: "text-indigo-700",   bg: "bg-indigo-50"      },
+  plan_uploaded:     { label: "Plan hochgeladen",    dot: "bg-cyan-500",     text: "text-cyan-700",     bg: "bg-cyan-50"        },
+  analyse_started:   { label: "Analyse gestartet",   dot: "bg-blue-400",     text: "text-blue-600",     bg: "bg-blue-50"        },
+  analyse_completed: { label: "Analyse abgeschlossen",dot: "bg-teal-500",    text: "text-teal-700",     bg: "bg-teal-50"        },
+  report_created:    { label: "Bericht erstellt",    dot: "bg-lime-500",     text: "text-lime-700",     bg: "bg-lime-50"        },
+  cost_limit_reached:{ label: "Kostenlimit erreicht",dot: "bg-red-500",      text: "text-red-700",      bg: "bg-red-50"         },
+  plan_changed:      { label: "Plan geändert",       dot: "bg-orange-400",   text: "text-orange-600",   bg: "bg-orange-50"      },
+};
 
 function relTime(iso: string): string {
   const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
@@ -55,17 +58,23 @@ export default function ActivityFeed({ activities }: Props) {
           <p className="text-xs text-stone-300 mt-1">Erstelle oder öffne eine Organisation</p>
         </div>
       ) : (
-        <div className="divide-y divide-stone-100 max-h-[440px] overflow-y-auto">
-          {activities.map(a => {
-            const { label, dot, text, bg } = cfg[a.type];
+        <div className="divide-y divide-stone-100 max-h-[520px] overflow-y-auto">
+          {activities.slice(0, 30).map(a => {
+            const c = cfg[a.type] ?? cfg.org_edited;
             return (
               <div key={a.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-stone-50/60 transition-colors">
-                <div className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${bg}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                <div className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${c.bg}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-[#141414] truncate">{a.orgName}</p>
-                  <p className={`text-[11px] font-medium mt-0.5 ${text}`}>{label}</p>
+                  <p className={`text-[11px] font-medium mt-0.5 ${c.text}`}>{c.label}</p>
+                  {a.meta && (
+                    <p className="text-[10px] text-stone-400 mt-0.5 truncate">{a.meta}</p>
+                  )}
+                  {a.user && (
+                    <p className="text-[10px] text-stone-400 truncate">{a.user}</p>
+                  )}
                 </div>
                 <span className="text-[10px] text-stone-400 flex-shrink-0 mt-0.5 tabular-nums whitespace-nowrap">
                   {relTime(a.timestamp)}

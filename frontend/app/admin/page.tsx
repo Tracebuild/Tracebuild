@@ -1,38 +1,47 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminNav from "@/components/admin/AdminNav";
 import OrgTable from "@/components/admin/OrgTable";
 import OrgModal from "@/components/admin/OrgModal";
+import type { OrgFormData } from "@/components/admin/OrgModal";
+import OrgDetailPanel from "@/components/admin/OrgDetailPanel";
 import ActivityFeed from "@/components/admin/ActivityFeed";
 import CostTable from "@/components/admin/CostTable";
-import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths } from "@/components/admin/mockCosts";
-import type { Organization, Activity, LastOpenedOrg } from "@/components/admin/types";
+import CostOverview from "@/components/admin/CostOverview";
+import SystemStatus from "@/components/admin/SystemStatus";
+import Toast from "@/components/admin/Toast";
+import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
+import { MOCK_ORGS, MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
+import type {
+  Organization,
+  Activity,
+  ActivityType,
+  LastOpenedOrg,
+  ToastMessage,
+} from "@/components/admin/types";
 
 /* ── Storage keys ──────────────────────────────────────────── */
 const ORG_KEY         = "tb_admin_orgs";
 const ACTIVITY_KEY    = "tb_admin_activities";
 const LAST_OPENED_KEY = "tb_admin_last_opened";
 
-/* ── Default org ───────────────────────────────────────────── */
-const DEFAULT_ORG: Organization = {
-  id: "tracebuild-default",
-  name: "TraceBuild",
-  planTier: "enterprise",
-  createdAt: new Date("2024-01-15").toISOString(),
-  isDefault: true,
-};
-
 /* ── Persistence ───────────────────────────────────────────── */
 function loadOrgs(): Organization[] {
   try {
     const raw = localStorage.getItem(ORG_KEY);
-    if (!raw) return [DEFAULT_ORG];
+    if (!raw) return MOCK_ORGS;
     const parsed = JSON.parse(raw) as Organization[];
-    return [DEFAULT_ORG, ...parsed.filter(o => o.id !== DEFAULT_ORG.id)];
-  } catch { return [DEFAULT_ORG]; }
+    if (parsed.length === 0) return MOCK_ORGS;
+    const hasDefault = parsed.some(o => o.isDefault);
+    if (!hasDefault) return [MOCK_ORGS[0], ...parsed];
+    return parsed;
+  } catch {
+    return MOCK_ORGS;
+  }
 }
 
 function persistOrgs(orgs: Organization[]) {
@@ -42,15 +51,22 @@ function persistOrgs(orgs: Organization[]) {
 function loadActivities(): Activity[] {
   try {
     const raw = localStorage.getItem(ACTIVITY_KEY);
-    return raw ? (JSON.parse(raw) as Activity[]) : [];
-  } catch { return []; }
+    const stored: Activity[] = raw ? (JSON.parse(raw) as Activity[]) : [];
+    const storedIds = new Set(stored.map(a => a.id));
+    const seedActivities = MOCK_ACTIVITIES.filter(a => !storedIds.has(a.id));
+    return [...stored, ...seedActivities].slice(0, 50);
+  } catch {
+    return MOCK_ACTIVITIES;
+  }
 }
 
 function loadLastOpened(): LastOpenedOrg | null {
   try {
     const raw = localStorage.getItem(LAST_OPENED_KEY);
     return raw ? (JSON.parse(raw) as LastOpenedOrg) : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
@@ -67,33 +83,80 @@ function todayStr(): string {
   });
 }
 
+/* ── Invoice mock data ─────────────────────────────────────── */
+interface MockInvoice {
+  id: string;
+  month: string;
+  total: number;
+  status: "laufend" | "bezahlt" | "ausstehend";
+  pdfReady: boolean;
+}
+
+const MOCK_INVOICES: MockInvoice[] = [
+  { id: "INV-2026-07", month: "2026-07", total: 114.30, status: "laufend",  pdfReady: false },
+  { id: "INV-2026-06", month: "2026-06", total: 287.45, status: "bezahlt",  pdfReady: true  },
+  { id: "INV-2026-05", month: "2026-05", total: 295.70, status: "bezahlt",  pdfReady: true  },
+  { id: "INV-2026-04", month: "2026-04", total: 311.80, status: "bezahlt",  pdfReady: true  },
+  { id: "INV-2026-03", month: "2026-03", total: 268.95, status: "bezahlt",  pdfReady: true  },
+  { id: "INV-2026-02", month: "2026-02", total: 242.60, status: "bezahlt",  pdfReady: true  },
+];
+
+const invoiceStatusCfg = {
+  laufend:    { label: "Laufend",    dot: "bg-amber-400",   text: "text-amber-700"   },
+  bezahlt:    { label: "Bezahlt",    dot: "bg-emerald-500", text: "text-emerald-700" },
+  ausstehend: { label: "Ausstehend", dot: "bg-red-500",     text: "text-red-700"     },
+} as const;
+
 /* ── KPI card ──────────────────────────────────────────────── */
-function KpiCard({ label, value, note, accent }: {
-  label: string; value: string; note?: string; accent?: boolean;
+function KpiCard({
+  label, value, note, trend, accent,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  trend?: { pct: string; positive: boolean };
+  accent?: boolean;
 }) {
   return (
-    <div className={`bg-white border rounded-2xl p-5 flex flex-col ${accent ? "border-[#B7926A]/30" : "border-stone-200"}`}>
-      <p className={`text-2xl font-bold tracking-tight ${accent ? "text-[#9E7A52]" : "text-[#141414]"}`}>{value}</p>
-      <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-2">{label}</p>
-      {note && <p className="text-[11px] text-stone-400 mt-0.5">{note}</p>}
+    <div className={`bg-white border rounded-2xl p-4 flex flex-col ${accent ? "border-[#B7926A]/30" : "border-stone-200"}`}>
+      <p className={`text-xl font-bold tracking-tight tabular-nums ${accent ? "text-[#9E7A52]" : "text-[#141414]"}`}>
+        {value}
+      </p>
+      <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mt-1.5">{label}</p>
+      <div className="flex items-center gap-2 mt-1">
+        {trend && (
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+            trend.positive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+          }`}>
+            {trend.pct}
+          </span>
+        )}
+        {note && <p className="text-[10px] text-stone-400">{note}</p>}
+      </div>
     </div>
   );
 }
 
 /* ── Search input ──────────────────────────────────────────── */
-function SearchInput({ value, onChange, placeholder }: {
+function SearchInput({
+  value, onChange, placeholder, id,
+}: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  id?: string;
 }) {
   return (
     <div className="relative">
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
-        width="13" height="13" viewBox="0 0 13 13" fill="none">
-        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3"/>
-        <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <svg
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
+        width="13" height="13" viewBox="0 0 13 13" fill="none"
+      >
+        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       </svg>
       <input
+        id={id}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? "Suchen..."}
@@ -105,7 +168,7 @@ function SearchInput({ value, onChange, placeholder }: {
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
         >
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
           </svg>
         </button>
       )}
@@ -113,23 +176,29 @@ function SearchInput({ value, onChange, placeholder }: {
   );
 }
 
-/* ── Section header ────────────────────────────────────────── */
-function SectionHeader({ title, sub }: { title: string; sub?: string }) {
+/* ── Section divider ───────────────────────────────────────── */
+function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
       <div className="h-px flex-1 bg-stone-100" />
-      <div className="text-center">
-        <span className="text-xs font-semibold text-stone-400 uppercase tracking-widest px-3">{title}</span>
-        {sub && <p className="text-[11px] text-stone-400 mt-0.5">{sub}</p>}
-      </div>
+      <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest px-2">{title}</span>
       <div className="h-px flex-1 bg-stone-100" />
     </div>
   );
 }
 
-/* ── Delete modal ──────────────────────────────────────────── */
-function DeleteModal({ org, onConfirm, onClose }: {
-  org: Organization; onConfirm: () => void; onClose: () => void;
+/* ── Generic Confirm modal ─────────────────────────────────── */
+function ConfirmModal({
+  orgName, title, description, confirmLabel, confirmCls,
+  onConfirm, onClose,
+}: {
+  orgName: string;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmCls: string;
+  onConfirm: () => void;
+  onClose: () => void;
 }) {
   return (
     <div
@@ -137,26 +206,160 @@ function DeleteModal({ org, onConfirm, onClose }: {
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 border border-stone-200">
-        <div className="w-11 h-11 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 6V10M10 14H10.01M2 10C2 5.58 5.58 2 10 2s8 3.58 8 8-3.58 8-8 8-8-3.58-8-8Z"
-              stroke="#DC2626" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </div>
-        <h3 className="text-base font-bold text-[#141414] text-center mb-2">Organisation löschen</h3>
+        <h3 className="text-base font-bold text-[#141414] text-center mb-2">{title}</h3>
         <p className="text-sm text-stone-500 text-center mb-6">
-          <span className="font-semibold text-stone-700">{org.name}</span> wird dauerhaft gelöscht.
-          Diese Aktion kann nicht rückgängig gemacht werden.
+          <span className="font-semibold text-stone-700">{orgName}</span> {description}
         </p>
         <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors">
+          <button
+            onClick={onClose}
+            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+          >
             Abbrechen
           </button>
-          <button onClick={onConfirm}
-            className="flex-1 bg-red-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-red-700 active:scale-[0.97] transition-all">
-            Löschen
+          <button
+            onClick={onConfirm}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold active:scale-[0.97] transition-all ${confirmCls}`}
+          >
+            {confirmLabel}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Quick action button ───────────────────────────────────── */
+function QuickActionBtn({
+  icon, label, onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex-1 flex flex-col items-center gap-2 py-4 px-3 bg-white border border-stone-200 rounded-2xl hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 transition-all text-center group"
+    >
+      <span className="text-stone-400 group-hover:text-[#9E7A52] transition-colors">{icon}</span>
+      <span className="text-xs font-medium text-stone-600 group-hover:text-[#141414] transition-colors leading-tight">{label}</span>
+    </button>
+  );
+}
+
+/* ── Invoices section ──────────────────────────────────────── */
+function InvoicesSection({
+  invoices, onToast,
+}: {
+  invoices: MockInvoice[];
+  onToast: (msg: string, type: ToastMessage["type"]) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Invoice table */}
+      <div className="lg:col-span-2 bg-white border border-stone-200 rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#141414]">Monatliche Kostenberichte</h3>
+          <button
+            onClick={() => onToast("Alle Berichte werden als ZIP exportiert...", "info")}
+            className="text-xs font-semibold text-[#9E7A52] bg-[#B7926A]/10 hover:bg-[#B7926A] hover:text-white px-3 py-1.5 rounded-lg transition-all"
+          >
+            Alle exportieren
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
+            <thead>
+              <tr className="border-b border-stone-100 bg-stone-50/60">
+                <th className="px-5 py-3 text-left text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Monat</th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Betrag</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 text-right text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Export</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((inv, idx) => {
+                const scfg = invoiceStatusCfg[inv.status];
+                return (
+                  <tr
+                    key={inv.id}
+                    className={`hover:bg-stone-50/60 transition-colors ${idx < invoices.length - 1 ? "border-b border-stone-100" : ""}`}
+                  >
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-[#141414]">{fmtMonth(inv.month)}</p>
+                      <p className="text-[11px] text-stone-400">{inv.id}</p>
+                    </td>
+                    <td className="px-4 py-4 text-right tabular-nums font-semibold text-[#141414]">
+                      CHF {inv.total.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${scfg.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${scfg.dot}`} />
+                        {scfg.label}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => inv.pdfReady
+                            ? onToast(`PDF für ${fmtMonth(inv.month)} wird heruntergeladen...`, "info")
+                            : onToast("PDF wird noch vorbereitet.", "warning")}
+                          className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
+                            inv.pdfReady
+                              ? "border-[#B7926A]/30 text-[#9E7A52] hover:bg-[#B7926A]/10"
+                              : "border-stone-200 text-stone-300 cursor-not-allowed"
+                          }`}
+                        >
+                          PDF
+                        </button>
+                        <button
+                          onClick={() => onToast(`CSV für ${fmtMonth(inv.month)} exportiert.`, "success")}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-700 transition-colors"
+                        >
+                          CSV
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Summary + quick exports */}
+      <div className="space-y-4">
+        <div className="bg-white border border-stone-200 rounded-2xl p-5">
+          <h4 className="text-sm font-semibold text-[#141414] mb-4">Monatsvergleich</h4>
+          <div className="space-y-2.5">
+            {invoices.slice(0, 4).map(inv => (
+              <div key={inv.id} className="flex items-center justify-between">
+                <span className="text-xs text-stone-500">{fmtMonth(inv.month)}</span>
+                <span className="text-xs font-semibold text-[#141414] tabular-nums">CHF {inv.total.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white border border-stone-200 rounded-2xl p-5">
+          <h4 className="text-sm font-semibold text-[#141414] mb-3">Schnellexport</h4>
+          <div className="space-y-2">
+            {[
+              { label: "Aktueller Monat — PDF", msg: "PDF-Export wird vorbereitet...", type: "info" as const },
+              { label: "Jahresdaten — CSV",     msg: "CSV-Export gestartet...",        type: "success" as const },
+              { label: "Monatsvergleich",       msg: "Monatsvergleich wird erstellt.", type: "info" as const },
+            ].map(({ label, msg, type }) => (
+              <button
+                key={label}
+                onClick={() => onToast(msg, type)}
+                className="w-full text-left text-sm font-medium text-stone-600 py-2.5 px-3.5 rounded-xl border border-stone-200 hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 hover:text-[#141414] transition-all"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -167,23 +370,41 @@ function DeleteModal({ org, onConfirm, onClose }: {
 export default function AdminPage() {
   const router = useRouter();
 
+  /* User state */
+  const [userName, setUserName]   = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
   /* Org state */
-  const [userName, setUserName]         = useState("");
-  const [userEmail, setUserEmail]       = useState("");
-  const [orgs, setOrgs]                 = useState<Organization[]>([DEFAULT_ORG]);
-  const [hydrated, setHydrated]         = useState(false);
-  const [search, setSearch]             = useState("");
-  const [modalOpen, setModalOpen]       = useState(false);
-  const [editTarget, setEditTarget]     = useState<Organization | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
-  const [activities, setActivities]     = useState<Activity[]>([]);
-  const [lastOpened, setLastOpened]     = useState<LastOpenedOrg | null>(null);
+  const [orgs, setOrgs]               = useState<Organization[]>(MOCK_ORGS);
+  const [hydrated, setHydrated]       = useState(false);
+  const [search, setSearch]           = useState("");
+  const [modalOpen, setModalOpen]     = useState(false);
+  const [editTarget, setEditTarget]   = useState<Organization | null>(null);
+  const [deleteTarget, setDeleteTarget]   = useState<Organization | null>(null);
+  const [detailOrg, setDetailOrg]         = useState<Organization | null>(null);
+  const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
+  const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
+
+  /* Activity state */
+  const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES);
+  const [lastOpened, setLastOpened] = useState<LastOpenedOrg | null>(null);
 
   /* Cost state */
   const [costMonth, setCostMonth]   = useState(currentMonth);
   const [costSearch, setCostSearch] = useState("");
 
-  /* Auth */
+  /* Toast state */
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  /* ── Toast helper ── */
+  function addToast(message: string, type: ToastMessage["type"] = "success") {
+    const id = crypto.randomUUID();
+    setToasts(prev => [...prev.slice(-3), { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }
+
+  /* ── Auth ── */
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace("/login"); return; }
@@ -194,7 +415,7 @@ export default function AdminPage() {
     });
   }, [router]);
 
-  /* Hydrate localStorage */
+  /* ── Hydrate localStorage ── */
   useEffect(() => {
     setOrgs(loadOrgs());
     setActivities(loadActivities());
@@ -202,7 +423,7 @@ export default function AdminPage() {
     setHydrated(true);
   }, []);
 
-  /* Org save — TraceBuild always first */
+  /* ── Org save — default org always first ── */
   function saveOrgs(updated: Organization[]) {
     const sorted = [
       ...updated.filter(o => o.isDefault),
@@ -212,20 +433,27 @@ export default function AdminPage() {
     persistOrgs(sorted);
   }
 
-  /* Activity tracking */
-  function trackActivity(type: Activity["type"], orgName: string) {
+  /* ── Activity tracking ── */
+  function trackActivity(type: ActivityType, orgName: string, orgId: string, meta?: string) {
     const entry: Activity = {
-      id: crypto.randomUUID(), type, orgName,
+      id: crypto.randomUUID(),
+      type,
+      orgName,
+      orgId,
+      user: userEmail || undefined,
       timestamp: new Date().toISOString(),
+      meta,
     };
     setActivities(prev => {
-      const updated = [entry, ...prev].slice(0, 10);
-      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(updated));
+      const updated = [entry, ...prev].slice(0, 50);
+      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(
+        updated.filter(a => !MOCK_ACTIVITIES.some(m => m.id === a.id))
+      ));
       return updated;
     });
   }
 
-  /* Open org → dashboard */
+  /* ── Open org → dashboard ── */
   function handleOpen(org: Organization) {
     const lo: LastOpenedOrg = {
       id: org.id, name: org.name, planTier: org.planTier,
@@ -233,41 +461,94 @@ export default function AdminPage() {
     };
     setLastOpened(lo);
     localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(lo));
-    trackActivity("org_opened", org.name);
+    trackActivity("org_opened", org.name, org.id);
     router.push("/dashboard");
   }
 
-  /* Modal handlers */
-  function handleSave(data: { name: string; planTier: Organization["planTier"]; status: "active" | "inactive" }) {
-    if (editTarget) {
-      saveOrgs(orgs.map(o => o.id === editTarget.id ? { ...o, ...data } : o));
-      trackActivity("org_edited", data.name);
+  /* ── Save (create / edit) ── */
+  function handleSave(data: OrgFormData) {
+    const isEdit = !!editTarget;
+    const targetId = editTarget?.id;
+
+    if (isEdit && targetId) {
+      saveOrgs(orgs.map(o => o.id === targetId ? {
+        ...o,
+        name: data.name,
+        description: data.description || undefined,
+        planTier: data.planTier,
+        status: data.status,
+        owner: data.owner || undefined,
+        ownerEmail: data.ownerEmail || undefined,
+        monthlyBudget: data.monthlyBudget ?? undefined,
+      } : o));
+      trackActivity("org_edited", data.name, targetId);
+      if (data.planTier !== editTarget?.planTier) {
+        trackActivity("plan_changed", data.name, targetId, `${editTarget?.planTier} → ${data.planTier}`);
+      }
+      addToast(`${data.name} wurde gespeichert.`, "success");
     } else {
-      saveOrgs([...orgs, {
+      const newOrg: Organization = {
         id: crypto.randomUUID(),
         name: data.name,
         planTier: data.planTier,
         status: data.status,
         createdAt: new Date().toISOString(),
         isDefault: false,
-      }]);
-      trackActivity("org_created", data.name);
+        description: data.description || undefined,
+        owner: data.owner || undefined,
+        ownerEmail: data.ownerEmail || undefined,
+        monthlyBudget: data.monthlyBudget ?? undefined,
+      };
+      saveOrgs([...orgs, newOrg]);
+      trackActivity("org_created", data.name, newOrg.id);
+      addToast(`${data.name} wurde erstellt.`, "success");
     }
     setModalOpen(false);
     setEditTarget(null);
   }
 
+  /* ── Delete ── */
   function handleDelete(org: Organization) {
     saveOrgs(orgs.filter(o => o.id !== org.id));
     setDeleteTarget(null);
+    addToast(`${org.name} wurde gelöscht.`, "info");
   }
 
-  /* Org derived */
+  /* ── Pause / Reactivate ── */
+  function handlePause(org: Organization) {
+    const newStatus = org.status === "paused" ? "active" : "paused";
+    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: newStatus } : o));
+    trackActivity(newStatus === "paused" ? "org_paused" : "org_edited", org.name, org.id);
+    addToast(
+      newStatus === "paused" ? `${org.name} wurde pausiert.` : `${org.name} wurde reaktiviert.`,
+      newStatus === "paused" ? "warning" : "success",
+    );
+    setPauseTarget(null);
+  }
+
+  /* ── Close ── */
+  function handleClose(org: Organization) {
+    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: "closed" } : o));
+    trackActivity("org_closed", org.name, org.id);
+    addToast(`${org.name} wurde geschlossen.`, "info");
+    setCloseTarget(null);
+  }
+
+  /* ── Archive ── */
+  function handleArchive(org: Organization) {
+    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: "archived" } : o));
+    trackActivity("org_archived", org.name, org.id);
+    addToast(`${org.name} wurde archiviert.`, "info");
+    setArchiveTarget(null);
+  }
+
+  /* ── Derived: filtered orgs ── */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orgs.filter(o => o.name.toLowerCase().includes(q));
   }, [orgs, search]);
 
+  /* ── Derived: last activity map ── */
   const lastActivityMap = useMemo<Record<string, string | undefined>>(() => {
     const map: Record<string, string> = {};
     for (const a of activities) {
@@ -276,7 +557,7 @@ export default function AdminPage() {
     return map;
   }, [activities]);
 
-  /* Cost derived */
+  /* ── Derived: cost data ── */
   const costMonths = useMemo(() => availableMonths(MOCK_COSTS), []);
 
   const filteredCosts = useMemo(() => {
@@ -286,29 +567,68 @@ export default function AdminPage() {
       .filter(c => !q || c.orgName.toLowerCase().includes(q));
   }, [costMonth, costSearch]);
 
-  const costKPIs = useMemo(() => {
-    const month = MOCK_COSTS.filter(c => c.month === costMonth);
-    return {
-      total:        month.reduce((s, c) => s + c.totalCost, 0),
-      analyse:      month.reduce((s, c) => s + c.analyseCost, 0),
-      storage:      month.reduce((s, c) => s + c.storageCost + c.databaseCost, 0),
-      analyseCount: month.reduce((s, c) => s + c.analyseCount, 0),
-    };
-  }, [costMonth]);
-
-  /* orgId → totalCost for current month (used in OrgTable) */
   const orgCostMap = useMemo<Record<string, number | undefined>>(() => {
     const map: Record<string, number> = {};
-    MOCK_COSTS.filter(c => c.month === costMonth).forEach(c => {
+    MOCK_COSTS.filter(c => c.month === currentMonth()).forEach(c => {
       map[c.orgId] = c.totalCost;
     });
     return map;
-  }, [costMonth]);
+  }, []);
+
+  /* ── Derived: KPI data ── */
+  const kpiData = useMemo(() => {
+    const cm = currentMonth();
+    const pm = (() => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    })();
+
+    const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
+    const prevCosts    = MOCK_COSTS.filter(c => c.month === pm);
+
+    const totalCost      = currentCosts.reduce((s, c) => s + c.totalCost, 0);
+    const prevTotalCost  = prevCosts.reduce((s, c) => s + c.totalCost, 0);
+    const totalAnalyses  = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const prevAnalyses   = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
+    const activeOrgs     = orgs.filter(o => o.status === "active").length;
+    const totalProjects  = MOCK_ORGS.reduce((s, o) => s + (o.projectCount ?? 0), 0);
+    const totalUsers     = MOCK_ORGS.reduce((s, o) => s + (o.userCount ?? 0), 0);
+
+    function trend(cur: number, prev: number) {
+      if (prev === 0) return undefined;
+      const diff = ((cur - prev) / prev) * 100;
+      return { pct: `${diff >= 0 ? "+" : ""}${diff.toFixed(0)} %`, positive: diff >= 0 };
+    }
+
+    return {
+      orgsCount: hydrated ? orgs.length : 0,
+      activeOrgs,
+      totalProjects,
+      totalUsers,
+      totalAnalyses,
+      analysesTrend: trend(totalAnalyses, prevAnalyses),
+      totalCost,
+      prevTotalCost,
+      costTrend: trend(totalCost, prevTotalCost),
+      avgCostPerAnalyse: totalAnalyses > 0 ? totalCost / totalAnalyses : 0,
+      totalStorageGB,
+      monthlyTotalsData: monthlyTotals(),
+      monthlyBudget: MOCK_ORGS.reduce((s, o) => s + (o.monthlyBudget ?? 0), 0),
+    };
+  }, [orgs, hydrated]);
+
+  const isDetailOrgInFiltered = detailOrg
+    ? orgs.find(o => o.id === detailOrg.id) ?? null
+    : null;
 
   return (
     <>
+      <Toast toasts={toasts} onRemove={id => setToasts(prev => prev.filter(t => t.id !== id))} />
       <AdminNav userEmail={userEmail} />
 
+      <div className="bg-[#F8F7F4] min-h-screen">
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
         {/* ── Greeting + last opened ── */}
@@ -342,143 +662,198 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── KPI row 1 — Übersicht ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard label="Organisationen"     value={hydrated ? orgs.length.toString() : "—"} />
-          <KpiCard label="Projekte"           value="—" note="Bald verfügbar" />
-          <KpiCard label="Benutzer"           value="—" note="Bald verfügbar" />
-          <KpiCard label="Laufende Prüfungen" value="—" note="Bald verfügbar" />
+        {/* ── 8-card KPI strip ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <KpiCard label="Organisationen" value={hydrated ? kpiData.orgsCount.toString() : "—"} />
+          <KpiCard label="Aktive Orgs"    value={hydrated ? kpiData.activeOrgs.toString() : "—"}
+            note={hydrated ? `${orgs.filter(o => o.status !== "active").length} inaktiv` : undefined} />
+          <KpiCard label="Projekte"       value={kpiData.totalProjects.toString()} />
+          <KpiCard label="Benutzer"       value={kpiData.totalUsers.toString()} />
+          <KpiCard label="Analysen / Mo." value={kpiData.totalAnalyses.toString()}
+            trend={kpiData.analysesTrend} />
+          <KpiCard label="Kosten / Mo."   value={`CHF ${kpiData.totalCost.toFixed(2)}`}
+            trend={kpiData.costTrend} accent />
+          <KpiCard label="Ø / Analyse"    value={`CHF ${kpiData.avgCostPerAnalyse.toFixed(2)}`} accent />
+          <KpiCard label="Speicher ges."  value={`${kpiData.totalStorageGB.toFixed(1)} GB`} />
         </div>
 
-        {/* ── KPI row 2 — Kosten ── */}
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
-            Kosten — {fmtMonth(costMonth)}
-          </p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
-              label="Gesamtkosten"
-              value={costKPIs.total > 0 ? `CHF ${costKPIs.total.toFixed(2)}` : "—"}
-              accent
-            />
-            <KpiCard
-              label="Analyse-Kosten"
-              value={costKPIs.analyse > 0 ? `CHF ${costKPIs.analyse.toFixed(2)}` : "—"}
-              accent
-            />
-            <KpiCard
-              label="Storage / DB"
-              value={costKPIs.storage > 0 ? `CHF ${costKPIs.storage.toFixed(2)}` : "—"}
-              accent
-            />
-            <KpiCard
-              label="Anzahl Analysen"
-              value={costKPIs.analyseCount > 0 ? costKPIs.analyseCount.toString() : "—"}
-              note={fmtMonth(costMonth)}
-            />
-          </div>
+        {/* ── Quick actions ── */}
+        <div className="flex gap-3 flex-wrap sm:flex-nowrap">
+          <QuickActionBtn
+            label="Neue Organisation"
+            onClick={() => { setEditTarget(null); setModalOpen(true); }}
+            icon={
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 3V15M3 9H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <QuickActionBtn
+            label="Benutzer einladen"
+            onClick={() => addToast("Funktion in Kürze verfügbar.", "info")}
+            icon={
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M12 11.5C13.38 11.5 14.5 10.38 14.5 9C14.5 7.62 13.38 6.5 12 6.5C10.62 6.5 9.5 7.62 9.5 9C9.5 10.38 10.62 11.5 12 11.5Z" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M7 15C7 13.34 9.24 12 12 12C14.76 12 17 13.34 17 15M3 5.5V9.5M5.5 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <QuickActionBtn
+            label="Bericht exportieren"
+            onClick={() => addToast("CSV-Export wird vorbereitet...", "info")}
+            icon={
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 11V3M6 8L9 11L12 8M3 13V15H15V13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
+          <QuickActionBtn
+            label="Org suchen"
+            onClick={() => {
+              const el = document.getElementById("org-search");
+              el?.focus();
+              el?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            icon={
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="7.5" cy="7.5" r="5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M12.5 12.5L15.5 15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            }
+          />
+          <QuickActionBtn
+            label="Systemstatus"
+            onClick={() => document.getElementById("systemstatus-section")?.scrollIntoView({ behavior: "smooth" })}
+            icon={
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M9 5V9.5L12 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
         </div>
 
-        {/* ── Main content: left col (orgs + costs) + right col (activity) ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* ── Cost overview ── */}
+        <div className="space-y-4">
+          <SectionHeader title="Kostenübersicht" />
+          <CostOverview
+            costs={MOCK_COSTS.filter(c => c.month === currentMonth())}
+            monthlyTotals={kpiData.monthlyTotalsData}
+            currentMonth={currentMonth()}
+            prevMonthTotal={kpiData.prevTotalCost}
+            monthlyBudget={kpiData.monthlyBudget}
+            fmtMonth={fmtMonth}
+          />
+        </div>
 
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-8">
-
-            {/* ── Organisationen ── */}
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-[#141414]">Organisationen</h2>
-                  <p className="text-xs text-stone-400 mt-0.5">
-                    {filtered.length} {filtered.length === 1 ? "Eintrag" : "Einträge"}
-                    {search ? ` für „${search}"` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <div className="flex-1 sm:w-52">
-                    <SearchInput value={search} onChange={setSearch} placeholder="Organisation suchen..." />
-                  </div>
-                  <button
-                    onClick={() => { setEditTarget(null); setModalOpen(true); }}
-                    className="flex-shrink-0 flex items-center gap-1.5 bg-[#B7926A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#9E7A52] active:scale-[0.97] transition-all shadow-sm shadow-[#B7926A]/25 whitespace-nowrap"
-                  >
-                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                      <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                    </svg>
-                    Neue Organisation
-                  </button>
-                </div>
+        {/* ── Organisations section ── */}
+        <div className="space-y-4">
+          <SectionHeader title="Organisationen" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-[#141414]">Alle Organisationen</h2>
+              <p className="text-xs text-stone-400 mt-0.5">
+                {filtered.length} {filtered.length === 1 ? "Eintrag" : "Einträge"}
+                {search ? ` für „${search}"` : ""}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:w-56">
+                <SearchInput value={search} onChange={setSearch} placeholder="Organisation suchen..." id="org-search" />
               </div>
+              <button
+                onClick={() => { setEditTarget(null); setModalOpen(true); }}
+                className="flex-shrink-0 flex items-center gap-1.5 bg-[#B7926A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#9E7A52] active:scale-[0.97] transition-all shadow-sm shadow-[#B7926A]/25 whitespace-nowrap"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                  <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                Neue Organisation
+              </button>
+            </div>
+          </div>
 
-              {!hydrated ? (
-                <div className="bg-white border border-stone-200 rounded-2xl h-48 animate-pulse" />
-              ) : filtered.length === 0 ? (
-                <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
-                  <p className="text-stone-500 text-sm font-medium">Keine Organisationen gefunden</p>
-                  {search && (
-                    <button onClick={() => setSearch("")} className="mt-2 text-sm text-[#B7926A] hover:underline">
-                      Filter zurücksetzen
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <OrgTable
-                  orgs={filtered}
-                  lastActivityMap={lastActivityMap}
-                  costMap={orgCostMap}
-                  onOpen={handleOpen}
-                  onEdit={org => { setEditTarget(org); setModalOpen(true); }}
-                  onDelete={org => setDeleteTarget(org)}
-                />
+          {!hydrated ? (
+            <div className="bg-white border border-stone-200 rounded-2xl h-48 animate-pulse" />
+          ) : filtered.length === 0 ? (
+            <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
+              <p className="text-stone-500 text-sm font-medium">Keine Organisationen gefunden</p>
+              {search && (
+                <button onClick={() => setSearch("")} className="mt-2 text-sm text-[#B7926A] hover:underline">
+                  Filter zurücksetzen
+                </button>
               )}
             </div>
+          ) : (
+            <OrgTable
+              orgs={filtered}
+              lastActivityMap={lastActivityMap}
+              costMap={orgCostMap}
+              onOpen={handleOpen}
+              onEdit={org => { setEditTarget(org); setModalOpen(true); }}
+              onDelete={org => setDeleteTarget(org)}
+              onPause={org => {
+                if (org.status === "paused") { handlePause(org); }
+                else { setPauseTarget(org); }
+              }}
+              onClose={org => setCloseTarget(org)}
+              onArchive={org => setArchiveTarget(org)}
+              onDetail={org => setDetailOrg(org)}
+            />
+          )}
+        </div>
 
-            {/* ── Kostenübersicht ── */}
-            <div className="space-y-4">
-              <SectionHeader title="Kostenübersicht" />
+        {/* ── Bottom two-col: CostTable + sidebar ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-              {/* Cost toolbar */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-[#141414]">Kosten pro Organisation</h2>
-                  <p className="text-xs text-stone-400 mt-0.5">
-                    {filteredCosts.length} {filteredCosts.length === 1 ? "Eintrag" : "Einträge"}
-                    {costSearch ? ` für „${costSearch}"` : ""}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  {/* Month select */}
-                  <select
-                    value={costMonth}
-                    onChange={e => setCostMonth(e.target.value)}
-                    className="border border-stone-300 rounded-xl px-3 py-2.5 text-sm text-stone-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors"
-                  >
-                    {costMonths.map(m => (
-                      <option key={m} value={m}>{fmtMonth(m)}</option>
-                    ))}
-                  </select>
-
-                  {/* Org search */}
-                  <div className="flex-1 sm:w-44">
-                    <SearchInput value={costSearch} onChange={setCostSearch} placeholder="Organisation..." />
-                  </div>
+          {/* Left: cost table */}
+          <div className="lg:col-span-2 space-y-4">
+            <SectionHeader title="Kosten pro Organisation" />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-[#141414]">Kostendetails</h2>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {filteredCosts.length} {filteredCosts.length === 1 ? "Eintrag" : "Einträge"}
+                  {costSearch ? ` für „${costSearch}"` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={costMonth}
+                  onChange={e => setCostMonth(e.target.value)}
+                  className="border border-stone-300 rounded-xl px-3 py-2.5 text-sm text-stone-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors"
+                >
+                  {costMonths.map(m => (
+                    <option key={m} value={m}>{fmtMonth(m)}</option>
+                  ))}
+                </select>
+                <div className="flex-1 sm:w-44">
+                  <SearchInput value={costSearch} onChange={setCostSearch} placeholder="Organisation..." />
                 </div>
               </div>
+            </div>
+            <CostTable costs={filteredCosts} />
+          </div>
 
-              <CostTable costs={filteredCosts} />
+          {/* Right sidebar: activity + system status */}
+          <div className="space-y-4 lg:sticky lg:top-20">
+            <ActivityFeed activities={activities} />
+            <div id="systemstatus-section">
+              <SystemStatus services={SYSTEM_SERVICES} />
             </div>
           </div>
-
-          {/* Activity sidebar */}
-          <div className="lg:sticky lg:top-20">
-            <ActivityFeed activities={activities} />
-          </div>
         </div>
-      </main>
 
-      {/* Modals */}
+        {/* ── Rechnungen & Exporte ── */}
+        <div className="space-y-4">
+          <SectionHeader title="Rechnungen & Exporte" />
+          <InvoicesSection invoices={MOCK_INVOICES} onToast={addToast} />
+        </div>
+
+      </main>
+      </div>
+
+      {/* ── Modals ── */}
       {modalOpen && (
         <OrgModal
           org={editTarget}
@@ -486,13 +861,65 @@ export default function AdminPage() {
           onClose={() => { setModalOpen(false); setEditTarget(null); }}
         />
       )}
+
       {deleteTarget && (
-        <DeleteModal
-          org={deleteTarget}
+        <ConfirmModal
+          orgName={deleteTarget.name}
+          title="Organisation löschen"
+          description="wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+          confirmLabel="Löschen"
+          confirmCls="bg-red-600 text-white hover:bg-red-700"
           onConfirm={() => handleDelete(deleteTarget)}
           onClose={() => setDeleteTarget(null)}
         />
       )}
+
+      {pauseTarget && (
+        <ConfirmModal
+          orgName={pauseTarget.name}
+          title="Organisation pausieren"
+          description="wird pausiert. Benutzer können sich nicht mehr einloggen."
+          confirmLabel="Pausieren"
+          confirmCls="bg-amber-500 text-white hover:bg-amber-600"
+          onConfirm={() => handlePause(pauseTarget)}
+          onClose={() => setPauseTarget(null)}
+        />
+      )}
+
+      {closeTarget && (
+        <ConfirmModal
+          orgName={closeTarget.name}
+          title="Organisation schließen"
+          description="wird geschlossen. Daten werden aufbewahrt, aber der Zugang gesperrt."
+          confirmLabel="Schließen"
+          confirmCls="bg-stone-700 text-white hover:bg-stone-800"
+          onConfirm={() => handleClose(closeTarget)}
+          onClose={() => setCloseTarget(null)}
+        />
+      )}
+
+      {archiveTarget && (
+        <ConfirmModal
+          orgName={archiveTarget.name}
+          title="Organisation archivieren"
+          description="wird archiviert und ist schreibgeschützt."
+          confirmLabel="Archivieren"
+          confirmCls="bg-stone-500 text-white hover:bg-stone-600"
+          onConfirm={() => handleArchive(archiveTarget)}
+          onClose={() => setArchiveTarget(null)}
+        />
+      )}
+
+      {/* ── Detail panel ── */}
+      <OrgDetailPanel
+        org={isDetailOrgInFiltered}
+        costs={MOCK_COSTS}
+        onClose={() => setDetailOrg(null)}
+        onEdit={() => {
+          if (detailOrg) { setEditTarget(detailOrg); setModalOpen(true); }
+        }}
+        onToast={addToast}
+      />
     </>
   );
 }
