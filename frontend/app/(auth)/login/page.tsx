@@ -33,13 +33,13 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      background: "rgba(15,22,22,0.75)",
+      background: "rgba(255,255,255,0.04)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
-      borderRadius: 16,
-      boxShadow: "0 8px 30px rgba(0,0,0,0.35)",
-      border: "1px solid rgba(255,255,255,0.12)",
-      padding: 32,
+      border: "1px solid rgba(245,243,238,0.1)",
+      borderRadius: 18,
+      padding: "40px 36px",
+      boxShadow: "0 40px 100px -30px rgba(0,0,0,0.6)",
     }}>
 
       {/* ── Branding ─────────────────────────────────────── */}
@@ -47,21 +47,21 @@ export default function LoginPage() {
         <Image
           src="/tracebuild-logo.png"
           alt="TraceBuild"
-          width={100}
-          height={32}
-          style={{ height: 32, width: "auto", objectFit: "contain" }}
+          width={120}
+          height={40}
+          style={{ height: 40, width: "auto", objectFit: "contain" }}
           priority
         />
         <div style={{ marginTop: 20, textAlign: "center" }}>
           <h1 style={{
-            fontFamily: "Archivo, Arial, sans-serif",
-            fontSize: 20, fontWeight: 700,
-            color: "#F5F1EA", margin: 0,
-            letterSpacing: "-0.01em",
+            fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",
+            fontSize: 22, fontWeight: 400,
+            color: "#F5F3EE", margin: 0,
+            letterSpacing: "-0.02em",
           }}>
             Willkommen zurück
           </h1>
-          <p style={{ fontSize: 14, color: "#C4B9A8", margin: "4px 0 0" }}>
+          <p style={{ fontSize: 14, color: "#9A9D96", margin: "6px 0 0" }}>
             Melde dich bei deinem Konto an
           </p>
         </div>
@@ -70,7 +70,11 @@ export default function LoginPage() {
       {/* ── Form ─────────────────────────────────────────── */}
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#C4B9A8", marginBottom: 6 }}>
+          <label style={{
+            display: "block", fontSize: 12, letterSpacing: ".04em",
+            textTransform: "uppercase", fontWeight: 500,
+            color: "#9A9D96", marginBottom: 7,
+          }}>
             E-Mail
           </label>
           <input
@@ -79,20 +83,24 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@firma.ch"
-            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#CEF79E]/35 focus:border-[#CEF79E] placeholder:text-[#948A7A]"
+            className="tb-input"
             style={{
               width: "100%", boxSizing: "border-box",
-              border: "1px solid rgba(255,255,255,0.16)",
-              borderRadius: 8, padding: "10px 14px",
-              fontSize: 14, color: "#F5F1EA",
-              background: "rgba(255,255,255,0.05)",
-              transition: "border-color 0.15s, box-shadow 0.15s",
+              border: "1px solid rgba(245,243,238,0.14)",
+              borderRadius: 10, padding: "12px 14px",
+              fontSize: 14, color: "#F5F3EE",
+              background: "rgba(255,255,255,0.03)",
+              transition: "border-color .2s, box-shadow .2s",
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#C4B9A8", marginBottom: 6 }}>
+          <label style={{
+            display: "block", fontSize: 12, letterSpacing: ".04em",
+            textTransform: "uppercase", fontWeight: 500,
+            color: "#9A9D96", marginBottom: 7,
+          }}>
             Passwort
           </label>
           <input
@@ -101,23 +109,23 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="tb-input focus:outline-none focus:ring-2 focus:ring-[#CEF79E]/35 focus:border-[#CEF79E] placeholder:text-[#948A7A]"
+            className="tb-input"
             style={{
               width: "100%", boxSizing: "border-box",
-              border: "1px solid rgba(255,255,255,0.16)",
-              borderRadius: 8, padding: "10px 14px",
-              fontSize: 14, color: "#F5F1EA",
-              background: "rgba(255,255,255,0.05)",
-              transition: "border-color 0.15s, box-shadow 0.15s",
+              border: "1px solid rgba(245,243,238,0.14)",
+              borderRadius: 10, padding: "12px 14px",
+              fontSize: 14, color: "#F5F3EE",
+              background: "rgba(255,255,255,0.03)",
+              transition: "border-color .2s, box-shadow .2s",
             }}
           />
         </div>
 
         {error && (
           <p style={{
-            fontSize: 14, color: "#fca5a5",
-            background: "rgba(220,38,38,0.12)",
-            border: "1px solid rgba(220,38,38,0.35)",
+            fontSize: 13, color: "#f87171",
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.25)",
             borderRadius: 8, padding: "10px 14px",
             margin: 0,
           }}>
@@ -128,15 +136,17 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="hover:bg-[#b8ef7a] active:scale-[0.98]"
+          className="tb-btn"
           style={{
             width: "100%",
-            background: "#CEF79E", color: "#222F30",
-            padding: "10px 0", border: "none",
-            borderRadius: 8, fontSize: 14, fontWeight: 600,
+            background: "#CEF79E", color: "#0C0D0C",
+            padding: "13px 0", border: "none",
+            borderRadius: 10,
+            fontSize: 13, letterSpacing: ".04em",
+            textTransform: "uppercase", fontWeight: 600,
             cursor: loading ? "not-allowed" : "pointer",
             opacity: loading ? 0.5 : 1,
-            transition: "all 0.15s",
+            transition: "all .3s cubic-bezier(.52,.01,0,1)",
             marginTop: 8,
           }}
         >
@@ -145,12 +155,11 @@ export default function LoginPage() {
       </form>
 
       {/* ── Footer link ───────────────────────────────────── */}
-      <p style={{ textAlign: "center", fontSize: 14, color: "#948A7A", margin: "24px 0 0" }}>
+      <p style={{ textAlign: "center", fontSize: 13, color: "#7C8078", margin: "28px 0 0" }}>
         Noch kein Konto?{" "}
         <Link
           href="/register"
-          className="hover:text-[#b8ef7a]"
-          style={{ color: "#CEF79E", fontWeight: 500, textDecoration: "none", transition: "color 0.15s" }}
+          style={{ color: "#CEF79E", fontWeight: 500, textDecoration: "none" }}
         >
           Registrieren
         </Link>
