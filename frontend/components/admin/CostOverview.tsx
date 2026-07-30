@@ -11,162 +11,195 @@ interface Props {
   fmtMonth: (m: string) => string;
 }
 
-function chf(n: number): string {
-  return `CHF ${n.toFixed(2)}`;
+function chf(n: number, decimals = 2): string {
+  return `CHF ${n.toFixed(decimals)}`;
+}
+
+function pctChange(current: number, prev: number): { pct: string; positive: boolean } | null {
+  if (prev === 0) return null;
+  const diff = ((current - prev) / prev) * 100;
+  return { pct: `${diff >= 0 ? "+" : ""}${diff.toFixed(1)} %`, positive: diff <= 0 };
 }
 
 export default function CostOverview({
   costs, monthlyTotals, currentMonth, prevMonthTotal, monthlyBudget, fmtMonth,
 }: Props) {
-  const totalCost     = costs.reduce((s, c) => s + c.totalCost, 0);
-  const analyseCost   = costs.reduce((s, c) => s + c.analyseCost, 0);
-  const storageCost   = costs.reduce((s, c) => s + c.storageCost, 0);
-  const databaseCost  = costs.reduce((s, c) => s + c.databaseCost, 0);
-  const ocrCost       = costs.reduce((s, c) => s + c.ocrCost, 0);
-  const infraCost     = costs.reduce((s, c) => s + c.infraCost, 0);
+  const totalThisMonth   = costs.reduce((s, c) => s + c.totalCost,    0);
+  const totalAnalyse     = costs.reduce((s, c) => s + c.analyseCost,  0);
+  const totalStorage     = costs.reduce((s, c) => s + c.storageCost,  0);
+  const totalDatabase    = costs.reduce((s, c) => s + c.databaseCost, 0);
+  const totalOcr         = costs.reduce((s, c) => s + c.ocrCost,      0);
+  const totalInfra       = costs.reduce((s, c) => s + c.infraCost,    0);
+  const totalAnalyseCount = costs.reduce((s, c) => s + c.analyseCount, 0);
+  const avgPerAnalyse    = totalAnalyseCount > 0 ? totalThisMonth / totalAnalyseCount : 0;
+  const budgetRemaining  = monthlyBudget - totalThisMonth;
+  const budgetPct        = Math.min((totalThisMonth / monthlyBudget) * 100, 100);
+  const change           = pctChange(totalThisMonth, prevMonthTotal);
 
-  const budgetRemaining = monthlyBudget > 0 ? Math.max(0, monthlyBudget - totalCost) : null;
-  const budgetPct       = monthlyBudget > 0 ? Math.min(100, (totalCost / monthlyBudget) * 100) : 0;
+  const maxTotal = Math.max(...monthlyTotals.map(m => m.total), 1);
 
-  const sortedByTrend = [...monthlyTotals].sort((a, b) => a.month.localeCompare(b.month));
-  const maxMonthTotal = Math.max(...sortedByTrend.map(m => m.total), 1);
+  // Org bar chart data
+  const maxOrgCost = Math.max(...costs.map(c => c.totalCost), 1);
 
-  const costCategories = [
-    { label: "Analyse-KI",  value: analyseCost,  color: "bg-[#B7926A]"     },
-    { label: "Storage",     value: storageCost,  color: "bg-stone-400"     },
-    { label: "Datenbank",   value: databaseCost, color: "bg-sky-400"       },
-    { label: "OCR",         value: ocrCost,      color: "bg-amber-400"     },
-    { label: "Infrastruktur",value: infraCost,   color: "bg-indigo-300"    },
+  const breakdownCards = [
+    { label: "Analyse-KI",  value: totalAnalyse,  key: "ai"  },
+    { label: "Storage",     value: totalStorage,  key: "st"  },
+    { label: "Datenbank",   value: totalDatabase, key: "db"  },
+    { label: "OCR",         value: totalOcr,      key: "ocr" },
+    { label: "Infrastruktur", value: totalInfra,  key: "in"  },
   ];
 
-  const sortedOrgs = [...costs].sort((a, b) => b.totalCost - a.totalCost);
-  const maxOrgCost = Math.max(...sortedOrgs.map(o => o.totalCost), 1);
-
   return (
-    <div className="space-y-4">
-      {/* Summary cards */}
+    <div className="space-y-5">
+      {/* ── Header row ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-[#B7926A]/30 rounded-2xl p-5">
-          <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-1">Gesamt aktueller Monat</p>
-          <p className="text-2xl font-bold text-[#9E7A52] tabular-nums">{chf(totalCost)}</p>
-          <p className="text-xs text-stone-400 mt-1">{fmtMonth(currentMonth)}</p>
-        </div>
-        <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-1">Budget verbleibend</p>
-          {budgetRemaining !== null ? (
-            <>
-              <p className="text-2xl font-bold text-[#141414] tabular-nums">{chf(budgetRemaining)}</p>
-              <div className="mt-2">
-                <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${budgetPct > 85 ? "bg-red-400" : budgetPct > 60 ? "bg-amber-400" : "bg-emerald-400"}`}
-                    style={{ width: `${budgetPct}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-stone-400 mt-1">{budgetPct.toFixed(0)} % von CHF {monthlyBudget.toFixed(2)}</p>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-stone-400 mt-1">Kein Budget definiert</p>
-          )}
-        </div>
-        <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-1">Vormonat</p>
-          <p className="text-2xl font-bold text-[#141414] tabular-nums">{chf(prevMonthTotal)}</p>
-          {prevMonthTotal > 0 && (
-            <p className={`text-xs mt-1 font-medium ${totalCost <= prevMonthTotal ? "text-emerald-600" : "text-red-500"}`}>
-              {totalCost <= prevMonthTotal
-                ? `↓ CHF ${(prevMonthTotal - totalCost).toFixed(2)} weniger`
-                : `↑ CHF ${(totalCost - prevMonthTotal).toFixed(2)} mehr`
-              }
+        {/* Total */}
+        <div className="bg-white border border-[#B7926A]/30 rounded-2xl p-5 sm:col-span-1">
+          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-1">
+            Gesamtkosten — {fmtMonth(currentMonth)}
+          </p>
+          <p className="text-3xl font-bold text-[#9E7A52] tabular-nums">
+            {chf(totalThisMonth)}
+          </p>
+          {change && (
+            <p className={`text-xs font-medium mt-1 ${change.positive ? "text-emerald-600" : "text-red-500"}`}>
+              {change.pct} vs. Vormonat
             </p>
           )}
+          <p className="text-[11px] text-stone-400 mt-1 tabular-nums">
+            {totalAnalyseCount} Analysen · Ø {chf(avgPerAnalyse)}/Analyse
+          </p>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* 6-month trend bar chart */}
+        {/* Budget remaining */}
         <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <h4 className="text-sm font-semibold text-[#141414] mb-4">6-Monats-Trend</h4>
-          <div className="flex items-end gap-2 h-32">
-            {sortedByTrend.map(({ month, total }) => {
-              const pct = (total / maxMonthTotal) * 100;
-              const isCurrent = month === currentMonth;
-              return (
-                <div key={month} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-                  <p className="text-[9px] text-stone-400 tabular-nums">{chf(total).replace("CHF ", "")}</p>
-                  <div className="w-full flex items-end" style={{ height: "80px" }}>
-                    <div
-                      className={`w-full rounded-t-md transition-all ${isCurrent ? "bg-[#B7926A]" : "bg-stone-200"}`}
-                      style={{ height: `${Math.max(pct, 4)}%` }}
-                    />
-                  </div>
-                  <p className={`text-[9px] truncate w-full text-center ${isCurrent ? "text-[#9E7A52] font-semibold" : "text-stone-400"}`}>
-                    {fmtMonth(month).split(" ")[0]}
-                  </p>
-                </div>
-              );
-            })}
+          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-1">
+            Budget verbleibend
+          </p>
+          <p className={`text-2xl font-bold tabular-nums ${budgetRemaining < 0 ? "text-red-600" : "text-[#141414]"}`}>
+            {chf(Math.max(budgetRemaining, 0))}
+          </p>
+          <div className="mt-2.5 h-2 bg-stone-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${budgetPct >= 90 ? "bg-red-500" : budgetPct >= 70 ? "bg-amber-400" : "bg-[#B7926A]"}`}
+              style={{ width: `${budgetPct}%` }}
+            />
           </div>
+          <p className="text-[11px] text-stone-400 mt-1 tabular-nums">
+            {chf(totalThisMonth)} von {chf(monthlyBudget)} ({budgetPct.toFixed(0)} %)
+          </p>
         </div>
 
-        {/* Category breakdown */}
+        {/* Prev month comparison */}
         <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <h4 className="text-sm font-semibold text-[#141414] mb-4">Kostenverteilung</h4>
-          <div className="space-y-3">
-            {costCategories.map(cat => {
-              const pct = totalCost > 0 ? (cat.value / totalCost) * 100 : 0;
-              return (
-                <div key={cat.label}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-medium text-stone-600">{cat.label}</span>
-                    <span className="tabular-nums text-stone-500">{chf(cat.value)}</span>
-                  </div>
-                  <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${cat.color}`}
-                      style={{ width: `${Math.max(pct, 1)}%` }}
-                    />
-                  </div>
-                  <p className="text-[9px] text-stone-400 mt-0.5 text-right">{pct.toFixed(0)} %</p>
-                </div>
-              );
-            })}
+          <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-widest mb-1">
+            Vormonat
+          </p>
+          <p className="text-2xl font-bold text-[#141414] tabular-nums">{chf(prevMonthTotal)}</p>
+          <p className="text-[11px] text-stone-400 mt-1">abgeschlossen (Final)</p>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+              change
+                ? change.positive ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
+                : "bg-stone-100 text-stone-500"
+            }`}>
+              {change ? change.pct : "—"}
+            </span>
+            <span className="text-[11px] text-stone-400">Änderung MoM</span>
           </div>
         </div>
       </div>
 
-      {/* Per-org bars */}
-      {sortedOrgs.length > 0 && (
-        <div className="bg-white border border-stone-200 rounded-2xl p-5">
+      {/* ── Cost breakdown cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {breakdownCards.map(card => (
+          <div key={card.key} className="bg-white border border-stone-200 rounded-xl p-4">
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mb-1">
+              {card.label}
+            </p>
+            <p className="text-base font-bold text-[#141414] tabular-nums">{chf(card.value)}</p>
+            <p className="text-[10px] text-stone-400 mt-0.5 tabular-nums">
+              {totalThisMonth > 0 ? ((card.value / totalThisMonth) * 100).toFixed(0) : "0"} %
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Main body: chart + org table ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+        {/* 6-month bar chart */}
+        <div className="lg:col-span-3 bg-white border border-stone-200 rounded-2xl p-5">
+          <h4 className="text-sm font-semibold text-[#141414] mb-4">6-Monats-Verlauf</h4>
+          <div className="space-y-2.5">
+            {monthlyTotals.map(mt => {
+              const isCurrent = mt.month === currentMonth;
+              const barPct = maxTotal > 0 ? (mt.total / maxTotal) * 100 : 0;
+              return (
+                <div key={mt.month} className="flex items-center gap-3">
+                  <span className="text-[11px] text-stone-400 w-16 flex-shrink-0 tabular-nums">
+                    {fmtMonth(mt.month)}
+                  </span>
+                  <div className="flex-1 h-5 bg-stone-100 rounded-md overflow-hidden">
+                    <div
+                      className="h-full rounded-md transition-all"
+                      style={{
+                        width: `${barPct}%`,
+                        backgroundColor: isCurrent ? "#B7926A" : "rgba(183,146,106,0.25)",
+                      }}
+                    />
+                  </div>
+                  <span className={`text-[11px] font-medium tabular-nums w-20 text-right flex-shrink-0 ${
+                    isCurrent ? "text-[#9E7A52]" : "text-stone-500"
+                  }`}>
+                    {chf(mt.total)}
+                    {isCurrent && <span className="text-[9px] text-stone-400 ml-1">*</span>}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-stone-400 mt-3">* Laufender Monat (Teildaten)</p>
+        </div>
+
+        {/* Cost per org mini table */}
+        <div className="lg:col-span-2 bg-white border border-stone-200 rounded-2xl p-5">
           <h4 className="text-sm font-semibold text-[#141414] mb-4">Kosten pro Organisation</h4>
-          <div className="space-y-3">
-            {sortedOrgs.map(org => {
-              const pct = (org.totalCost / maxOrgCost) * 100;
-              const initials = org.orgName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-              return (
-                <div key={org.orgId} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-md bg-[#B7926A]/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[9px] font-bold text-[#B7926A]">{initials}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium text-stone-700 truncate">{org.orgName}</span>
-                      <span className="tabular-nums text-stone-500 ml-2 flex-shrink-0">{chf(org.totalCost)}</span>
+          {costs.length === 0 ? (
+            <p className="text-sm text-stone-400 text-center py-4">Keine Daten</p>
+          ) : (
+            <div className="space-y-3">
+              {[...costs]
+                .sort((a, b) => b.totalCost - a.totalCost)
+                .map(c => {
+                  const barPct = maxOrgCost > 0 ? (c.totalCost / maxOrgCost) * 100 : 0;
+                  const initials = c.orgName.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+                  return (
+                    <div key={c.orgId} className="space-y-1">
+                      <div className="flex items-center gap-2 justify-between">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-5 h-5 rounded-md bg-[#B7926A]/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[8px] font-bold text-[#B7926A]">{initials}</span>
+                          </div>
+                          <span className="text-xs font-medium text-[#141414] truncate">{c.orgName}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-[#141414] tabular-nums flex-shrink-0">
+                          {chf(c.totalCost)}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${barPct}%`, backgroundColor: "#B7926A" }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 bg-stone-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#B7926A]/60"
-                        style={{ width: `${Math.max(pct, 2)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,51 +1,91 @@
 import type { OrgCost } from "./types";
 
+/*
+ * MOCK-DATEN — Ersetzen durch echte Datenquelle sobald verfügbar.
+ *
+ * Kostenmodell:
+ *   analyseCost  = Anzahl Analysen × Claude-API-Kosten (ca. CHF 0.45 / Analyse)
+ *   storageCost  = Supabase Storage (kumulativ: CHF 0.12 / Analyse)
+ *   databaseCost = Supabase DB-Pauschale (CHF 1.20) + variabel (CHF 0.05 / Analyse)
+ *   ocrCost      = OCR-Verarbeitung (CHF 0.05 / Analyse)
+ *   infraCost    = Infrastruktur-Pauschale (CHF 0.20–1.50 / Org / Monat)
+ */
+
 function mo(offset: number): string {
   const d = new Date();
   d.setMonth(d.getMonth() - offset);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function mkCost(
+  orgId: string,
+  orgName: string,
+  offset: number,
+  analyseCount: number,
+  analyseCost: number,
+  storageCost: number,
+  databaseCost: number,
+  ocrCost: number,
+  infraCost: number,
+  storageGB: number,
+): OrgCost {
+  return {
+    orgId,
+    orgName,
+    month: mo(offset),
+    analyseCount,
+    analyseCost,
+    storageCost,
+    databaseCost,
+    ocrCost,
+    infraCost,
+    totalCost: +(analyseCost + storageCost + databaseCost + ocrCost + infraCost).toFixed(2),
+    currency: "CHF",
+    status: offset === 0 ? "laufend" : "final",
+    storageGB,
+  };
+}
+
 export const MOCK_COSTS: OrgCost[] = [
-  /* ── TraceBuild (enterprise, default) ── */
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(0), analyseCount: 12, analyseCost:  5.40, storageCost: 2.80, databaseCost: 1.20, ocrCost: 0.60, infraCost: 1.20, totalCost:  11.20, currency: "CHF", status: "laufend", storageGB:  3.2 },
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(1), analyseCount: 38, analyseCost: 17.10, storageCost: 5.20, databaseCost: 3.80, ocrCost: 1.90, infraCost: 2.40, totalCost:  30.40, currency: "CHF", status: "final",   storageGB:  5.1 },
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(2), analyseCount: 45, analyseCost: 20.25, storageCost: 5.00, databaseCost: 3.80, ocrCost: 2.25, infraCost: 2.40, totalCost:  33.70, currency: "CHF", status: "final",   storageGB:  5.8 },
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(3), analyseCount: 41, analyseCost: 18.45, storageCost: 4.80, databaseCost: 3.60, ocrCost: 2.05, infraCost: 2.40, totalCost:  31.30, currency: "CHF", status: "final",   storageGB:  5.4 },
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(4), analyseCount: 29, analyseCost: 13.05, storageCost: 3.60, databaseCost: 2.80, ocrCost: 1.45, infraCost: 2.40, totalCost:  23.30, currency: "CHF", status: "final",   storageGB:  4.2 },
-  { orgId: "tracebuild-default", orgName: "TraceBuild",         month: mo(5), analyseCount: 22, analyseCost:  9.90, storageCost: 2.60, databaseCost: 2.20, ocrCost: 1.10, infraCost: 1.80, totalCost:  17.60, currency: "CHF", status: "final",   storageGB:  3.1 },
+  // ── TraceBuild (enterprise) ──────────────────────────────────
+  mkCost("tracebuild-default", "TraceBuild", 0, 12,  5.40,  2.80, 1.20, 0.85, 0.50, 0.8),
+  mkCost("tracebuild-default", "TraceBuild", 1, 38, 17.10,  5.20, 3.80, 2.10, 1.20, 3.2),
+  mkCost("tracebuild-default", "TraceBuild", 2, 45, 20.25,  5.00, 3.80, 2.50, 1.40, 3.5),
+  mkCost("tracebuild-default", "TraceBuild", 3, 41, 18.45,  4.80, 3.60, 2.30, 1.30, 3.4),
+  mkCost("tracebuild-default", "TraceBuild", 4, 35, 15.75,  4.50, 3.40, 2.00, 1.10, 3.1),
+  mkCost("tracebuild-default", "TraceBuild", 5, 29, 13.05,  4.20, 3.20, 1.80, 0.90, 2.8),
 
-  /* ── Müller Architekten AG (pro) ── */
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(0), analyseCount:  8, analyseCost:  3.60, storageCost: 1.20, databaseCost: 0.80, ocrCost: 0.40, infraCost: 0.60, totalCost:   6.60, currency: "CHF", status: "laufend", storageGB:  1.8 },
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(1), analyseCount: 24, analyseCost: 10.80, storageCost: 3.40, databaseCost: 2.60, ocrCost: 1.20, infraCost: 1.20, totalCost:  19.20, currency: "CHF", status: "final",   storageGB:  3.5 },
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(2), analyseCount: 31, analyseCost: 13.95, storageCost: 3.80, databaseCost: 2.80, ocrCost: 1.55, infraCost: 1.20, totalCost:  23.30, currency: "CHF", status: "final",   storageGB:  4.1 },
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(3), analyseCount: 27, analyseCost: 12.15, storageCost: 3.20, databaseCost: 2.40, ocrCost: 1.35, infraCost: 1.20, totalCost:  20.30, currency: "CHF", status: "final",   storageGB:  3.8 },
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(4), analyseCount: 19, analyseCost:  8.55, storageCost: 2.40, databaseCost: 1.80, ocrCost: 0.95, infraCost: 1.20, totalCost:  14.90, currency: "CHF", status: "final",   storageGB:  2.9 },
-  { orgId: "muller-architekten", orgName: "Müller Architekten AG", month: mo(5), analyseCount: 14, analyseCost:  6.30, storageCost: 1.80, databaseCost: 1.40, ocrCost: 0.70, infraCost: 0.80, totalCost:  11.00, currency: "CHF", status: "final",   storageGB:  2.1 },
+  // ── Müller Architekten AG (pro) ──────────────────────────────
+  mkCost("org-mueller", "Müller Architekten AG", 0,  28, 12.60,  4.20, 2.80, 1.40, 0.80, 2.1),
+  mkCost("org-mueller", "Müller Architekten AG", 1,  72, 32.40,  8.40, 5.80, 3.60, 2.10, 7.8),
+  mkCost("org-mueller", "Müller Architekten AG", 2,  68, 30.60,  8.10, 5.60, 3.40, 2.00, 7.2),
+  mkCost("org-mueller", "Müller Architekten AG", 3,  81, 36.45,  9.20, 6.20, 4.05, 2.30, 8.5),
+  mkCost("org-mueller", "Müller Architekten AG", 4,  65, 29.25,  7.80, 5.40, 3.25, 1.90, 6.8),
+  mkCost("org-mueller", "Müller Architekten AG", 5,  58, 26.10,  7.20, 5.00, 2.90, 1.70, 6.1),
 
-  /* ── Hochbauamt Kanton ZH (enterprise) ── */
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(0), analyseCount: 31, analyseCost: 13.95, storageCost: 6.40, databaseCost: 4.20, ocrCost: 1.55, infraCost: 3.60, totalCost:  29.70, currency: "CHF", status: "laufend", storageGB:  8.4 },
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(1), analyseCount: 87, analyseCost: 39.15, storageCost:14.20, databaseCost: 9.20, ocrCost: 4.35, infraCost: 5.40, totalCost:  72.30, currency: "CHF", status: "final",   storageGB: 18.2 },
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(2), analyseCount: 94, analyseCost: 42.30, storageCost:14.80, databaseCost: 9.60, ocrCost: 4.70, infraCost: 5.40, totalCost:  76.80, currency: "CHF", status: "final",   storageGB: 19.1 },
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(3), analyseCount: 79, analyseCost: 35.55, storageCost:12.40, databaseCost: 8.20, ocrCost: 3.95, infraCost: 5.40, totalCost:  65.50, currency: "CHF", status: "final",   storageGB: 16.5 },
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(4), analyseCount: 63, analyseCost: 28.35, storageCost:10.00, databaseCost: 6.80, ocrCost: 3.15, infraCost: 4.80, totalCost:  53.10, currency: "CHF", status: "final",   storageGB: 13.7 },
-  { orgId: "hochbauamt-zh", orgName: "Hochbauamt Kanton ZH", month: mo(5), analyseCount: 48, analyseCost: 21.60, storageCost: 7.60, databaseCost: 5.40, ocrCost: 2.40, infraCost: 3.60, totalCost:  40.60, currency: "CHF", status: "final",   storageGB: 10.8 },
+  // ── Hochbauamt Kanton ZH (enterprise) ───────────────────────
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 0,  54, 24.30,  8.10, 5.40, 2.70, 1.50, 5.4),
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 1, 143, 64.35, 18.40,12.10, 7.15, 4.20,18.4),
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 2, 138, 62.10, 17.80,11.60, 6.90, 4.00,17.2),
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 3, 156, 70.20, 19.40,13.00, 7.80, 4.50,19.8),
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 4, 124, 55.80, 16.20,10.80, 6.20, 3.60,15.9),
+  mkCost("org-hochbau-zh", "Hochbauamt Kanton ZH", 5, 112, 50.40, 14.80, 9.80, 5.60, 3.20,14.1),
 
-  /* ── DesignBau Studio (starter) ── */
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(0), analyseCount:  3, analyseCost:  1.35, storageCost: 0.40, databaseCost: 0.20, ocrCost: 0.15, infraCost: 0.20, totalCost:   2.30, currency: "CHF", status: "laufend", storageGB:  0.6 },
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(1), analyseCount:  9, analyseCost:  4.05, storageCost: 1.00, databaseCost: 0.60, ocrCost: 0.45, infraCost: 0.40, totalCost:   6.50, currency: "CHF", status: "final",   storageGB:  1.3 },
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(2), analyseCount: 11, analyseCost:  4.95, storageCost: 1.20, databaseCost: 0.80, ocrCost: 0.55, infraCost: 0.40, totalCost:   7.90, currency: "CHF", status: "final",   storageGB:  1.7 },
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(3), analyseCount:  7, analyseCost:  3.15, storageCost: 0.80, databaseCost: 0.40, ocrCost: 0.35, infraCost: 0.40, totalCost:   5.10, currency: "CHF", status: "final",   storageGB:  1.1 },
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(4), analyseCount:  5, analyseCost:  2.25, storageCost: 0.60, databaseCost: 0.40, ocrCost: 0.25, infraCost: 0.20, totalCost:   3.70, currency: "CHF", status: "final",   storageGB:  0.8 },
-  { orgId: "designbau-studio", orgName: "DesignBau Studio", month: mo(5), analyseCount:  4, analyseCost:  1.80, storageCost: 0.40, databaseCost: 0.20, ocrCost: 0.20, infraCost: 0.20, totalCost:   2.80, currency: "CHF", status: "final",   storageGB:  0.6 },
+  // ── DesignBau Studio (starter, paused) ───────────────────────
+  mkCost("org-design-bau", "DesignBau Studio", 0,  2,  0.90, 0.40, 1.20, 0.10, 0.20, 0.1),
+  mkCost("org-design-bau", "DesignBau Studio", 1,  8,  3.60, 0.80, 1.20, 0.40, 0.25, 0.4),
+  mkCost("org-design-bau", "DesignBau Studio", 2, 12,  5.40, 1.20, 1.20, 0.60, 0.30, 0.6),
+  mkCost("org-design-bau", "DesignBau Studio", 3, 10,  4.50, 1.00, 1.20, 0.50, 0.25, 0.5),
+  mkCost("org-design-bau", "DesignBau Studio", 4, 15,  6.75, 1.40, 1.20, 0.75, 0.35, 0.7),
+  mkCost("org-design-bau", "DesignBau Studio", 5, 18,  8.10, 1.60, 1.20, 0.90, 0.40, 0.9),
 
-  /* ── Planungs AG Bern (pro) ── */
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(0), analyseCount:  5, analyseCost:  2.25, storageCost: 0.80, databaseCost: 0.60, ocrCost: 0.25, infraCost: 0.40, totalCost:   4.30, currency: "CHF", status: "laufend", storageGB:  1.2 },
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(1), analyseCount: 17, analyseCost:  7.65, storageCost: 2.20, databaseCost: 1.80, ocrCost: 0.85, infraCost: 0.80, totalCost:  13.30, currency: "CHF", status: "final",   storageGB:  2.8 },
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(2), analyseCount: 21, analyseCost:  9.45, storageCost: 2.60, databaseCost: 2.00, ocrCost: 1.05, infraCost: 0.80, totalCost:  15.90, currency: "CHF", status: "final",   storageGB:  3.4 },
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(3), analyseCount: 16, analyseCost:  7.20, storageCost: 2.00, databaseCost: 1.60, ocrCost: 0.80, infraCost: 0.80, totalCost:  12.40, currency: "CHF", status: "final",   storageGB:  2.6 },
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(4), analyseCount: 11, analyseCost:  4.95, storageCost: 1.40, databaseCost: 1.20, ocrCost: 0.55, infraCost: 0.60, totalCost:   8.70, currency: "CHF", status: "final",   storageGB:  1.9 },
-  { orgId: "planungs-bern", orgName: "Planungs AG Bern", month: mo(5), analyseCount:  8, analyseCost:  3.60, storageCost: 1.00, databaseCost: 0.80, ocrCost: 0.40, infraCost: 0.60, totalCost:   6.40, currency: "CHF", status: "final",   storageGB:  1.4 },
+  // ── Planungs AG Bern (pro) ───────────────────────────────────
+  mkCost("org-planungs-be", "Planungs AG Bern", 0, 18,  8.10, 2.70, 1.80, 0.90, 0.50, 1.2),
+  mkCost("org-planungs-be", "Planungs AG Bern", 1, 48, 21.60, 5.80, 3.80, 2.40, 1.40, 5.1),
+  mkCost("org-planungs-be", "Planungs AG Bern", 2, 52, 23.40, 6.10, 4.00, 2.60, 1.50, 5.5),
+  mkCost("org-planungs-be", "Planungs AG Bern", 3, 44, 19.80, 5.40, 3.60, 2.20, 1.30, 4.8),
+  mkCost("org-planungs-be", "Planungs AG Bern", 4, 39, 17.55, 4.90, 3.20, 1.95, 1.10, 4.3),
+  mkCost("org-planungs-be", "Planungs AG Bern", 5, 35, 15.75, 4.40, 2.80, 1.75, 1.00, 3.9),
 ];
 
 /* ── Utilities ──────────────────────────────────────────────────── */
@@ -66,11 +106,11 @@ export function availableMonths(costs: OrgCost[]): string[] {
 }
 
 export function monthlyTotals(): { month: string; total: number }[] {
-  const map = new Map<string, number>();
+  const sums: Record<string, number> = {};
   for (const c of MOCK_COSTS) {
-    map.set(c.month, (map.get(c.month) ?? 0) + c.totalCost);
+    sums[c.month] = +((sums[c.month] ?? 0) + c.totalCost).toFixed(2);
   }
-  return Array.from(map.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
+  return Object.entries(sums)
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, total]) => ({ month, total }));
 }

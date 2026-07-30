@@ -54,14 +54,14 @@ export interface LastOpenedOrg {
 export interface OrgCost {
   orgId: string;
   orgName: string;
-  month: string;
+  month: string; // "YYYY-MM"
   analyseCount: number;
-  analyseCost: number;
-  storageCost: number;
-  databaseCost: number;
-  ocrCost: number;
-  infraCost: number;
-  totalCost: number;
+  analyseCost: number;   // CHF — Claude API
+  storageCost: number;   // CHF — Supabase Storage
+  databaseCost: number;  // CHF — Supabase DB
+  ocrCost: number;       // CHF — OCR processing
+  infraCost: number;     // CHF — Infrastructure
+  totalCost: number;     // CHF — Summe
   currency: "CHF";
   status: "laufend" | "final";
   storageGB: number;

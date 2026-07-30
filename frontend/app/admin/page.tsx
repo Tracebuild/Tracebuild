@@ -36,6 +36,7 @@ function loadOrgs(): Organization[] {
     if (!raw) return MOCK_ORGS;
     const parsed = JSON.parse(raw) as Organization[];
     if (parsed.length === 0) return MOCK_ORGS;
+    // Ensure default org is always first
     const hasDefault = parsed.some(o => o.isDefault);
     if (!hasDefault) return [MOCK_ORGS[0], ...parsed];
     return parsed;
@@ -52,6 +53,7 @@ function loadActivities(): Activity[] {
   try {
     const raw = localStorage.getItem(ACTIVITY_KEY);
     const stored: Activity[] = raw ? (JSON.parse(raw) as Activity[]) : [];
+    // Merge: stored first, then MOCK_ACTIVITIES as seed
     const storedIds = new Set(stored.map(a => a.id));
     const seedActivities = MOCK_ACTIVITIES.filter(a => !storedIds.has(a.id));
     return [...stored, ...seedActivities].slice(0, 50);
@@ -139,7 +141,7 @@ function KpiCard({
 
 /* ── Search input ──────────────────────────────────────────── */
 function SearchInput({
-  value, onChange, placeholder, id,
+  value, onChange, placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -222,50 +224,6 @@ function ConfirmModal({
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold active:scale-[0.97] transition-all ${confirmCls}`}
           >
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Quick action button ───────────────────────────────────── */
-function QuickActionBtn({
-  icon, label, onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 flex flex-col items-center gap-2 py-4 px-3 bg-white border border-stone-200 rounded-2xl hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 transition-all text-center group"
-    >
-      <span className="text-stone-400 group-hover:text-[#9E7A52] transition-colors">{icon}</span>
-      <span className="text-xs font-medium text-stone-600 group-hover:text-[#141414] transition-colors leading-tight">{label}</span>
-    </button>
-  );
-}
-
-/* ── Invoices section ──────────────────────────────────────── */
-function InvoicesSection({
-  invoices, onToast,
-}: {
-  invoices: MockInvoice[];
-  onToast: (msg: string, type: ToastMessage["type"]) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      {/* Invoice table */}
-      <div className="lg:col-span-2 bg-white border border-stone-200 rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#141414]">Monatliche Kostenberichte</h3>
-          <button
-            onClick={() => onToast("Alle Berichte werden als ZIP exportiert...", "info")}
-            className="text-xs font-semibold text-[#9E7A52] bg-[#B7926A]/10 hover:bg-[#B7926A] hover:text-white px-3 py-1.5 rounded-lg transition-all"
-          >
-            Alle exportieren
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -366,6 +324,25 @@ function InvoicesSection({
   );
 }
 
+/* ── Quick action button ───────────────────────────────────── */
+function QuickActionBtn({
+  icon, label, onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex-1 flex flex-col items-center gap-2 py-4 px-3 bg-white border border-stone-200 rounded-2xl hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 transition-all text-center group"
+    >
+      <span className="text-stone-400 group-hover:text-[#9E7A52] transition-colors">{icon}</span>
+      <span className="text-xs font-medium text-stone-600 group-hover:text-[#141414] transition-colors leading-tight">{label}</span>
+    </button>
+  );
+}
+
 /* ── Main page ─────────────────────────────────────────────── */
 export default function AdminPage() {
   const router = useRouter();
@@ -375,15 +352,15 @@ export default function AdminPage() {
   const [userEmail, setUserEmail] = useState("");
 
   /* Org state */
-  const [orgs, setOrgs]               = useState<Organization[]>(MOCK_ORGS);
-  const [hydrated, setHydrated]       = useState(false);
-  const [search, setSearch]           = useState("");
-  const [modalOpen, setModalOpen]     = useState(false);
+  const [orgs, setOrgs]           = useState<Organization[]>(MOCK_ORGS);
+  const [hydrated, setHydrated]   = useState(false);
+  const [search, setSearch]       = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget]   = useState<Organization | null>(null);
-  const [deleteTarget, setDeleteTarget]   = useState<Organization | null>(null);
-  const [detailOrg, setDetailOrg]         = useState<Organization | null>(null);
-  const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
-  const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
+  const [detailOrg, setDetailOrg] = useState<Organization | null>(null);
+  const [pauseTarget, setPauseTarget]   = useState<Organization | null>(null);
+  const [closeTarget, setCloseTarget]   = useState<Organization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
 
   /* Activity state */
@@ -503,6 +480,7 @@ export default function AdminPage() {
       trackActivity("org_created", data.name, newOrg.id);
       addToast(`${data.name} wurde erstellt.`, "success");
     }
+
     setModalOpen(false);
     setEditTarget(null);
   }
@@ -587,14 +565,15 @@ export default function AdminPage() {
     const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
     const prevCosts    = MOCK_COSTS.filter(c => c.month === pm);
 
-    const totalCost      = currentCosts.reduce((s, c) => s + c.totalCost, 0);
-    const prevTotalCost  = prevCosts.reduce((s, c) => s + c.totalCost, 0);
-    const totalAnalyses  = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
-    const prevAnalyses   = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const totalCost     = currentCosts.reduce((s, c) => s + c.totalCost, 0);
+    const prevTotalCost = prevCosts.reduce((s, c) => s + c.totalCost, 0);
+    const totalAnalyses = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const prevAnalyses  = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
     const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
-    const activeOrgs     = orgs.filter(o => o.status === "active").length;
-    const totalProjects  = MOCK_ORGS.reduce((s, o) => s + (o.projectCount ?? 0), 0);
-    const totalUsers     = MOCK_ORGS.reduce((s, o) => s + (o.userCount ?? 0), 0);
+
+    const activeOrgs   = orgs.filter(o => o.status === "active").length;
+    const totalProjects = MOCK_ORGS.reduce((s, o) => s + (o.projectCount ?? 0), 0);
+    const totalUsers    = MOCK_ORGS.reduce((s, o) => s + (o.userCount ?? 0), 0);
 
     function trend(cur: number, prev: number) {
       if (prev === 0) return undefined;
@@ -708,26 +687,11 @@ export default function AdminPage() {
             }
           />
           <QuickActionBtn
-            label="Org suchen"
-            onClick={() => {
-              const el = document.getElementById("org-search");
-              el?.focus();
-              el?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle cx="7.5" cy="7.5" r="5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M12.5 12.5L15.5 15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            }
-          />
-          <QuickActionBtn
             label="Systemstatus"
             onClick={() => document.getElementById("systemstatus-section")?.scrollIntoView({ behavior: "smooth" })}
             icon={
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M9 5V9.5L12 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M9 2L10.9 6.26L15.5 6.9L12.25 10.07L13.08 14.65L9 12.4L4.92 14.65L5.75 10.07L2.5 6.9L7.1 6.26L9 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
               </svg>
             }
           />
@@ -759,7 +723,7 @@ export default function AdminPage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="flex-1 sm:w-56">
-                <SearchInput value={search} onChange={setSearch} placeholder="Organisation suchen..." id="org-search" />
+                <SearchInput value={search} onChange={setSearch} placeholder="Organisation suchen..." />
               </div>
               <button
                 onClick={() => { setEditTarget(null); setModalOpen(true); }}
