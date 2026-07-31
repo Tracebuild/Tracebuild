@@ -20,7 +20,7 @@ export const MOCK_ORGS: Organization[] = [
   {
     id: "org-mueller",
     name: "Müller Architekten AG",
-    planTier: "pro",
+    planTier: "business",
     status: "active",
     createdAt: "2024-03-10T09:00:00Z",
     description: "Architekturbüro in Zürich",
@@ -65,7 +65,7 @@ export const MOCK_ORGS: Organization[] = [
   {
     id: "org-planungs-be",
     name: "Planungs AG Bern",
-    planTier: "pro",
+    planTier: "business",
     status: "active",
     createdAt: "2024-11-15T08:30:00Z",
     description: "Planungsbüro Region Bern",

@@ -2,11 +2,11 @@
 
 import type { Organization } from "./types";
 
-const planMeta = {
+const planMeta: Record<string, { label: string; cls: string }> = {
   starter:    { label: "Starter",    cls: "bg-stone-100 text-stone-500" },
-  pro:        { label: "Pro",        cls: "bg-blue-100 text-blue-700" },
+  business:   { label: "Business",   cls: "bg-sky-100 text-sky-700" },
   enterprise: { label: "Enterprise", cls: "bg-[#B7926A]/10 text-[#9E7A52]" },
-} as const;
+};
 
 interface Props {
   org: Organization;
@@ -32,7 +32,7 @@ function IconTrash() {
 }
 
 export default function OrgCard({ org, onOpen, onEdit, onDelete }: Props) {
-  const { label, cls } = planMeta[org.planTier];
+  const { label, cls } = planMeta[org.planTier] ?? planMeta.starter;
   const initials = org.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   const created  = new Date(org.createdAt).toLocaleDateString("de-CH");
 
