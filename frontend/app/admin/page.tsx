@@ -14,6 +14,7 @@ import CostTable from "@/components/admin/CostTable";
 import CostOverview from "@/components/admin/CostOverview";
 import SystemStatus from "@/components/admin/SystemStatus";
 import Toast from "@/components/admin/Toast";
+import InvoicesSection from "@/components/admin/InvoicesSection";
 import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
 import { MOCK_ORGS, MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
 import type {
@@ -122,6 +123,7 @@ function SearchInput({
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  id?: string;
 }) {
   return (
     <div className="relative">
@@ -133,6 +135,7 @@ function SearchInput({
         <path d="M9 9L11.5 11.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       </svg>
       <input
+        id={id}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? "Suchen..."}
@@ -688,6 +691,13 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Rechnungen & Exporte ── */}
+        <div className="space-y-4">
+          <SectionHeader title="Rechnungen & Exporte" />
+          <InvoicesSection onToast={addToast} />
+        </div>
+
       </main>
       </div>
 

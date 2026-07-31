@@ -139,7 +139,7 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); }}
+              onKeyDown={e => { if (e.key === "Escape") onClose(); }}
               className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
               placeholder="z.B. Müller Architekten AG"
               autoFocus

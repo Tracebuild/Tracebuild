@@ -115,7 +115,7 @@ export default function OrgTable({
                             {org.name}
                           </span>
                           {org.isDefault && (
-                            <span className="text-[9px] font-bold text-[#9E7A52] bg-[#B7926A]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            <span className="text-[9px] font-bold text-[#9E7A52] bg-[#B7926A]/10 px-1.5 py-0.5 rounded uppercase tracking-wider flex-shrink-0">
                               Default
                             </span>
                           )}

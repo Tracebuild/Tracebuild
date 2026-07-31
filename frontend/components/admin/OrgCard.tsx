@@ -3,7 +3,7 @@
 import type { Organization } from "./types";
 
 const planMeta = {
-  free:       { label: "Free",       cls: "bg-stone-100 text-stone-500" },
+  starter:    { label: "Starter",    cls: "bg-stone-100 text-stone-500" },
   pro:        { label: "Pro",        cls: "bg-blue-100 text-blue-700" },
   enterprise: { label: "Enterprise", cls: "bg-[#B7926A]/10 text-[#9E7A52]" },
 } as const;

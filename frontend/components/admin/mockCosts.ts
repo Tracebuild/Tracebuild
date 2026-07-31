@@ -88,7 +88,7 @@ export const MOCK_COSTS: OrgCost[] = [
   mkCost("org-planungs-be", "Planungs AG Bern", 5, 35, 15.75, 4.40, 2.80, 1.75, 1.00, 3.9),
 ];
 
-/* ── Utilities ──────────────────────────────────────────────── */
+/* ── Utilities ──────────────────────────────────────────────────── */
 
 export function currentMonth(): string {
   return mo(0);
