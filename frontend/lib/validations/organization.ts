@@ -12,6 +12,7 @@ export interface CreateOrgInput {
   projectLimit?:   number | null;
   storageLimitGb?: number | null;
   monthlyBudget?:  number | null;
+  isDefault?:      boolean;
 }
 
 export interface UpdateOrgInput {
@@ -73,6 +74,7 @@ export function validateCreate(
       projectLimit:    body.projectLimit   as number | null | undefined,
       storageLimitGb:  body.storageLimitGb as number | null | undefined,
       monthlyBudget:   body.monthlyBudget  as number | null | undefined,
+      isDefault:       (body.isDefault     as boolean | undefined) ?? false,
     },
   };
 }
