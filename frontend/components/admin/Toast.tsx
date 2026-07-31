@@ -10,28 +10,24 @@ interface Props {
 
 const toastConfig = {
   success: {
-    bg: "bg-emerald-50 border-emerald-200",
-    icon: "text-emerald-600",
-    text: "text-emerald-800",
-    dot: "bg-emerald-500",
+    bg: "bg-emerald-900/30 border-emerald-500/30",
+    icon: "text-emerald-400",
+    text: "text-emerald-300",
   },
   error: {
-    bg: "bg-red-50 border-red-200",
-    icon: "text-red-600",
-    text: "text-red-800",
-    dot: "bg-red-500",
+    bg: "bg-red-900/30 border-red-500/30",
+    icon: "text-red-400",
+    text: "text-red-300",
   },
   warning: {
-    bg: "bg-amber-50 border-amber-200",
-    icon: "text-amber-600",
-    text: "text-amber-800",
-    dot: "bg-amber-500",
+    bg: "bg-amber-900/30 border-amber-500/30",
+    icon: "text-amber-400",
+    text: "text-amber-300",
   },
   info: {
-    bg: "bg-sky-50 border-sky-200",
-    icon: "text-sky-600",
-    text: "text-sky-800",
-    dot: "bg-sky-500",
+    bg: "bg-sky-900/30 border-sky-500/30",
+    icon: "text-sky-400",
+    text: "text-sky-300",
   },
 } as const;
 
@@ -78,7 +74,7 @@ function SingleToast({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: 
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-lg shadow-black/5 min-w-[280px] max-w-sm ${cfg.bg}`}
+      className={`flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-lg shadow-black/30 min-w-[280px] max-w-sm backdrop-blur-md ${cfg.bg}`}
       role="alert"
     >
       <span className={`mt-0.5 flex-shrink-0 ${cfg.icon}`}>
@@ -102,7 +98,6 @@ function SingleToast({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: 
 
 export default function Toast({ toasts, onRemove }: Props) {
   if (toasts.length === 0) return null;
-
   return (
     <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 items-end">
       {toasts.slice(-4).map(toast => (

@@ -26,16 +26,13 @@ import type {
   ToastMessage,
 } from "@/components/admin/types";
 
-/* ── Storage keys ──────────────────────────────────────────── */
 const ACTIVITY_KEY    = "tb_admin_activities";
 const LAST_OPENED_KEY = "tb_admin_last_opened";
 
-/* ── Persistence ───────────────────────────────────────────── */
 function loadActivities(): Activity[] {
   try {
     const raw = localStorage.getItem(ACTIVITY_KEY);
     const stored: Activity[] = raw ? (JSON.parse(raw) as Activity[]) : [];
-    // Merge: stored first, then MOCK_ACTIVITIES as seed
     const storedIds = new Set(stored.map(a => a.id));
     const seedActivities = MOCK_ACTIVITIES.filter(a => !storedIds.has(a.id));
     return [...stored, ...seedActivities].slice(0, 50);
@@ -53,7 +50,6 @@ function loadLastOpened(): LastOpenedOrg | null {
   }
 }
 
-/* ── Helpers ───────────────────────────────────────────────── */
 function extractName(email: string, meta: Record<string, unknown> = {}): string {
   const full = ((meta.full_name ?? meta.name ?? "") as string).trim();
   if (full) return full.split(" ")[0];
@@ -67,7 +63,6 @@ function todayStr(): string {
   });
 }
 
-/* ── KPI card ──────────────────────────────────────────────── */
 function KpiCard({
   label, value, note, trend, accent,
 }: {
@@ -78,26 +73,25 @@ function KpiCard({
   accent?: boolean;
 }) {
   return (
-    <div className={`bg-white border rounded-2xl p-4 flex flex-col ${accent ? "border-[#B7926A]/30" : "border-stone-200"}`}>
-      <p className={`text-xl font-bold tracking-tight tabular-nums ${accent ? "text-[#9E7A52]" : "text-[#141414]"}`}>
+    <div className={`bg-[#172540] border rounded-2xl p-4 flex flex-col ${accent ? "border-[#2862D7]/30" : "border-[rgba(60,63,68,0.5)]"}`}>
+      <p className={`text-xl font-bold tracking-tight tabular-nums ${accent ? "text-[#85A6E9]" : "text-white"}`}>
         {value}
       </p>
-      <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest mt-1.5">{label}</p>
+      <p className="text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest mt-1.5">{label}</p>
       <div className="flex items-center gap-2 mt-1">
         {trend && (
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-            trend.positive ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+            trend.positive ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
           }`}>
             {trend.pct}
           </span>
         )}
-        {note && <p className="text-[10px] text-stone-400">{note}</p>}
+        {note && <p className="text-[10px] text-[#7B8299]">{note}</p>}
       </div>
     </div>
   );
 }
 
-/* ── Search input ──────────────────────────────────────────── */
 function SearchInput({
   value, onChange, placeholder, id,
 }: {
@@ -109,7 +103,7 @@ function SearchInput({
   return (
     <div className="relative">
       <svg
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7B8299] pointer-events-none"
         width="13" height="13" viewBox="0 0 13 13" fill="none"
       >
         <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.3" />
@@ -120,12 +114,12 @@ function SearchInput({
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder ?? "Suchen..."}
-        className="w-full pl-8 pr-8 py-2.5 text-sm border border-stone-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors placeholder:text-stone-400"
+        className="w-full pl-8 pr-8 py-2.5 text-sm border border-[rgba(133,166,233,0.25)] rounded-xl bg-[rgba(23,37,64,0.6)] text-white focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors placeholder:text-[#7B8299]"
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7B8299] hover:text-white transition-colors"
         >
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
             <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
@@ -136,18 +130,16 @@ function SearchInput({
   );
 }
 
-/* ── Section divider ───────────────────────────────────────── */
 function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="h-px flex-1 bg-stone-100" />
-      <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest px-2">{title}</span>
-      <div className="h-px flex-1 bg-stone-100" />
+      <div className="h-px flex-1 bg-[rgba(60,63,68,0.4)]" />
+      <span className="text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest px-2">{title}</span>
+      <div className="h-px flex-1 bg-[rgba(60,63,68,0.4)]" />
     </div>
   );
 }
 
-/* ── Generic Confirm modal ─────────────────────────────────── */
 function ConfirmModal({
   orgName, title, description, confirmLabel, confirmCls,
   onConfirm, onClose,
@@ -162,18 +154,18 @@ function ConfirmModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-7 border border-stone-200">
-        <h3 className="text-base font-bold text-[#141414] text-center mb-2">{title}</h3>
-        <p className="text-sm text-stone-500 text-center mb-6">
-          <span className="font-semibold text-stone-700">{orgName}</span> {description}
+      <div className="bg-[#0E111B] rounded-2xl shadow-2xl w-full max-w-sm p-7 border border-[rgba(60,63,68,0.5)]">
+        <h3 className="text-base font-bold text-white text-center mb-2">{title}</h3>
+        <p className="text-sm text-[#ABAEBB] text-center mb-6">
+          <span className="font-semibold text-white">{orgName}</span> {description}
         </p>
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+            className="flex-1 border border-[rgba(60,63,68,0.4)] rounded-xl py-2.5 text-sm font-medium text-[#ABAEBB] hover:bg-[#1E2D4A] transition-colors"
           >
             Abbrechen
           </button>
@@ -189,64 +181,45 @@ function ConfirmModal({
   );
 }
 
-/* ── Quick action button ───────────────────────────────────── */
-function QuickActionBtn({
-  icon, label, onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
+function QuickActionBtn({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex-1 flex flex-col items-center gap-2 py-4 px-3 bg-white border border-stone-200 rounded-2xl hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 transition-all text-center group"
+      className="flex-1 flex flex-col items-center gap-2 py-4 px-3 bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl hover:border-[#2862D7]/40 hover:bg-[#2862D7]/8 transition-all text-center group"
     >
-      <span className="text-stone-400 group-hover:text-[#9E7A52] transition-colors">{icon}</span>
-      <span className="text-xs font-medium text-stone-600 group-hover:text-[#141414] transition-colors leading-tight">{label}</span>
+      <span className="text-[#7B8299] group-hover:text-[#85A6E9] transition-colors">{icon}</span>
+      <span className="text-xs font-medium text-[#ABAEBB] group-hover:text-white transition-colors leading-tight">{label}</span>
     </button>
   );
 }
 
-/* ── Main page ─────────────────────────────────────────────── */
 export default function AdminPage() {
   const router = useRouter();
 
-  /* User state */
   const [userName, setUserName]   = useState("");
   const [userEmail, setUserEmail] = useState("");
-
-  /* Org state */
   const [orgs, setOrgs]           = useState<Organization[]>([]);
   const [hydrated, setHydrated]   = useState(false);
   const [search, setSearch]       = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editTarget, setEditTarget]   = useState<Organization | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null);
-  const [detailOrg, setDetailOrg] = useState<Organization | null>(null);
-  const [pauseTarget, setPauseTarget]   = useState<Organization | null>(null);
-  const [closeTarget, setCloseTarget]   = useState<Organization | null>(null);
+  const [editTarget, setEditTarget]       = useState<Organization | null>(null);
+  const [deleteTarget, setDeleteTarget]   = useState<Organization | null>(null);
+  const [detailOrg, setDetailOrg]         = useState<Organization | null>(null);
+  const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
+  const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
-
-  /* Activity state */
   const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES);
   const [lastOpened, setLastOpened] = useState<LastOpenedOrg | null>(null);
-
-  /* Cost state */
   const [costMonth, setCostMonth]   = useState(currentMonth);
   const [costSearch, setCostSearch] = useState("");
+  const [toasts, setToasts]         = useState<ToastMessage[]>([]);
 
-  /* Toast state */
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  /* ── Toast helper ── */
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
     setToasts(prev => [...prev.slice(-3), { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }
 
-  /* ── Auth ── */
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace("/login"); return; }
@@ -257,7 +230,6 @@ export default function AdminPage() {
     });
   }, [router]);
 
-  /* ── Load orgs from API, activities + lastOpened from localStorage ── */
   useEffect(() => {
     organizationService.list()
       .then(data => setOrgs(sortOrgs(data)))
@@ -267,24 +239,15 @@ export default function AdminPage() {
     setLastOpened(loadLastOpened());
   }, []);
 
-  /* ── Keep default org first ── */
   function sortOrgs(list: Organization[]): Organization[] {
-    return [
-      ...list.filter(o => o.isDefault),
-      ...list.filter(o => !o.isDefault),
-    ];
+    return [...list.filter(o => o.isDefault), ...list.filter(o => !o.isDefault)];
   }
 
-  /* ── Activity tracking ── */
   function trackActivity(type: ActivityType, orgName: string, orgId: string, meta?: string) {
     const entry: Activity = {
-      id: crypto.randomUUID(),
-      type,
-      orgName,
-      orgId,
+      id: crypto.randomUUID(), type, orgName, orgId,
       user: userEmail || undefined,
-      timestamp: new Date().toISOString(),
-      meta,
+      timestamp: new Date().toISOString(), meta,
     };
     setActivities(prev => {
       const updated = [entry, ...prev].slice(0, 50);
@@ -295,21 +258,16 @@ export default function AdminPage() {
     });
   }
 
-  /* ── Open org → dashboard ── */
   function handleOpen(org: Organization) {
-    const lo: LastOpenedOrg = {
-      id: org.id, name: org.name, planTier: org.planTier,
-      timestamp: new Date().toISOString(),
-    };
+    const lo: LastOpenedOrg = { id: org.id, name: org.name, planTier: org.planTier, timestamp: new Date().toISOString() };
     setLastOpened(lo);
     localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(lo));
     trackActivity("org_opened", org.name, org.id);
     router.push("/dashboard");
   }
 
-  /* ── Save (create / edit) ── */
   async function handleSave(data: OrgFormData) {
-    const isEdit  = !!editTarget;
+    const isEdit   = !!editTarget;
     const targetId = editTarget?.id;
     try {
       if (isEdit && targetId) {
@@ -334,7 +292,6 @@ export default function AdminPage() {
     }
   }
 
-  /* ── Delete ── */
   async function handleDelete(org: Organization) {
     try {
       await organizationService.softDelete(org.id);
@@ -348,7 +305,6 @@ export default function AdminPage() {
     }
   }
 
-  /* ── Pause / Reactivate ── */
   async function handlePause(org: Organization) {
     const newStatus = org.status === "paused" ? "active" : "paused";
     try {
@@ -366,7 +322,6 @@ export default function AdminPage() {
     }
   }
 
-  /* ── Close ── */
   async function handleClose(org: Organization) {
     try {
       const updated = await organizationService.changeStatus(org.id, "closed");
@@ -380,7 +335,6 @@ export default function AdminPage() {
     }
   }
 
-  /* ── Archive ── */
   async function handleArchive(org: Organization) {
     try {
       const updated = await organizationService.changeStatus(org.id, "archived");
@@ -394,13 +348,11 @@ export default function AdminPage() {
     }
   }
 
-  /* ── Derived: filtered orgs ── */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orgs.filter(o => o.name.toLowerCase().includes(q));
   }, [orgs, search]);
 
-  /* ── Derived: last activity map ── */
   const lastActivityMap = useMemo<Record<string, string | undefined>>(() => {
     const map: Record<string, string> = {};
     for (const a of activities) {
@@ -409,7 +361,6 @@ export default function AdminPage() {
     return map;
   }, [activities]);
 
-  /* ── Derived: cost data ── */
   const costMonths = useMemo(() => availableMonths(MOCK_COSTS), []);
 
   const filteredCosts = useMemo(() => {
@@ -421,13 +372,10 @@ export default function AdminPage() {
 
   const orgCostMap = useMemo<Record<string, number | undefined>>(() => {
     const map: Record<string, number> = {};
-    MOCK_COSTS.filter(c => c.month === currentMonth()).forEach(c => {
-      map[c.orgId] = c.totalCost;
-    });
+    MOCK_COSTS.filter(c => c.month === currentMonth()).forEach(c => { map[c.orgId] = c.totalCost; });
     return map;
   }, []);
 
-  /* ── Derived: KPI data ── */
   const kpiData = useMemo(() => {
     const cm = currentMonth();
     const pm = (() => {
@@ -435,35 +383,26 @@ export default function AdminPage() {
       d.setMonth(d.getMonth() - 1);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     })();
-
     const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
     const prevCosts    = MOCK_COSTS.filter(c => c.month === pm);
-
-    const totalCost     = currentCosts.reduce((s, c) => s + c.totalCost, 0);
-    const prevTotalCost = prevCosts.reduce((s, c) => s + c.totalCost, 0);
-    const totalAnalyses = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
-    const prevAnalyses  = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
-    const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
-
-    const activeOrgs    = orgs.filter(o => o.status === "active").length;
-    const totalProjects = orgs.reduce((s, o) => s + (o.projectCount ?? 0), 0);
-    const totalUsers    = orgs.reduce((s, o) => s + (o.userCount ?? 0), 0);
-
+    const totalCost        = currentCosts.reduce((s, c) => s + c.totalCost, 0);
+    const prevTotalCost    = prevCosts.reduce((s, c) => s + c.totalCost, 0);
+    const totalAnalyses    = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const prevAnalyses     = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const totalStorageGB   = currentCosts.reduce((s, c) => s + c.storageGB, 0);
+    const activeOrgs       = orgs.filter(o => o.status === "active").length;
+    const totalProjects    = orgs.reduce((s, o) => s + (o.projectCount ?? 0), 0);
+    const totalUsers       = orgs.reduce((s, o) => s + (o.userCount ?? 0), 0);
     function trend(cur: number, prev: number) {
       if (prev === 0) return undefined;
       const diff = ((cur - prev) / prev) * 100;
       return { pct: `${diff >= 0 ? "+" : ""}${diff.toFixed(0)} %`, positive: diff >= 0 };
     }
-
     return {
       orgsCount: hydrated ? orgs.length : 0,
-      activeOrgs,
-      totalProjects,
-      totalUsers,
-      totalAnalyses,
+      activeOrgs, totalProjects, totalUsers, totalAnalyses,
       analysesTrend: trend(totalAnalyses, prevAnalyses),
-      totalCost,
-      prevTotalCost,
+      totalCost, prevTotalCost,
       costTrend: trend(totalCost, prevTotalCost),
       avgCostPerAnalyse: totalAnalyses > 0 ? totalCost / totalAnalyses : 0,
       totalStorageGB,
@@ -472,42 +411,39 @@ export default function AdminPage() {
     };
   }, [orgs, hydrated]);
 
-  const isDetailOrgInFiltered = detailOrg
-    ? orgs.find(o => o.id === detailOrg.id) ?? null
-    : null;
+  const isDetailOrgInFiltered = detailOrg ? orgs.find(o => o.id === detailOrg.id) ?? null : null;
 
   return (
     <>
       <Toast toasts={toasts} onRemove={id => setToasts(prev => prev.filter(t => t.id !== id))} />
       <AdminNav userEmail={userEmail} />
 
-      <div className="bg-[#F8F7F4] min-h-screen">
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* ── Greeting + last opened ── */}
+        {/* Greeting + last opened */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-widest mb-1">
+            <p className="text-[11px] font-medium text-[#7B8299] uppercase tracking-widest mb-1">
               {todayStr()}
             </p>
-            <h1 className="text-2xl font-bold text-[#141414]">
+            <h1 className="text-2xl font-bold text-white">
               Willkommen zurück{userName ? `, ${userName}` : ""}
             </h1>
           </div>
 
           {hydrated && lastOpened && (
-            <div className="flex-shrink-0 flex items-center gap-4 bg-white border border-stone-200 rounded-2xl px-5 py-3.5">
+            <div className="flex-shrink-0 flex items-center gap-4 bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl px-5 py-3.5">
               <div>
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Zuletzt geöffnet</p>
-                <p className="text-sm font-semibold text-[#141414] mt-0.5">{lastOpened.name}</p>
+                <p className="text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest">Zuletzt geöffnet</p>
+                <p className="text-sm font-semibold text-white mt-0.5">{lastOpened.name}</p>
               </div>
-              <div className="h-7 w-px bg-stone-200" />
+              <div className="h-7 w-px bg-[rgba(60,63,68,0.4)]" />
               <button
                 onClick={() => {
                   const org = orgs.find(o => o.id === lastOpened.id);
                   if (org) handleOpen(org); else router.push("/dashboard");
                 }}
-                className="text-sm font-semibold text-[#9E7A52] hover:text-white bg-[#B7926A]/10 hover:bg-[#B7926A] px-3.5 py-2 rounded-xl transition-all active:scale-[0.97] whitespace-nowrap"
+                className="text-sm font-semibold text-[#85A6E9] hover:text-white bg-[#2862D7]/10 hover:bg-[#2862D7] px-3.5 py-2 rounded-xl transition-all active:scale-[0.97] whitespace-nowrap"
               >
                 Weiter öffnen →
               </button>
@@ -515,63 +451,44 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── 8-card KPI strip ── */}
+        {/* KPI strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           <KpiCard label="Organisationen" value={hydrated ? kpiData.orgsCount.toString() : "—"} />
           <KpiCard label="Aktive Orgs"    value={hydrated ? kpiData.activeOrgs.toString() : "—"}
             note={hydrated ? `${orgs.filter(o => o.status !== "active").length} inaktiv` : undefined} />
           <KpiCard label="Projekte"       value={kpiData.totalProjects.toString()} />
           <KpiCard label="Benutzer"       value={kpiData.totalUsers.toString()} />
-          <KpiCard label="Analysen / Mo." value={kpiData.totalAnalyses.toString()}
-            trend={kpiData.analysesTrend} />
-          <KpiCard label="Kosten / Mo."   value={`CHF ${kpiData.totalCost.toFixed(2)}`}
-            trend={kpiData.costTrend} accent />
+          <KpiCard label="Analysen / Mo." value={kpiData.totalAnalyses.toString()} trend={kpiData.analysesTrend} />
+          <KpiCard label="Kosten / Mo."   value={`CHF ${kpiData.totalCost.toFixed(2)}`} trend={kpiData.costTrend} accent />
           <KpiCard label="Ø / Analyse"    value={`CHF ${kpiData.avgCostPerAnalyse.toFixed(2)}`} accent />
           <KpiCard label="Speicher ges."  value={`${kpiData.totalStorageGB.toFixed(1)} GB`} />
         </div>
 
-        {/* ── Quick actions ── */}
+        {/* Quick actions */}
         <div className="flex gap-3 flex-wrap sm:flex-nowrap">
           <QuickActionBtn
             label="Neue Organisation"
             onClick={() => { setEditTarget(null); setModalOpen(true); }}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 3V15M3 9H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            }
+            icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3V15M3 9H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>}
           />
           <QuickActionBtn
             label="Benutzer einladen"
             onClick={() => addToast("Funktion in Kürze verfügbar.", "info")}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M12 11.5C13.38 11.5 14.5 10.38 14.5 9C14.5 7.62 13.38 6.5 12 6.5C10.62 6.5 9.5 7.62 9.5 9C9.5 10.38 10.62 11.5 12 11.5Z" stroke="currentColor" strokeWidth="1.3" />
-                <path d="M7 15C7 13.34 9.24 12 12 12C14.76 12 17 13.34 17 15M3 5.5V9.5M5.5 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
-            }
+            icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12 11.5C13.38 11.5 14.5 10.38 14.5 9C14.5 7.62 13.38 6.5 12 6.5C10.62 6.5 9.5 7.62 9.5 9C9.5 10.38 10.62 11.5 12 11.5Z" stroke="currentColor" strokeWidth="1.3" /><path d="M7 15C7 13.34 9.24 12 12 12C14.76 12 17 13.34 17 15M3 5.5V9.5M5.5 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>}
           />
           <QuickActionBtn
             label="Bericht exportieren"
             onClick={() => addToast("CSV-Export wird vorbereitet...", "info")}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 11V3M6 8L9 11L12 8M3 13V15H15V13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            }
+            icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 11V3M6 8L9 11L12 8M3 13V15H15V13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>}
           />
           <QuickActionBtn
             label="Systemstatus"
             onClick={() => document.getElementById("systemstatus-section")?.scrollIntoView({ behavior: "smooth" })}
-            icon={
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 2L10.9 6.26L15.5 6.9L12.25 10.07L13.08 14.65L9 12.4L4.92 14.65L5.75 10.07L2.5 6.9L7.1 6.26L9 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-              </svg>
-            }
+            icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L10.9 6.26L15.5 6.9L12.25 10.07L13.08 14.65L9 12.4L4.92 14.65L5.75 10.07L2.5 6.9L7.1 6.26L9 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>}
           />
         </div>
 
-        {/* ── Cost overview ── */}
+        {/* Cost overview */}
         <div className="space-y-4">
           <SectionHeader title="Kostenübersicht" />
           <CostOverview
@@ -584,13 +501,13 @@ export default function AdminPage() {
           />
         </div>
 
-        {/* ── Organisations section ── */}
+        {/* Organisations */}
         <div className="space-y-4">
           <SectionHeader title="Organisationen" />
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-[#141414]">Alle Organisationen</h2>
-              <p className="text-xs text-stone-400 mt-0.5">
+              <h2 className="text-base font-semibold text-white">Alle Organisationen</h2>
+              <p className="text-xs text-[#7B8299] mt-0.5">
                 {filtered.length} {filtered.length === 1 ? "Eintrag" : "Einträge"}
                 {search ? ` für „${search}"` : ""}
               </p>
@@ -601,7 +518,7 @@ export default function AdminPage() {
               </div>
               <button
                 onClick={() => { setEditTarget(null); setModalOpen(true); }}
-                className="flex-shrink-0 flex items-center gap-1.5 bg-[#B7926A] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#9E7A52] active:scale-[0.97] transition-all shadow-sm shadow-[#B7926A]/25 whitespace-nowrap"
+                className="flex-shrink-0 flex items-center gap-1.5 bg-[#2862D7] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#3470E8] active:scale-[0.97] transition-all shadow-sm shadow-[#2862D7]/25 whitespace-nowrap"
               >
                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
                   <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -612,12 +529,12 @@ export default function AdminPage() {
           </div>
 
           {!hydrated ? (
-            <div className="bg-white border border-stone-200 rounded-2xl h-48 animate-pulse" />
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl h-48 animate-pulse" />
           ) : filtered.length === 0 ? (
-            <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center">
-              <p className="text-stone-500 text-sm font-medium">Keine Organisationen gefunden</p>
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
+              <p className="text-[#ABAEBB] text-sm font-medium">Keine Organisationen gefunden</p>
               {search && (
-                <button onClick={() => setSearch("")} className="mt-2 text-sm text-[#B7926A] hover:underline">
+                <button onClick={() => setSearch("")} className="mt-2 text-sm text-[#85A6E9] hover:underline">
                   Filter zurücksetzen
                 </button>
               )}
@@ -630,10 +547,7 @@ export default function AdminPage() {
               onOpen={handleOpen}
               onEdit={org => { setEditTarget(org); setModalOpen(true); }}
               onDelete={org => setDeleteTarget(org)}
-              onPause={org => {
-                if (org.status === "paused") { handlePause(org); }
-                else { setPauseTarget(org); }
-              }}
+              onPause={org => { if (org.status === "paused") { handlePause(org); } else { setPauseTarget(org); } }}
               onClose={org => setCloseTarget(org)}
               onArchive={org => setArchiveTarget(org)}
               onDetail={org => setDetailOrg(org)}
@@ -641,16 +555,14 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── Bottom two-col: CostTable + sidebar ── */}
+        {/* Bottom two-col */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-          {/* Left: cost table */}
           <div className="lg:col-span-2 space-y-4">
             <SectionHeader title="Kosten pro Organisation" />
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-[#141414]">Kostendetails</h2>
-                <p className="text-xs text-stone-400 mt-0.5">
+                <h2 className="text-base font-semibold text-white">Kostendetails</h2>
+                <p className="text-xs text-[#7B8299] mt-0.5">
                   {filteredCosts.length} {filteredCosts.length === 1 ? "Eintrag" : "Einträge"}
                   {costSearch ? ` für „${costSearch}"` : ""}
                 </p>
@@ -659,7 +571,7 @@ export default function AdminPage() {
                 <select
                   value={costMonth}
                   onChange={e => setCostMonth(e.target.value)}
-                  className="border border-stone-300 rounded-xl px-3 py-2.5 text-sm text-stone-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/40 focus:border-[#B7926A] transition-colors"
+                  className="border border-[rgba(133,166,233,0.25)] rounded-xl px-3 py-2.5 text-sm text-white bg-[rgba(23,37,64,0.6)] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors"
                 >
                   {costMonths.map(m => (
                     <option key={m} value={m}>{fmtMonth(m)}</option>
@@ -673,7 +585,6 @@ export default function AdminPage() {
             <CostTable costs={filteredCosts} />
           </div>
 
-          {/* Right sidebar: activity + system status */}
           <div className="space-y-4 lg:sticky lg:top-20">
             <ActivityFeed activities={activities} />
             <div id="systemstatus-section">
@@ -682,16 +593,14 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* ── Rechnungen & Exporte ── */}
+        {/* Invoices */}
         <div className="space-y-4">
           <SectionHeader title="Rechnungen & Exporte" />
           <InvoicesSection onToast={addToast} />
         </div>
 
       </main>
-      </div>
 
-      {/* ── Modals ── */}
       {modalOpen && (
         <OrgModal
           org={editTarget}
@@ -730,7 +639,7 @@ export default function AdminPage() {
           title="Organisation schließen"
           description="wird geschlossen. Daten werden aufbewahrt, aber der Zugang gesperrt."
           confirmLabel="Schließen"
-          confirmCls="bg-stone-700 text-white hover:bg-stone-800"
+          confirmCls="bg-[#172540] border border-[rgba(60,63,68,0.5)] text-white hover:bg-[#1E2D4A]"
           onConfirm={() => handleClose(closeTarget)}
           onClose={() => setCloseTarget(null)}
         />
@@ -742,13 +651,12 @@ export default function AdminPage() {
           title="Organisation archivieren"
           description="wird archiviert und ist schreibgeschützt."
           confirmLabel="Archivieren"
-          confirmCls="bg-stone-500 text-white hover:bg-stone-600"
+          confirmCls="bg-[rgba(60,63,68,0.6)] text-white hover:bg-[rgba(60,63,68,0.8)]"
           onConfirm={() => handleArchive(archiveTarget)}
           onClose={() => setArchiveTarget(null)}
         />
       )}
 
-      {/* ── Detail panel ── */}
       <OrgDetailPanel
         org={isDetailOrgInFiltered}
         costs={MOCK_COSTS}
