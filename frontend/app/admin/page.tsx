@@ -118,7 +118,7 @@ function KpiCard({
 
 /* ── Search input ──────────────────────────────────────────── */
 function SearchInput({
-  value, onChange, placeholder,
+  value, onChange, placeholder, id,
 }: {
   value: string;
   onChange: (v: string) => void;
