@@ -34,19 +34,23 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: project, error: insertErr } = await admin
+
+  // Try full insert (with bauzone/parcel_number if migration 20240004 applied)
+  let { data: project, error: insertErr } = await admin
     .from("projects")
-    .insert({
-      name,
-      domain,
-      location,
-      org_id: user.org_id,
-      status: "active",
-      parcel_number: parcel_number ?? null,
-      bauzone: zone ?? null,
-    })
+    .insert({ name, domain, location, org_id: user.org_id, status: "active",
+              parcel_number: parcel_number ?? null, bauzone: zone ?? null })
     .select()
     .single();
+
+  // Fallback: columns don't exist yet (migration not run) — insert without them
+  if (insertErr?.message?.includes("bauzone") || insertErr?.message?.includes("parcel_number")) {
+    ({ data: project, error: insertErr } = await admin
+      .from("projects")
+      .insert({ name, domain, location, org_id: user.org_id, status: "active" })
+      .select()
+      .single());
+  }
 
   if (insertErr) return err(insertErr.message, 500);
 
