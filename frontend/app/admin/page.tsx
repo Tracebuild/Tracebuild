@@ -16,7 +16,8 @@ import SystemStatus from "@/components/admin/SystemStatus";
 import Toast from "@/components/admin/Toast";
 import InvoicesSection from "@/components/admin/InvoicesSection";
 import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
-import { MOCK_ORGS, MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
+import { MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
+import { organizationService } from "@/lib/services/organizationService";
 import type {
   Organization,
   Activity,
@@ -26,30 +27,10 @@ import type {
 } from "@/components/admin/types";
 
 /* ── Storage keys ──────────────────────────────────────────── */
-const ORG_KEY         = "tb_admin_orgs";
 const ACTIVITY_KEY    = "tb_admin_activities";
 const LAST_OPENED_KEY = "tb_admin_last_opened";
 
 /* ── Persistence ───────────────────────────────────────────── */
-function loadOrgs(): Organization[] {
-  try {
-    const raw = localStorage.getItem(ORG_KEY);
-    if (!raw) return MOCK_ORGS;
-    const parsed = JSON.parse(raw) as Organization[];
-    if (parsed.length === 0) return MOCK_ORGS;
-    // Ensure default org is always first
-    const hasDefault = parsed.some(o => o.isDefault);
-    if (!hasDefault) return [MOCK_ORGS[0], ...parsed];
-    return parsed;
-  } catch {
-    return MOCK_ORGS;
-  }
-}
-
-function persistOrgs(orgs: Organization[]) {
-  localStorage.setItem(ORG_KEY, JSON.stringify(orgs));
-}
-
 function loadActivities(): Activity[] {
   try {
     const raw = localStorage.getItem(ACTIVITY_KEY);
@@ -236,7 +217,7 @@ export default function AdminPage() {
   const [userEmail, setUserEmail] = useState("");
 
   /* Org state */
-  const [orgs, setOrgs]           = useState<Organization[]>(MOCK_ORGS);
+  const [orgs, setOrgs]           = useState<Organization[]>([]);
   const [hydrated, setHydrated]   = useState(false);
   const [search, setSearch]       = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -276,22 +257,22 @@ export default function AdminPage() {
     });
   }, [router]);
 
-  /* ── Hydrate localStorage ── */
+  /* ── Load orgs from API, activities + lastOpened from localStorage ── */
   useEffect(() => {
-    setOrgs(loadOrgs());
+    organizationService.list()
+      .then(data => setOrgs(sortOrgs(data)))
+      .catch(() => { /* keep empty list */ })
+      .finally(() => setHydrated(true));
     setActivities(loadActivities());
     setLastOpened(loadLastOpened());
-    setHydrated(true);
   }, []);
 
-  /* ── Org save — default org always first ── */
-  function saveOrgs(updated: Organization[]) {
-    const sorted = [
-      ...updated.filter(o => o.isDefault),
-      ...updated.filter(o => !o.isDefault),
+  /* ── Keep default org first ── */
+  function sortOrgs(list: Organization[]): Organization[] {
+    return [
+      ...list.filter(o => o.isDefault),
+      ...list.filter(o => !o.isDefault),
     ];
-    setOrgs(sorted);
-    persistOrgs(sorted);
   }
 
   /* ── Activity tracking ── */
@@ -327,81 +308,90 @@ export default function AdminPage() {
   }
 
   /* ── Save (create / edit) ── */
-  function handleSave(data: OrgFormData) {
-    const isEdit = !!editTarget;
+  async function handleSave(data: OrgFormData) {
+    const isEdit  = !!editTarget;
     const targetId = editTarget?.id;
-
-    if (isEdit && targetId) {
-      saveOrgs(orgs.map(o => o.id === targetId ? {
-        ...o,
-        name: data.name,
-        description: data.description || undefined,
-        planTier: data.planTier,
-        status: data.status,
-        owner: data.owner || undefined,
-        ownerEmail: data.ownerEmail || undefined,
-        monthlyBudget: data.monthlyBudget ?? undefined,
-      } : o));
-      trackActivity("org_edited", data.name, targetId);
-      if (data.planTier !== editTarget?.planTier) {
-        trackActivity("plan_changed", data.name, targetId, `${editTarget?.planTier} → ${data.planTier}`);
+    try {
+      if (isEdit && targetId) {
+        const updated = await organizationService.update(targetId, data);
+        setOrgs(prev => sortOrgs(prev.map(o => o.id === targetId ? updated : o)));
+        trackActivity("org_edited", data.name, targetId);
+        if (data.planTier !== editTarget?.planTier) {
+          trackActivity("plan_changed", data.name, targetId, `${editTarget?.planTier} → ${data.planTier}`);
+        }
+        addToast(`${data.name} wurde gespeichert.`, "success");
+      } else {
+        const newOrg = await organizationService.create(data);
+        setOrgs(prev => sortOrgs([...prev, newOrg]));
+        trackActivity("org_created", data.name, newOrg.id);
+        addToast(`${data.name} wurde erstellt.`, "success");
       }
-      addToast(`${data.name} wurde gespeichert.`, "success");
-    } else {
-      const newOrg: Organization = {
-        id: crypto.randomUUID(),
-        name: data.name,
-        planTier: data.planTier,
-        status: data.status,
-        createdAt: new Date().toISOString(),
-        isDefault: false,
-        description: data.description || undefined,
-        owner: data.owner || undefined,
-        ownerEmail: data.ownerEmail || undefined,
-        monthlyBudget: data.monthlyBudget ?? undefined,
-      };
-      saveOrgs([...orgs, newOrg]);
-      trackActivity("org_created", data.name, newOrg.id);
-      addToast(`${data.name} wurde erstellt.`, "success");
+    } catch {
+      addToast("Fehler beim Speichern. Bitte versuche es erneut.", "error");
+    } finally {
+      setModalOpen(false);
+      setEditTarget(null);
     }
-
-    setModalOpen(false);
-    setEditTarget(null);
   }
 
   /* ── Delete ── */
-  function handleDelete(org: Organization) {
-    saveOrgs(orgs.filter(o => o.id !== org.id));
-    setDeleteTarget(null);
-    addToast(`${org.name} wurde gelöscht.`, "info");
+  async function handleDelete(org: Organization) {
+    try {
+      await organizationService.softDelete(org.id);
+      setOrgs(prev => prev.filter(o => o.id !== org.id));
+      if (detailOrg?.id === org.id) setDetailOrg(null);
+      addToast(`${org.name} wurde gelöscht.`, "info");
+    } catch {
+      addToast("Fehler beim Löschen.", "error");
+    } finally {
+      setDeleteTarget(null);
+    }
   }
 
   /* ── Pause / Reactivate ── */
-  function handlePause(org: Organization) {
+  async function handlePause(org: Organization) {
     const newStatus = org.status === "paused" ? "active" : "paused";
-    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: newStatus } : o));
-    trackActivity(newStatus === "paused" ? "org_paused" : "org_edited", org.name, org.id);
-    addToast(
-      newStatus === "paused" ? `${org.name} wurde pausiert.` : `${org.name} wurde reaktiviert.`,
-      newStatus === "paused" ? "warning" : "success",
-    );
-    setPauseTarget(null);
+    try {
+      const updated = await organizationService.changeStatus(org.id, newStatus);
+      setOrgs(prev => prev.map(o => o.id === org.id ? updated : o));
+      trackActivity(newStatus === "paused" ? "org_paused" : "org_edited", org.name, org.id);
+      addToast(
+        newStatus === "paused" ? `${org.name} wurde pausiert.` : `${org.name} wurde reaktiviert.`,
+        newStatus === "paused" ? "warning" : "success",
+      );
+    } catch {
+      addToast("Fehler beim Statuswechsel.", "error");
+    } finally {
+      setPauseTarget(null);
+    }
   }
 
   /* ── Close ── */
-  function handleClose(org: Organization) {
-    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: "closed" } : o));
-    trackActivity("org_closed", org.name, org.id);
-    addToast(`${org.name} wurde geschlossen.`, "info");
-    setCloseTarget(null);
+  async function handleClose(org: Organization) {
+    try {
+      const updated = await organizationService.changeStatus(org.id, "closed");
+      setOrgs(prev => prev.map(o => o.id === org.id ? updated : o));
+      trackActivity("org_closed", org.name, org.id);
+      addToast(`${org.name} wurde geschlossen.`, "info");
+    } catch {
+      addToast("Fehler beim Schließen.", "error");
+    } finally {
+      setCloseTarget(null);
+    }
   }
 
   /* ── Archive ── */
-  function handleArchive(org: Organization) {
-    saveOrgs(orgs.map(o => o.id === org.id ? { ...o, status: "archived" } : o));
-    trackActivity("org_archived", org.name, org.id);
-    addToast(`${org.name} wurde archiviert.`, "info");
-    setArchiveTarget(null);
+  async function handleArchive(org: Organization) {
+    try {
+      const updated = await organizationService.changeStatus(org.id, "archived");
+      setOrgs(prev => prev.map(o => o.id === org.id ? updated : o));
+      trackActivity("org_archived", org.name, org.id);
+      addToast(`${org.name} wurde archiviert.`, "info");
+    } catch {
+      addToast("Fehler beim Archivieren.", "error");
+    } finally {
+      setArchiveTarget(null);
+    }
   }
 
   /* ── Derived: filtered orgs ── */
@@ -455,9 +445,9 @@ export default function AdminPage() {
     const prevAnalyses  = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
     const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
 
-    const activeOrgs   = orgs.filter(o => o.status === "active").length;
-    const totalProjects = MOCK_ORGS.reduce((s, o) => s + (o.projectCount ?? 0), 0);
-    const totalUsers    = MOCK_ORGS.reduce((s, o) => s + (o.userCount ?? 0), 0);
+    const activeOrgs    = orgs.filter(o => o.status === "active").length;
+    const totalProjects = orgs.reduce((s, o) => s + (o.projectCount ?? 0), 0);
+    const totalUsers    = orgs.reduce((s, o) => s + (o.userCount ?? 0), 0);
 
     function trend(cur: number, prev: number) {
       if (prev === 0) return undefined;
@@ -478,7 +468,7 @@ export default function AdminPage() {
       avgCostPerAnalyse: totalAnalyses > 0 ? totalCost / totalAnalyses : 0,
       totalStorageGB,
       monthlyTotalsData: monthlyTotals(),
-      monthlyBudget: MOCK_ORGS.reduce((s, o) => s + (o.monthlyBudget ?? 0), 0),
+      monthlyBudget: orgs.reduce((s, o) => s + (o.monthlyBudget ?? 0), 0),
     };
   }, [orgs, hydrated]);
 
@@ -764,7 +754,7 @@ export default function AdminPage() {
         costs={MOCK_COSTS}
         onClose={() => setDetailOrg(null)}
         onEdit={() => {
-          if (detailOrg) { setEditTarget(detailOrg); setModalOpen(true); }
+          if (isDetailOrgInFiltered) { setEditTarget(isDetailOrgInFiltered); setModalOpen(true); }
         }}
         onToast={addToast}
       />

@@ -92,11 +92,11 @@ function Initials({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
 }
 
 const planLabel: Record<PlanTier, string> = {
-  starter: "Starter", pro: "Pro", enterprise: "Enterprise",
+  starter: "Starter", business: "Business", enterprise: "Enterprise",
 };
 const planCls: Record<PlanTier, string> = {
   starter:    "bg-stone-100 text-stone-500",
-  pro:        "bg-sky-50 text-sky-700",
+  business:   "bg-sky-50 text-sky-700",
   enterprise: "bg-[#B7926A]/10 text-[#9E7A52]",
 };
 type StatusMeta = { dot: string; text: string; label: string };

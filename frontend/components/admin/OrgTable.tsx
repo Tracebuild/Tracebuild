@@ -16,12 +16,13 @@ interface Props {
   onDetail?: (org: Organization) => void;
 }
 
-type KnownPlan = PlanTier | "free";
+type KnownPlan = PlanTier | "free" | "pro";
 
 const planMeta: Record<KnownPlan, { label: string; cls: string }> = {
   starter:    { label: "Starter",    cls: "bg-stone-100 text-stone-500"    },
-  free:       { label: "Starter",    cls: "bg-stone-100 text-stone-500"    }, // legacy fallback
-  pro:        { label: "Pro",        cls: "bg-sky-50 text-sky-700"         },
+  free:       { label: "Starter",    cls: "bg-stone-100 text-stone-500"    },
+  business:   { label: "Business",   cls: "bg-sky-50 text-sky-700"         },
+  pro:        { label: "Business",   cls: "bg-sky-50 text-sky-700"         },
   enterprise: { label: "Enterprise", cls: "bg-[#B7926A]/10 text-[#9E7A52]" },
 };
 

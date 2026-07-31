@@ -71,9 +71,9 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
     setStatus(org?.status ?? "active");
     setOwner(org?.owner ?? "");
     setOwnerEmail(org?.ownerEmail ?? "");
-    setUserLimit(null);
-    setProjectLimit(null);
-    setStorageLimit(null);
+    setUserLimit(org?.userCount    ?? null);
+    setProjectLimit(org?.projectCount ?? null);
+    setStorageLimit(org?.storageGB  ?? null);
     setMonthlyBudget(org?.monthlyBudget ?? null);
   }, [org]);
 
@@ -191,7 +191,7 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
               className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
             >
               <option value="starter">Starter</option>
-              <option value="pro">Pro</option>
+              <option value="business">Business</option>
               <option value="enterprise">Enterprise</option>
             </select>
           </div>

@@ -1,4 +1,4 @@
-export type PlanTier = "starter" | "pro" | "enterprise";
+export type PlanTier = "starter" | "business" | "enterprise";
 export type OrgStatus = "active" | "paused" | "closed" | "archived";
 
 export interface Organization {
