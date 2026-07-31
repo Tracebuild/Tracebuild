@@ -13,7 +13,7 @@ export default function ScrollProgressBar() {
   }, []);
   return (
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, zIndex: 100, pointerEvents: "none" }}>
-      <div style={{ height: "100%", width: `${w.toFixed(2)}%`, background: "#CEF79E", transition: "width 0.1s linear" }} />
+      <div style={{ height: "100%", width: `${w.toFixed(2)}%`, background: "#2862D7", transition: "width 0.1s linear" }} />
     </div>
   );
 }

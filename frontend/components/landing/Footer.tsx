@@ -6,7 +6,7 @@ export default function Footer() {
     <footer style={{ position: "relative" }}>
       <div style={{ maxWidth: 1120, margin: "0 auto", padding: "0 24px" }}>
         <div style={{
-          borderTop: "1px solid rgba(245,243,238,0.12)",
+          borderTop: "1px solid rgba(60,63,68,0.75)",
           padding: "36px 0",
           display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 24,
         }}>
@@ -17,13 +17,13 @@ export default function Footer() {
               width={80} height={20}
               style={{ height: 20, width: "auto", objectFit: "contain" }}
             />
-            <span style={{ fontSize: 14, color: "#9A9D96" }}>© {new Date().getFullYear()} TraceBuild</span>
+            <span style={{ fontSize: 14, color: "#ABAEBB" }}>© {new Date().getFullYear()} TraceBuild</span>
           </div>
           <div style={{ display: "flex", gap: 32 }}>
-            <a href="#preise" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Preise</a>
+            <a href="#preise" style={{ fontSize: 14, color: "#ABAEBB", textDecoration: "none" }}>Preise</a>
             <a href="mailto:jonas@tracebuild.ch"
-               style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Kontakt</a>
-            <Link href="/login" style={{ fontSize: 14, color: "#9A9D96", textDecoration: "none" }}>Login</Link>
+               style={{ fontSize: 14, color: "#ABAEBB", textDecoration: "none" }}>Kontakt</a>
+            <Link href="/login" style={{ fontSize: 14, color: "#ABAEBB", textDecoration: "none" }}>Login</Link>
           </div>
         </div>
       </div>
