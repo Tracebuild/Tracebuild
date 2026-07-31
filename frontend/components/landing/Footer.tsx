@@ -12,10 +12,10 @@ export default function Footer() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <Image
-              src="/tracebuild-logo.png"
+              src="/Logo-new.png"
               alt="TraceBuild"
-              width={80} height={20}
-              style={{ height: 20, width: "auto", objectFit: "contain" }}
+              width={533} height={400}
+              style={{ height: 22, width: "auto", objectFit: "contain" }}
             />
             <span style={{ fontSize: 14, color: "#ABAEBB" }}>© {new Date().getFullYear()} TraceBuild</span>
           </div>

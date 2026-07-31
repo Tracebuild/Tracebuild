@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import TraceBuildLogo from "@/components/landing/TraceBuildLogo";
+
+const EASE = "cubic-bezier(.52,.01,0,1)";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -27,8 +29,6 @@ export default function RegisterPage() {
       password,
       options: {
         data: { full_name: name },
-        // Verwendet die aktuelle Domain statt der statischen "Site URL" aus dem
-        // Supabase-Dashboard — vermeidet falsche Links nach Domain-Umzügen.
         emailRedirectTo: `${window.location.origin}/login`,
       },
     });
@@ -49,52 +49,97 @@ export default function RegisterPage() {
     router.refresh();
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%", boxSizing: "border-box",
+    border: "1px solid rgba(133,166,233,0.25)",
+    borderRadius: 10, padding: "11px 14px",
+    fontSize: 14, color: "#FFFFFF",
+    background: "rgba(23,37,64,0.6)",
+    outline: "none",
+    transition: `border-color .3s ${EASE}, box-shadow .3s ${EASE}`,
+  };
+
+  const focusIn  = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = "#2862D7";
+    e.currentTarget.style.boxShadow   = "0 0 0 3px rgba(40,98,215,0.2)";
+  };
+  const focusOut = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = "rgba(133,166,233,0.25)";
+    e.currentTarget.style.boxShadow   = "none";
+  };
+
   return (
-    <div className="bg-white/88 backdrop-blur-md rounded-2xl shadow-2xl shadow-stone-900/10 border border-stone-200/70 p-8">
+    <div style={{
+      background: "rgba(23,37,64,0.75)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      borderRadius: 18,
+      boxShadow: "0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(133,166,233,0.15)",
+      border: "1px solid rgba(60,63,68,0.6)",
+      padding: 36,
+    }}>
 
       {/* ── Branding ─────────────────────────────────────── */}
-      <div className="flex flex-col items-center mb-8">
-        <TraceBuildLogo size="md" light />
-        <div className="mt-6 text-center">
-          <h1 className="text-xl font-bold text-[#141414]">Konto erstellen</h1>
-          <p className="text-sm text-stone-500 mt-1">
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
+        <Image
+          src="/Logo-new.png"
+          alt="TraceBuild"
+          width={533}
+          height={400}
+          style={{ height: 52, width: "auto", objectFit: "contain" }}
+          priority
+        />
+        <div style={{ marginTop: 18, textAlign: "center" }}>
+          <h1 style={{
+            fontFamily: "Archivo, Arial, sans-serif",
+            fontSize: 20, fontWeight: 600,
+            color: "#FFFFFF", margin: 0,
+            letterSpacing: "-0.01em",
+          }}>
+            Konto erstellen
+          </h1>
+          <p style={{ fontSize: 14, color: "#ABAEBB", margin: "5px 0 0" }}>
             Starte deine kostenlose Testphase
           </p>
         </div>
       </div>
 
       {/* ── Form ─────────────────────────────────────────── */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#ABAEBB", marginBottom: 6 }}>
             Name
           </label>
           <input
             type="text"
             required
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors bg-white/70"
+            onChange={e => setName(e.target.value)}
             placeholder="Max Muster"
+            style={inputStyle}
+            onFocus={focusIn}
+            onBlur={focusOut}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#ABAEBB", marginBottom: 6 }}>
             E-Mail
           </label>
           <input
             type="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors bg-white/70"
+            onChange={e => setEmail(e.target.value)}
             placeholder="name@firma.ch"
+            style={inputStyle}
+            onFocus={focusIn}
+            onBlur={focusOut}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1.5">
+          <label style={{ display: "block", fontSize: 14, fontWeight: 500, color: "#ABAEBB", marginBottom: 6 }}>
             Passwort
           </label>
           <input
@@ -102,20 +147,34 @@ export default function RegisterPage() {
             required
             minLength={8}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-stone-300 rounded-lg px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors bg-white/70"
+            onChange={e => setPassword(e.target.value)}
             placeholder="Mind. 8 Zeichen"
+            style={inputStyle}
+            onFocus={focusIn}
+            onBlur={focusOut}
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+          <p style={{
+            fontSize: 14, color: "#fca5a5",
+            background: "rgba(220,38,38,0.12)",
+            border: "1px solid rgba(220,38,38,0.35)",
+            borderRadius: 10, padding: "10px 14px",
+            margin: 0,
+          }}>
             {error}
           </p>
         )}
 
         {info && (
-          <p className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3.5 py-2.5">
+          <p style={{
+            fontSize: 14, color: "#6ee7b7",
+            background: "rgba(16,185,129,0.1)",
+            border: "1px solid rgba(16,185,129,0.3)",
+            borderRadius: 10, padding: "10px 14px",
+            margin: 0,
+          }}>
             {info}
           </p>
         )}
@@ -123,16 +182,32 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#B7926A] text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-[#9E7A52] disabled:opacity-50 active:scale-[0.98] transition-all duration-150 mt-2"
+          style={{
+            width: "100%",
+            background: "#2862D7", color: "#FFFFFF",
+            padding: "12px 0", border: "none",
+            borderRadius: 10, fontSize: 14, fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.6 : 1,
+            transition: `all .4s ${EASE}`,
+            marginTop: 8, letterSpacing: "0.02em",
+          }}
+          onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = "#3470E8"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#2862D7"; }}
         >
           {loading ? "Konto wird erstellt..." : "Konto erstellen →"}
         </button>
       </form>
 
       {/* ── Footer link ───────────────────────────────────── */}
-      <p className="text-center text-sm text-stone-500 mt-6">
+      <p style={{ textAlign: "center", fontSize: 14, color: "#7B8299", margin: "24px 0 0" }}>
         Bereits registriert?{" "}
-        <Link href="/login" className="text-[#B7926A] font-medium hover:underline">
+        <Link
+          href="/login"
+          style={{ color: "#85A6E9", fontWeight: 500, textDecoration: "none", transition: `color .3s ${EASE}` }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#FFFFFF"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#85A6E9"; }}
+        >
           Anmelden
         </Link>
       </p>
