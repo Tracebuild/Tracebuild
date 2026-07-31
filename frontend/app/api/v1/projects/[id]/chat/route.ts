@@ -143,15 +143,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const docIds = (docRows ?? []).map((d: { id: string }) => d.id);
   let lastItems: AnalysisItemRow[] = [];
   if (docIds.length > 0) {
-    const { data: latestAnalysis } = await admin
+    const { data: analyses } = await admin
       .from("analyses")
       .select("id")
       .in("document_id", docIds)
       .eq("status", "done")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
 
+    const latestAnalysis = analyses?.[0] ?? null;
     if (latestAnalysis) {
       const { data: items } = await admin
         .from("analysis_items")
