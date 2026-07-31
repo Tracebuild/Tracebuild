@@ -105,13 +105,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const admin = createAdminClient();
 
-  const { data: project } = await admin
+  const { data: project, error: projectError } = await admin
     .from("projects")
-    .select("name, domain, location, bauzone")
+    .select("*")
     .eq("id", params.id)
     .eq("org_id", user.org_id)
     .single();
-  if (!project) return err("Projekt nicht gefunden", 404);
+  if (projectError || !project) return err(`Projekt nicht gefunden (${projectError?.message ?? "no data"})`, 404);
 
   const body = await request.json() as { content?: string };
   const content = body.content?.trim();
@@ -163,7 +163,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   const systemPrompt = buildSystemPrompt(
-    project as ProjectRow,
+    project as unknown as ProjectRow,
     (normRows ?? []) as unknown as NormRow[],
     lastItems,
   );
