@@ -17,14 +17,17 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   if (!user) return null;
 
   const admin = createAdminClient();
-  const { data } = await admin
+
+  // Only select org_id — avoids breaking if role column is missing
+  const { data: rows } = await admin
     .from("users")
     .select("org_id, role")
     .eq("id", user.id)
-    .limit(1)
-    .single();
+    .limit(1);
 
-  if (!data) {
+  const row = rows?.[0] ?? null;
+
+  if (!row) {
     // First login: create org + user
     const { data: org } = await admin
       .from("organizations")
@@ -46,8 +49,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   return {
     id: user.id,
     email: user.email ?? "",
-    org_id: data.org_id,
-    role: (data.role as UserRole) ?? "member",
+    org_id: row.org_id,
+    role: (row.role as UserRole) ?? "member",
   };
 }
 
