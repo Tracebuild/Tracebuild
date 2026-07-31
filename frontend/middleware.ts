@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const SUPER_ADMIN_DOMAIN = "@tracebuild.info";
+
 export async function middleware(request: NextRequest) {
-  // If env vars are missing, skip middleware entirely
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next();
   }
@@ -31,29 +32,42 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { pathname } = request.nextUrl;
-    const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register");
     const isLandingRoute = pathname === "/";
+    const isSuperAdmin   = !!user?.email?.endsWith(SUPER_ADMIN_DOMAIN);
 
+    // Not logged in → redirect to login (except auth/landing routes)
     if (!user && !isAuthRoute && !isLandingRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
     }
 
+    // Logged in on auth/landing → route by email domain
     if (user && (isAuthRoute || isLandingRoute)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/admin";
+      url.pathname = isSuperAdmin ? "/admin" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Protect /admin (super admin portal) — non-tracebuild.info users go to /dashboard
+    // /admin/org is the org admin portal and handles its own auth guard
+    if (
+      user &&
+      pathname.startsWith("/admin") &&
+      !pathname.startsWith("/admin/org") &&
+      !isSuperAdmin
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
     return supabaseResponse;
   } catch {
-    // If middleware crashes, allow the request through rather than 500ing
     return NextResponse.next();
   }
 }
