@@ -8,6 +8,7 @@ const ADMIN_EMAILS = new Set([
   "tracebuild.info@gmail.com",
   "livio.thoma07@gmail.com",
   "jonasjud87@gmail.com",
+  "liviocyrill.thomamanser@gmail.com",
 ]);
 
 export default function AdminReturnFab() {
