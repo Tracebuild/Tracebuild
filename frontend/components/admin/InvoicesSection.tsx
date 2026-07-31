@@ -21,24 +21,22 @@ const MOCK_INVOICES: MockInvoice[] = [
 ];
 
 const statusCfg = {
-  laufend:    { label: "Laufend",    dot: "bg-amber-400",   text: "text-amber-700"   },
-  bezahlt:    { label: "Bezahlt",    dot: "bg-emerald-500", text: "text-emerald-700" },
-  ausstehend: { label: "Ausstehend", dot: "bg-red-500",     text: "text-red-700"     },
+  laufend:    { label: "Laufend",    dot: "bg-amber-400",   text: "text-amber-400"   },
+  bezahlt:    { label: "Bezahlt",    dot: "bg-emerald-500", text: "text-emerald-400" },
+  ausstehend: { label: "Ausstehend", dot: "bg-red-500",     text: "text-red-400"     },
 } as const;
 
-interface Props {
-  onToast: (msg: string, type: ToastMessage["type"]) => void;
-}
+interface Props { onToast: (msg: string, type: ToastMessage["type"]) => void }
 
 export default function InvoicesSection({ onToast }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div className="lg:col-span-2 bg-white border border-stone-200 rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#141414]">Monatliche Kostenberichte</h3>
+      <div className="lg:col-span-2 bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[rgba(60,63,68,0.4)] flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white">Monatliche Kostenberichte</h3>
           <button
             onClick={() => onToast("Alle Berichte werden als ZIP exportiert...", "info")}
-            className="text-xs font-semibold text-[#9E7A52] bg-[#B7926A]/10 hover:bg-[#B7926A] hover:text-white px-3 py-1.5 rounded-lg transition-all"
+            className="text-xs font-semibold text-[#85A6E9] bg-[#2862D7]/10 hover:bg-[#2862D7] hover:text-white px-3 py-1.5 rounded-lg transition-all"
           >
             Alle exportieren
           </button>
@@ -46,11 +44,11 @@ export default function InvoicesSection({ onToast }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[480px]">
             <thead>
-              <tr className="border-b border-stone-100 bg-stone-50/60">
-                <th className="px-5 py-3 text-left   text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Monat</th>
-                <th className="px-4 py-3 text-right  text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Betrag</th>
-                <th className="px-4 py-3 text-left   text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Status</th>
-                <th className="px-5 py-3 text-right  text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Export</th>
+              <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
+                <th className="px-5 py-3 text-left  text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider">Monat</th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider">Betrag</th>
+                <th className="px-4 py-3 text-left  text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 text-right text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider">Export</th>
               </tr>
             </thead>
             <tbody>
@@ -59,13 +57,13 @@ export default function InvoicesSection({ onToast }: Props) {
                 return (
                   <tr
                     key={inv.id}
-                    className={`hover:bg-stone-50/60 transition-colors ${idx < MOCK_INVOICES.length - 1 ? "border-b border-stone-100" : ""}`}
+                    className={`hover:bg-[#1E2D4A]/60 transition-colors ${idx < MOCK_INVOICES.length - 1 ? "border-b border-[rgba(60,63,68,0.3)]" : ""}`}
                   >
                     <td className="px-5 py-4">
-                      <p className="font-medium text-[#141414]">{fmtMonth(inv.month)}</p>
-                      <p className="text-[11px] text-stone-400">{inv.id}</p>
+                      <p className="font-medium text-white">{fmtMonth(inv.month)}</p>
+                      <p className="text-[11px] text-[#7B8299]">{inv.id}</p>
                     </td>
-                    <td className="px-4 py-4 text-right tabular-nums font-semibold text-[#141414]">
+                    <td className="px-4 py-4 text-right tabular-nums font-semibold text-white">
                       CHF {inv.total.toFixed(2)}
                     </td>
                     <td className="px-4 py-4">
@@ -82,15 +80,15 @@ export default function InvoicesSection({ onToast }: Props) {
                             : onToast("PDF wird noch vorbereitet.", "warning")}
                           className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-colors ${
                             inv.pdfReady
-                              ? "border-[#B7926A]/30 text-[#9E7A52] hover:bg-[#B7926A]/10"
-                              : "border-stone-200 text-stone-300 cursor-not-allowed"
+                              ? "border-[#2862D7]/30 text-[#85A6E9] hover:bg-[#2862D7]/10"
+                              : "border-[rgba(60,63,68,0.4)] text-[rgba(133,166,233,0.3)] cursor-not-allowed"
                           }`}
                         >
                           PDF
                         </button>
                         <button
                           onClick={() => onToast(`CSV für ${fmtMonth(inv.month)} exportiert.`, "success")}
-                          className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-700 transition-colors"
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-[rgba(60,63,68,0.4)] text-[#ABAEBB] hover:border-[rgba(133,166,233,0.4)] hover:text-white transition-colors"
                         >
                           CSV
                         </button>
@@ -105,20 +103,20 @@ export default function InvoicesSection({ onToast }: Props) {
       </div>
 
       <div className="space-y-4">
-        <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <h4 className="text-sm font-semibold text-[#141414] mb-4">Monatsvergleich</h4>
+        <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-5">
+          <h4 className="text-sm font-semibold text-white mb-4">Monatsvergleich</h4>
           <div className="space-y-2.5">
             {MOCK_INVOICES.slice(0, 4).map(inv => (
               <div key={inv.id} className="flex items-center justify-between">
-                <span className="text-xs text-stone-500">{fmtMonth(inv.month)}</span>
-                <span className="text-xs font-semibold text-[#141414] tabular-nums">CHF {inv.total.toFixed(2)}</span>
+                <span className="text-xs text-[#ABAEBB]">{fmtMonth(inv.month)}</span>
+                <span className="text-xs font-semibold text-white tabular-nums">CHF {inv.total.toFixed(2)}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white border border-stone-200 rounded-2xl p-5">
-          <h4 className="text-sm font-semibold text-[#141414] mb-3">Schnellexport</h4>
+        <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-5">
+          <h4 className="text-sm font-semibold text-white mb-3">Schnellexport</h4>
           <div className="space-y-2">
             {[
               { label: "Aktueller Monat — PDF", msg: "PDF-Export wird vorbereitet...", type: "info" as const },
@@ -128,7 +126,7 @@ export default function InvoicesSection({ onToast }: Props) {
               <button
                 key={label}
                 onClick={() => onToast(msg, type)}
-                className="w-full text-left text-sm font-medium text-stone-600 py-2.5 px-3.5 rounded-xl border border-stone-200 hover:border-[#B7926A]/40 hover:bg-[#B7926A]/5 hover:text-[#141414] transition-all"
+                className="w-full text-left text-sm font-medium text-[#ABAEBB] py-2.5 px-3.5 rounded-xl border border-[rgba(60,63,68,0.4)] hover:border-[#2862D7]/40 hover:bg-[#2862D7]/8 hover:text-white transition-all"
               >
                 {label}
               </button>

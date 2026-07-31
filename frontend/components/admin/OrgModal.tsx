@@ -22,6 +22,14 @@ interface Props {
   onClose: () => void;
 }
 
+const inputCls = [
+  "w-full rounded-xl px-3.5 py-2.5 text-sm text-white",
+  "bg-[rgba(23,37,64,0.6)] border border-[rgba(133,166,233,0.25)]",
+  "placeholder:text-[#7B8299]",
+  "focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7]",
+  "transition-colors",
+].join(" ");
+
 function NumInput({
   label, value, onChange, suffix,
 }: {
@@ -32,18 +40,18 @@ function NumInput({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-stone-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#7B8299] mb-1">{label}</label>
       <div className="relative">
         <input
           type="number"
           min={0}
           value={value ?? ""}
           onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))}
-          className="w-full border border-stone-300 rounded-lg px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+          className={inputCls}
           placeholder="—"
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 pointer-events-none">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#7B8299] pointer-events-none">
             {suffix}
           </span>
         )}
@@ -95,32 +103,31 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
   }
 
   const statusOptions: { value: OrgStatus; label: string; dot: string; active: string }[] = [
-    { value: "active",   label: "Aktiv",       dot: "bg-emerald-500", active: "bg-emerald-50 border-emerald-300 text-emerald-700" },
-    { value: "paused",   label: "Pausiert",    dot: "bg-amber-400",   active: "bg-amber-50 border-amber-300 text-amber-700"       },
-    { value: "closed",   label: "Geschlossen", dot: "bg-stone-400",   active: "bg-stone-100 border-stone-400 text-stone-700"      },
-    { value: "archived", label: "Archiviert",  dot: "bg-stone-300",   active: "bg-stone-50 border-stone-300 text-stone-500"       },
+    { value: "active",   label: "Aktiv",       dot: "bg-emerald-500", active: "bg-emerald-500/15 border-emerald-500/40 text-emerald-400" },
+    { value: "paused",   label: "Pausiert",    dot: "bg-amber-400",   active: "bg-amber-500/15 border-amber-500/40 text-amber-400"       },
+    { value: "closed",   label: "Geschlossen", dot: "bg-[#4B5563]",   active: "bg-[rgba(60,63,68,0.5)] border-[rgba(133,166,233,0.3)] text-[#ABAEBB]" },
+    { value: "archived", label: "Archiviert",  dot: "bg-[#374151]",   active: "bg-[rgba(60,63,68,0.3)] border-[rgba(60,63,68,0.4)] text-[#7B8299]"   },
   ];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm px-4 py-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 py-6 overflow-y-auto"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-stone-200 overflow-hidden my-auto">
+      <div className="bg-[#0E111B] rounded-2xl shadow-2xl w-full max-w-lg border border-[rgba(60,63,68,0.5)] overflow-hidden my-auto">
 
-        {/* Header */}
-        <div className="px-7 py-5 border-b border-stone-100 flex items-start justify-between">
+        <div className="px-7 py-5 border-b border-[rgba(60,63,68,0.4)] flex items-start justify-between">
           <div>
-            <h2 className="text-base font-bold text-[#141414]">
+            <h2 className="text-base font-bold text-white">
               {org ? "Organisation bearbeiten" : "Neue Organisation erstellen"}
             </h2>
-            <p className="text-sm text-stone-500 mt-0.5">
+            <p className="text-sm text-[#ABAEBB] mt-0.5">
               {org ? "Angaben aktualisieren" : "Neue Organisation zum System hinzufügen"}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg transition-colors ml-4 flex-shrink-0"
+            className="w-7 h-7 flex items-center justify-center text-[#7B8299] hover:text-white hover:bg-[#1E2D4A] rounded-lg transition-colors ml-4 flex-shrink-0"
           >
             <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
               <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -128,67 +135,60 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-7 py-5 space-y-4 max-h-[calc(100vh-220px)] overflow-y-auto">
 
-          {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">
+            <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">
               Organisationsname <span className="text-red-400">*</span>
             </label>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === "Escape") onClose(); }}
-              className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+              className={inputCls}
               placeholder="z.B. Müller Architekten AG"
               autoFocus
             />
           </div>
 
-          {/* Beschreibung */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Kurzbeschreibung</label>
+            <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">Kurzbeschreibung</label>
             <input
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+              className={inputCls}
               placeholder="Kurze Beschreibung der Organisation"
             />
           </div>
 
-          {/* Owner + Email — two col */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">
-                Besitzer / Ansprechpartner
-              </label>
+              <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">Besitzer / Ansprechpartner</label>
               <input
                 value={owner}
                 onChange={e => setOwner(e.target.value)}
-                className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+                className={inputCls}
                 placeholder="Vollständiger Name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1.5">E-Mail</label>
+              <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">E-Mail</label>
               <input
                 type="email"
                 value={ownerEmail}
                 onChange={e => setOwnerEmail(e.target.value)}
-                className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+                className={inputCls}
                 placeholder="name@beispiel.ch"
               />
             </div>
           </div>
 
-          {/* Tarif */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1.5">Tarif</label>
+            <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">Tarif</label>
             <select
               value={planTier}
               onChange={e => setPlanTier(e.target.value as PlanTier)}
-              className="w-full border border-stone-300 rounded-xl px-3.5 py-2.5 text-sm text-stone-900 bg-white focus:outline-none focus:ring-2 focus:ring-[#B7926A]/50 focus:border-[#B7926A] transition-colors"
+              className={`${inputCls} appearance-none`}
             >
               <option value="starter">Starter</option>
               <option value="business">Business</option>
@@ -196,10 +196,9 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
             </select>
           </div>
 
-          {/* Status — not shown for default org */}
           {!org?.isDefault && (
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">Status</label>
+              <label className="block text-sm font-medium text-[#ABAEBB] mb-2">Status</label>
               <div className="grid grid-cols-2 gap-2">
                 {statusOptions.map(opt => (
                   <button
@@ -209,10 +208,10 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
                     className={`flex items-center gap-2 py-2 px-3 rounded-xl border text-sm font-medium transition-all ${
                       status === opt.value
                         ? opt.active
-                        : "border-stone-300 text-stone-500 hover:border-stone-400 hover:bg-stone-50"
+                        : "border-[rgba(60,63,68,0.4)] text-[#7B8299] hover:border-[rgba(133,166,233,0.3)] hover:bg-[#1E2D4A]"
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${status === opt.value ? opt.dot : "bg-stone-300"}`} />
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${status === opt.value ? opt.dot : "bg-[rgba(60,63,68,0.5)]"}`} />
                     {opt.label}
                   </button>
                 ))}
@@ -220,9 +219,8 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
             </div>
           )}
 
-          {/* Limits section */}
           <div>
-            <p className="text-sm font-medium text-stone-700 mb-2">Limits & Budget</p>
+            <p className="text-sm font-medium text-[#ABAEBB] mb-2">Limits & Budget</p>
             <div className="grid grid-cols-2 gap-3">
               <NumInput label="Benutzerlimit"      value={userLimit}     onChange={setUserLimit}    />
               <NumInput label="Projektlimit"       value={projectLimit}  onChange={setProjectLimit} />
@@ -232,18 +230,17 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-7 py-5 border-t border-stone-100 flex gap-3">
+        <div className="px-7 py-5 border-t border-[rgba(60,63,68,0.4)] flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 border border-stone-300 rounded-xl py-2.5 text-sm font-medium text-stone-600 hover:bg-stone-50 transition-colors"
+            className="flex-1 border border-[rgba(60,63,68,0.4)] rounded-xl py-2.5 text-sm font-medium text-[#ABAEBB] hover:bg-[#1E2D4A] transition-colors"
           >
             Abbrechen
           </button>
           <button
             onClick={handleSave}
             disabled={!name.trim()}
-            className="flex-1 bg-[#B7926A] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#9E7A52] disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+            className="flex-1 bg-[#2862D7] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#3470E8] disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
           >
             {org ? "Speichern" : "Erstellen →"}
           </button>
