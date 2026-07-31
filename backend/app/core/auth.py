@@ -8,10 +8,11 @@ security = HTTPBearer()
 
 
 class CurrentUser:
-    def __init__(self, id: UUID, email: str, org_id: UUID) -> None:
+    def __init__(self, id: UUID, email: str, org_id: UUID, role: str = "member") -> None:
         self.id = id
         self.email = email
         self.org_id = org_id
+        self.role = role
 
 
 async def get_current_user(
@@ -38,7 +39,7 @@ async def get_current_user(
     # User-Eintrag in unserer users-Tabelle suchen (limit statt maybe_single — robuster)
     res = (
         db.table("users")
-        .select("org_id")
+        .select("org_id, role")
         .eq("id", str(user_id))
         .limit(1)
         .execute()
@@ -62,13 +63,15 @@ async def get_current_user(
                 "id": str(user_id),
                 "org_id": str(org_id),
                 "email": auth_user.email or "",
-                "role": "owner",
+                "role": "org_admin",
             }
         ).execute()
+        role = "org_admin"
     else:
         org_id = UUID(user_data["org_id"])
+        role = user_data.get("role", "member")
 
-    return CurrentUser(id=user_id, email=auth_user.email or "", org_id=org_id)
+    return CurrentUser(id=user_id, email=auth_user.email or "", org_id=org_id, role=role)
 
 
 AuthDep = Depends(get_current_user)
