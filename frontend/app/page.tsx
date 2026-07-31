@@ -26,11 +26,11 @@ export default function LandingPage() {
       <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "80px 24px 16px", overflow: "hidden", zIndex: 1 }}>
         <HeroFade>
           <Image
-            src="/tracebuild-logo.png"
+            src="/Logo-new.png"
             alt="TraceBuild"
-            width={220}
-            height={220}
-            style={{ height: "clamp(110px,15vw,220px)", width: "auto", objectFit: "contain", display: "block", margin: "0 auto 0" }}
+            width={533}
+            height={400}
+            style={{ height: "clamp(80px,12vw,160px)", width: "auto", objectFit: "contain", display: "block", margin: "0 auto 0" }}
             priority
           />
           <h1 style={{ fontSize: "clamp(30px,6vw,110px)", fontWeight: 400, color: FG, lineHeight: 1.06, letterSpacing: "-0.03em", margin: "0 0 12px" }}>

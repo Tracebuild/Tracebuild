@@ -53,10 +53,10 @@ export default function Navbar() {
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <Image
-            src="/tracebuild-logo.png"
+            src="/Logo-new.png"
             alt="TraceBuild"
-            width={80} height={28}
-            style={{ height: 38, width: "auto", objectFit: "contain", display: "block" }}
+            width={533} height={400}
+            style={{ height: 36, width: "auto", objectFit: "contain", display: "block" }}
             priority
           />
           <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.01em", color: "#FFFFFF" }}>

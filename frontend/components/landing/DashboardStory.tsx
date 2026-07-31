@@ -90,7 +90,7 @@ export default function DashboardStory() {
             display: "flex", flexDirection: "column", gap: 4,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
-              <Image src="/tracebuild-logo.png" alt="" width={16} height={16} style={{ height: 16, width: "auto", objectFit: "contain" }} />
+              <Image src="/Logo-new.png" alt="" width={533} height={400} style={{ height: 16, width: "auto", objectFit: "contain" }} />
               <span style={{ fontSize: 12, color: "#FFFFFF" }}>TraceBuild</span>
             </div>
             <div style={{ background: "#2862D7", color: "#0B0C0E", borderRadius: 6, padding: "8px 10px", fontSize: 10.5, fontWeight: 600, marginBottom: 10 }}>
