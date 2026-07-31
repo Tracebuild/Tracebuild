@@ -39,14 +39,14 @@ export default function Navbar() {
         ...(scrolled ? {
           marginTop: 12, height: 56, maxWidth: 820,
           borderRadius: 14,
-          boxShadow: "inset 0 0 0 1px rgba(245,243,238,0.14)",
-          background: "rgba(255,255,255,0.06)",
+          boxShadow: "inset 0 0 0 1px rgba(133,166,233,0.3)",
+          background: "rgba(23,37,64,0.45)",
           padding: "0 20px",
         } : {
           marginTop: 14, height: 72, maxWidth: 1160,
           borderRadius: 14,
-          boxShadow: "inset 0 0 0 1px rgba(245,243,238,0.06)",
-          background: "rgba(255,255,255,0.03)",
+          boxShadow: "inset 0 0 0 1px rgba(133,166,233,0.18)",
+          background: "rgba(23,37,64,0.3)",
           padding: "0 26px",
         }),
       }}>
@@ -59,8 +59,8 @@ export default function Navbar() {
             style={{ height: 38, width: "auto", objectFit: "contain", display: "block" }}
             priority
           />
-          <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.01em", color: "#F5F3EE" }}>
-            Trace<span style={{ color: "#CEF79E" }}>Build</span>
+          <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: "-0.01em", color: "#FFFFFF" }}>
+            Trace<span style={{ color: "#2862D7" }}>Build</span>
           </span>
         </div>
 
@@ -71,9 +71,9 @@ export default function Navbar() {
               key={href}
               href={href}
               onClick={e => { e.preventDefault(); smoothTo(href); }}
-              style={{ fontSize: 13, letterSpacing: "0.02em", textTransform: "uppercase", color: "#9A9D96", fontWeight: 500, textDecoration: "none", transition: `color .5s ${EASE}` }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#F5F3EE")}
-              onMouseLeave={e => (e.currentTarget.style.color = "#9A9D96")}
+              style={{ fontSize: 13, letterSpacing: "0.02em", textTransform: "uppercase", color: "#ABAEBB", fontWeight: 500, textDecoration: "none", transition: `color .5s ${EASE}` }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#FFFFFF")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#ABAEBB")}
             >
               {label}
             </a>
@@ -85,24 +85,24 @@ export default function Navbar() {
           href="/login"
           style={{
             fontSize: 13, letterSpacing: "0.02em", textTransform: "uppercase",
-            color: "#F5F3EE",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(245,243,238,0.16)",
+            color: "#FFFFFF",
+            background: "rgba(23,37,64,0.5)",
+            border: "1px solid rgba(133,166,233,0.28)",
             borderRadius: 10, padding: "9px 18px",
             fontWeight: 500, textDecoration: "none",
             transition: `all .5s ${EASE}`,
           }}
           onMouseEnter={e => {
             const el = e.currentTarget as HTMLElement;
-            el.style.borderColor = "#CEF79E";
-            el.style.color = "#CEF79E";
-            el.style.background = "rgba(206,247,158,0.08)";
+            el.style.borderColor = "#2862D7";
+            el.style.color = "#FFFFFF";
+            el.style.background = "rgba(40,98,215,0.16)";
           }}
           onMouseLeave={e => {
             const el = e.currentTarget as HTMLElement;
-            el.style.borderColor = "rgba(245,243,238,0.16)";
-            el.style.color = "#F5F3EE";
-            el.style.background = "rgba(255,255,255,0.05)";
+            el.style.borderColor = "rgba(133,166,233,0.28)";
+            el.style.color = "#FFFFFF";
+            el.style.background = "rgba(23,37,64,0.5)";
           }}
         >
           Login
