@@ -2,7 +2,75 @@ import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { anthropic } from "@/lib/anthropic";
 
-export const maxDuration = 300;
+export const maxDuration = 120;
+
+const MODEL = "claude-haiku-4-5-20251001";
+// Haiku 4.5 pricing per 1M tokens
+const PRICE_IN  = 0.80 / 1_000_000;
+const PRICE_OUT = 4.00 / 1_000_000;
+
+// ── System prompt builder ─────────────────────────────────────────────────────
+
+interface ProjectRow {
+  name: string;
+  domain: string;
+  location: { canton?: string; municipality?: string } | null;
+  bauzone: string | null;
+}
+
+interface NormRow {
+  norms: { id: string; title: string; category: string; text: string } | null;
+}
+
+interface AnalysisItemRow {
+  status: string;
+  note: string;
+  norm_title: string | null;
+}
+
+function buildSystemPrompt(
+  project: ProjectRow,
+  normRows: NormRow[],
+  lastItems: AnalysisItemRow[],
+): string {
+  const name       = project.name;
+  const gemeinde   = project.location?.municipality ?? "unbekannt";
+  const kanton     = project.location?.canton       ?? "unbekannt";
+  const bauzone    = project.bauzone                ?? "nicht ermittelt";
+
+  const norms = normRows.map(r => r.norms).filter(Boolean) as NonNullable<NormRow["norms"]>[];
+  const normenListe = norms.length > 0
+    ? norms.map(n => `- [${n.category}] ${n.title}: ${n.text.slice(0, 200)}${n.text.length > 200 ? "…" : ""}`).join("\n")
+    : "Noch keine Normen zugewiesen.";
+
+  const failWarn = lastItems.filter(i => i.status === "fail" || i.status === "warn");
+  const analyseSummary = failWarn.length > 0
+    ? failWarn.map(i => `- [${i.status.toUpperCase()}] ${i.norm_title ?? "Norm"}: ${i.note}`).join("\n")
+    : "Keine offenen Prüfpunkte aus der letzten Analyse.";
+
+  return `Du bist ein Baurechtsassistent für das Projekt "${name}" in ${gemeinde}, Kanton ${kanton}, Bauzone ${bauzone}.
+
+Projektkontext:
+
+Zugewiesene Normen:
+${normenListe}
+
+Letzte Analyse:
+${analyseSummary}
+
+Du kannst:
+- Fragen zum Projekt und den festgestellten Prüfpunkten beantworten
+- Allgemeine Fragen zu Schweizer Baurecht, SIA-Normen und kantonalen Baugesetzen beantworten
+- Verbesserungsvorschläge bei Norm-Verstössen erläutern
+
+Du kannst nicht:
+- Rechtsverbindliche Aussagen machen (weise darauf hin)
+- Auf Dokumente ausserhalb des Projekts zugreifen
+
+Antworte auf Deutsch. Sei präzise und praxisorientiert.`;
+}
+
+// ── GET — load history ────────────────────────────────────────────────────────
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const user = await getAuthUser();
@@ -20,13 +88,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const { data, error } = await admin
     .from("chat_messages")
-    .select("role, content, created_at")
+    .select("id, role, content, created_at")
     .eq("project_id", params.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(100);
 
   if (error) return err(error.message, 500);
   return ok(data);
 }
+
+// ── POST — stream response ────────────────────────────────────────────────────
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const user = await getAuthUser();
@@ -34,60 +105,75 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const admin = createAdminClient();
 
-  const { data: project } = await admin
+  const { data: project, error: projectError } = await admin
     .from("projects")
-    .select("*, analyses(result_json, status)")
+    .select("*")
     .eq("id", params.id)
     .eq("org_id", user.org_id)
     .single();
-  if (!project) return err("Projekt nicht gefunden", 404);
+  if (projectError || !project) return err(`Projekt nicht gefunden (${projectError?.message ?? "no data"})`, 404);
 
-  const body = await request.json();
-  const { content } = body;
+  const body = await request.json() as { content?: string };
+  const content = body.content?.trim();
   if (!content) return err("Nachricht fehlt");
 
-  // Usernachricht speichern
-  await admin.from("chat_messages").insert({
-    project_id: params.id,
-    role: "user",
-    content,
-  });
+  // Save user message
+  await admin.from("chat_messages").insert({ project_id: params.id, role: "user", content });
 
-  // Chatverlauf laden
-  const { data: history } = await admin
+  // Load last 20 messages for context
+  const { data: historyRows } = await admin
     .from("chat_messages")
     .select("role, content")
     .eq("project_id", params.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .limit(20);
 
-  // Standards für Kontext laden
-  const canton = project.location?.canton ?? "";
-  const { data: standards } = await admin
-    .from("standards")
-    .select("category, text")
-    .eq("domain", project.domain ?? "bau")
-    .eq("jurisdiction_name", canton)
-    .limit(15);
+  // Load project norms
+  const { data: normRows } = await admin
+    .from("project_norms")
+    .select("norms(id, title, category, text)")
+    .eq("project_id", params.id);
 
-  const standardsText = (standards ?? [])
-    .map((s: { category: string; text: string }) => `- [${s.category}] ${s.text}`)
-    .join("\n");
+  // Load last analysis items (fail/warn for summary)
+  const { data: docRows } = await admin
+    .from("documents")
+    .select("id")
+    .eq("project_id", params.id);
 
-  const systemPrompt = `Du bist ein Bausachverständiger für Schweizer Baurecht und hilfst dem Nutzer, sein Bauprojekt "${project.name}" zu analysieren.
+  const docIds = (docRows ?? []).map((d: { id: string }) => d.id);
+  let lastItems: AnalysisItemRow[] = [];
+  if (docIds.length > 0) {
+    const { data: analyses } = await admin
+      .from("analyses")
+      .select("id")
+      .in("document_id", docIds)
+      .eq("status", "done")
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-Projekt: ${project.name} | Kanton: ${canton} | Gemeinde: ${project.location?.municipality ?? ""}
+    const latestAnalysis = analyses?.[0] ?? null;
+    if (latestAnalysis) {
+      const { data: items } = await admin
+        .from("analysis_items")
+        .select("status, note, norm_title")
+        .eq("analysis_id", latestAnalysis.id)
+        .in("status", ["fail", "warn"]);
+      lastItems = (items ?? []) as AnalysisItemRow[];
+    }
+  }
 
-Relevante Normen und Vorschriften:
-${standardsText || "Noch keine Normen in der Datenbank für diesen Kanton."}
+  const systemPrompt = buildSystemPrompt(
+    project as unknown as ProjectRow,
+    (normRows ?? []) as unknown as NormRow[],
+    lastItems,
+  );
 
-Antworte präzise, fachlich und auf Deutsch.`;
-
-  const messages = (history ?? []).map((m: { role: string; content: string }) => ({
+  const messages = (historyRows ?? []).map((m: { role: string; content: string }) => ({
     role: m.role as "user" | "assistant",
     content: m.content,
   }));
 
-  // SSE-Stream
+  // SSE stream
   const encoder = new TextEncoder();
   let fullResponse = "";
 
@@ -95,7 +181,7 @@ Antworte präzise, fachlich und auf Deutsch.`;
     async start(controller) {
       try {
         const claudeStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-6",
+          model: MODEL,
           max_tokens: 2048,
           system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
           messages,
@@ -106,24 +192,29 @@ Antworte präzise, fachlich und auf Deutsch.`;
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
-            const text = event.delta.text;
-            fullResponse += text;
-            controller.enqueue(encoder.encode(`data: ${text}\n\n`));
+            const token = event.delta.text;
+            fullResponse += token;
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(token)}\n\n`));
           }
         }
 
-        // Assistent-Antwort speichern
+        // Cost tracking
+        const final = await claudeStream.finalMessage();
+        const costUsd = final.usage.input_tokens * PRICE_IN + final.usage.output_tokens * PRICE_OUT;
+
+        // Save assistant message + cost
         await admin.from("chat_messages").insert({
           project_id: params.id,
           role: "assistant",
           content: fullResponse,
+          cost_usd: costUsd,
         });
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       } catch (e) {
         controller.enqueue(
-          encoder.encode(`data: [ERROR] ${e instanceof Error ? e.message : "Unbekannter Fehler"}\n\n`)
+          encoder.encode(`data: [ERROR] ${e instanceof Error ? e.message : "Fehler"}\n\n`)
         );
         controller.close();
       }
