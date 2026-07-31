@@ -1,5 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+interface OrgRow {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: string;
+  plan: string;
+  owner_name: string | null;
+  owner_email: string | null;
+  user_limit: number | null;
+  project_limit: number | null;
+  storage_limit_gb: number | null;
+  monthly_budget: number | null;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+  archived_at: string | null;
+  is_default: boolean;
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -27,8 +47,7 @@ export async function uniqueSlug(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function formatOrg(row: Record<string, any>) {
+export function formatOrg(row: OrgRow) {
   return {
     id:             row.id               as string,
     name:           row.name             as string,

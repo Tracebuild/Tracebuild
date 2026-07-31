@@ -48,8 +48,14 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     .single();
   if (fetchErr || !existing) return err("Organisation nicht gefunden", 404);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const patch: Record<string, any> = {};
+  interface OrgPatch {
+    name?: string; slug?: string; description?: string | null;
+    plan?: string; status?: string;
+    owner_name?: string | null; owner_email?: string | null;
+    user_limit?: number | null; project_limit?: number | null;
+    storage_limit_gb?: number | null; monthly_budget?: number | null;
+  }
+  const patch: OrgPatch = {};
   if (input.name !== undefined) {
     patch.name = input.name;
     patch.slug = await uniqueSlug(admin, slugify(input.name), id);

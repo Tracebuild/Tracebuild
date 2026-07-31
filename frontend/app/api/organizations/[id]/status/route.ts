@@ -22,8 +22,8 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   const admin = createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const patch: Record<string, any> = { status };
+  interface StatusPatch { status: string; closed_at: string | null; archived_at: string | null; }
+  const patch: StatusPatch = { status, closed_at: null, archived_at: null };
 
   if (status === "closed") {
     patch.closed_at   = new Date().toISOString();
