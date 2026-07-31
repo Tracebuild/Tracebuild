@@ -1,8 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const ADMIN_EMAILS = new Set([
+  "tracebuild.info@gmail.com",
+  "livio.thoma07@gmail.com",
+  "jonasjud87@gmail.com",
+  "liviocyrill.thomamanser@gmail.com",
+]);
+
 export async function middleware(request: NextRequest) {
-  // If env vars are missing, skip middleware entirely
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next();
   }
@@ -36,8 +42,9 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     const { pathname } = request.nextUrl;
-    const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register");
     const isLandingRoute = pathname === "/";
+    const isAdminRoute   = pathname.startsWith("/admin");
 
     if (!user && !isAuthRoute && !isLandingRoute) {
       const url = request.nextUrl.clone();
@@ -47,13 +54,18 @@ export async function middleware(request: NextRequest) {
 
     if (user && (isAuthRoute || isLandingRoute)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/admin";
+      url.pathname = ADMIN_EMAILS.has(user.email ?? "") ? "/admin" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    if (isAdminRoute && user && !ADMIN_EMAILS.has(user.email ?? "")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
 
     return supabaseResponse;
   } catch {
-    // If middleware crashes, allow the request through rather than 500ing
     return NextResponse.next();
   }
 }
