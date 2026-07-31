@@ -99,7 +99,8 @@ export default function ChatPage() {
       });
 
       if (!res.ok || !res.body) {
-        throw new Error("Netzwerkfehler");
+        const body = await res.text().catch(() => "");
+        throw new Error(`Fehler ${res.status}${body ? `: ${body}` : ""}`);
       }
 
       const reader  = res.body.getReader();
