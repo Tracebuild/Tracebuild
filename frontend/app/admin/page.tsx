@@ -26,13 +26,6 @@ import type {
   ToastMessage,
 } from "@/components/admin/types";
 
-const ADMIN_EMAILS = new Set([
-  "tracebuild.info@gmail.com",
-  "livio.thoma07@gmail.com",
-  "jonasjud87@gmail.com",
-  "liviocyrill.thomamanser@gmail.com",
-]);
-
 const ACTIVITY_KEY    = "tb_admin_activities";
 const LAST_OPENED_KEY = "tb_admin_last_opened";
 
@@ -241,16 +234,15 @@ export default function AdminPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }
 
-  /* Auth + email guard */
+  /* Load current user info */
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
-      if (!data.user) { router.replace("/login"); return; }
+      if (!data.user) return;
       const email = data.user.email ?? "";
-      if (!ADMIN_EMAILS.has(email)) { router.replace("/dashboard"); return; }
       setUserEmail(email);
       setUserName(extractName(email, data.user.user_metadata ?? {}));
     });
-  }, [router]);
+  }, []);
 
   /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
