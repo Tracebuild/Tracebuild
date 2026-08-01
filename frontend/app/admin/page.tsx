@@ -290,6 +290,7 @@ export default function AdminPage() {
   }
 
   function handleOpen(org: Organization) {
+    document.cookie = `tb_active_org_id=${org.id}; Path=/; Max-Age=86400; SameSite=Lax`;
     const lo: LastOpenedOrg = { id: org.id, name: org.name, planTier: org.planTier, timestamp: new Date().toISOString() };
     setLastOpened(lo);
     localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(lo));
