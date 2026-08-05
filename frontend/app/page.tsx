@@ -137,7 +137,7 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        body { margin:0; background:#050506; }
+        body { margin:0; background:linear-gradient(150deg,#160f0d 0%,#120a16 45%,#0a0e18 100%) fixed; }
         .lp-nav-link { font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:#9a9ba3; font-weight:500; text-decoration:none; transition:color .2s; }
         .lp-nav-link:hover { color:#fff; }
         .lp-nav-login { font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; color:#fff; background:rgba(20,20,24,.55); border:1px solid rgba(255,255,255,.09); border-radius:9px; padding:8px 16px; font-weight:500; text-decoration:none; transition:border-color .2s, background .2s; }
@@ -159,7 +159,7 @@ export default function LandingPage() {
         @keyframes glowPulse { 0%,100%{opacity:.16;transform:scale(1)} 50%{opacity:.28;transform:scale(1.1)} }
       `}</style>
 
-      <div style={{ background:"#050506", color:"#fff", position:"relative", fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',sans-serif", WebkitFontSmoothing:"antialiased" }}>
+      <div style={{ background:"transparent", color:"#fff", position:"relative", fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',sans-serif", WebkitFontSmoothing:"antialiased" }}>
 
         {/* Ambient blobs */}
         <div style={{ position:"fixed", top:"-12%", left:"-14%", width:"55vw", height:"55vw", maxWidth:800, maxHeight:800, background:"radial-gradient(circle,#ff8a5c 0%,transparent 70%)", filter:"blur(70px)", opacity:.16, zIndex:-1, pointerEvents:"none", animation:"glowPulse 11s ease-in-out infinite" }} />
