@@ -18,13 +18,29 @@ interface Project {
   created_at: string;
 }
 
+interface OrgInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface MeResponse {
+  id: string;
+  email: string;
+  org_id: string;
+  role: string;
+  org: OrgInfo | null;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [email, setEmail] = useState<string>("");
+  const [email, setEmail]         = useState<string>("");
   const [isOrgAdmin, setIsOrgAdmin] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [activeOrg, setActiveOrg]   = useState<OrgInfo | null>(null);
+  const [projects, setProjects]     = useState<Project[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [showModal, setShowModal]   = useState(false);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -41,9 +57,15 @@ export default function DashboardPage() {
         return;
       }
       setEmail(data.user.email ?? "");
-      // Check if user has org_admin access
-      const res = await fetch("/api/v1/admin/users");
-      setIsOrgAdmin(res.ok);
+
+      const res = await fetch("/api/v1/auth/me");
+      if (res.ok) {
+        const json = await res.json() as { data: MeResponse; error: null };
+        const me = json.data;
+        setActiveOrg(me.org);
+        setIsSuperAdmin(me.role === "super_admin");
+        setIsOrgAdmin(me.role === "super_admin" || me.role === "org_admin");
+      }
     });
   }, [router]);
 
@@ -69,6 +91,13 @@ export default function DashboardPage() {
         <div className="px-4 py-5 border-b border-[#e7e2d9]">
           <TraceBuildLogo size="sm" />
         </div>
+
+        {activeOrg && (
+          <div className="px-4 py-3 border-b border-[#e7e2d9] bg-stone-50">
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest">Organisation</p>
+            <p className="text-sm font-semibold text-stone-800 mt-0.5 truncate">{activeOrg.name}</p>
+          </div>
+        )}
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#f3ece3] text-[#8b6344] text-sm font-medium">
@@ -117,6 +146,18 @@ export default function DashboardPage() {
 
       {/* Main content */}
       <main className="flex-1 overflow-auto">
+        {isSuperAdmin && activeOrg && (
+          <div className="bg-[#151E32] text-[#85A6E9] px-8 py-2.5 flex items-center justify-between text-xs font-medium border-b border-[#2862D7]/20">
+            <span>
+              <span className="text-[#7B8299]">Aktive Organisation:</span>{" "}
+              <span className="text-white font-semibold">{activeOrg.name}</span>
+            </span>
+            <Link href="/admin" className="text-[#85A6E9] hover:text-white transition-colors">
+              ← Zur Adminübersicht
+            </Link>
+          </div>
+        )}
+
         <div className="px-8 py-8 max-w-5xl">
           <div className="flex items-center justify-between mb-8">
             <div>

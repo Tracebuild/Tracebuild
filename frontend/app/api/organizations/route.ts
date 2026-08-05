@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
       project_limit:    input.projectLimit   ?? null,
       storage_limit_gb: input.storageLimitGb ?? null,
       monthly_budget:   input.monthlyBudget  ?? null,
+      is_default:       input.isDefault      ?? false,
     })
     .select()
     .single();

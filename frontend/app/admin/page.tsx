@@ -63,6 +63,19 @@ function todayStr(): string {
   });
 }
 
+const TRACEBUILD_SEED: OrgFormData = {
+  name:           "TraceBuild",
+  description:    "TraceBuild Intern",
+  planTier:       "enterprise",
+  status:         "active",
+  owner:          "TraceBuild Team",
+  ownerEmail:     "tracebuild.info@gmail.com",
+  userLimit:      null,
+  projectLimit:   null,
+  storageLimit:   null,
+  monthlyBudget:  null,
+};
+
 function KpiCard({
   label, value, note, trend, accent,
 }: {
@@ -200,6 +213,7 @@ export default function AdminPage() {
   const [userEmail, setUserEmail] = useState("");
   const [orgs, setOrgs]           = useState<Organization[]>([]);
   const [hydrated, setHydrated]   = useState(false);
+  const [seeding, setSeeding]     = useState(false);
   const [search, setSearch]       = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget]       = useState<Organization | null>(null);
@@ -208,7 +222,7 @@ export default function AdminPage() {
   const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
   const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
-  const [activities, setActivities] = useState<Activity[]>(MOCK_ACTIVITIES);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [lastOpened, setLastOpened] = useState<LastOpenedOrg | null>(null);
   const [costMonth, setCostMonth]   = useState(currentMonth);
   const [costSearch, setCostSearch] = useState("");
@@ -220,23 +234,40 @@ export default function AdminPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }
 
+  /* Load current user info */
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
-      if (!data.user) { router.replace("/login"); return; }
+      if (!data.user) return;
       const email = data.user.email ?? "";
       setUserEmail(email);
       setUserName(extractName(email, data.user.user_metadata ?? {}));
-      if (email) localStorage.setItem("tb_admin_email", email);
     });
-  }, [router]);
+  }, []);
 
+  /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
     organizationService.list()
-      .then(data => setOrgs(sortOrgs(data)))
+      .then(async data => {
+        if (data.length === 0 && !seeding) {
+          setSeeding(true);
+          try {
+            const tb = await organizationService.create(TRACEBUILD_SEED, true);
+            setOrgs([tb]);
+            addToast("TraceBuild Organisation wurde erstellt.", "success");
+          } catch {
+            addToast("Fehler beim Erstellen der TraceBuild Organisation.", "error");
+          } finally {
+            setSeeding(false);
+          }
+        } else {
+          setOrgs(sortOrgs(data));
+        }
+      })
       .catch(() => { /* keep empty list */ })
       .finally(() => setHydrated(true));
     setActivities(loadActivities());
     setLastOpened(loadLastOpened());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function sortOrgs(list: Organization[]): Organization[] {
@@ -259,6 +290,7 @@ export default function AdminPage() {
   }
 
   function handleOpen(org: Organization) {
+    document.cookie = `tb_active_org_id=${org.id}; Path=/; Max-Age=86400; SameSite=Lax`;
     const lo: LastOpenedOrg = { id: org.id, name: org.name, planTier: org.planTier, timestamp: new Date().toISOString() };
     setLastOpened(lo);
     localStorage.setItem(LAST_OPENED_KEY, JSON.stringify(lo));
@@ -378,34 +410,18 @@ export default function AdminPage() {
 
   const kpiData = useMemo(() => {
     const cm = currentMonth();
-    const pm = (() => {
-      const d = new Date();
-      d.setMonth(d.getMonth() - 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    })();
     const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
-    const prevCosts    = MOCK_COSTS.filter(c => c.month === pm);
-    const totalCost        = currentCosts.reduce((s, c) => s + c.totalCost, 0);
-    const prevTotalCost    = prevCosts.reduce((s, c) => s + c.totalCost, 0);
-    const totalAnalyses    = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
-    const prevAnalyses     = prevCosts.reduce((s, c) => s + c.analyseCount, 0);
-    const totalStorageGB   = currentCosts.reduce((s, c) => s + c.storageGB, 0);
-    const activeOrgs       = orgs.filter(o => o.status === "active").length;
-    const totalProjects    = orgs.reduce((s, o) => s + (o.projectCount ?? 0), 0);
-    const totalUsers       = orgs.reduce((s, o) => s + (o.userCount ?? 0), 0);
-    function trend(cur: number, prev: number) {
-      if (prev === 0) return undefined;
-      const diff = ((cur - prev) / prev) * 100;
-      return { pct: `${diff >= 0 ? "+" : ""}${diff.toFixed(0)} %`, positive: diff >= 0 };
-    }
+    const totalCost      = currentCosts.reduce((s, c) => s + c.totalCost, 0);
+    const totalAnalyses  = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
+    const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
+    const activeOrgs     = orgs.filter(o => o.status === "active").length;
+    const totalProjects  = orgs.reduce((s, o) => s + (o.projectCount ?? 0), 0);
+    const totalUsers     = orgs.reduce((s, o) => s + (o.userCount ?? 0), 0);
     return {
       orgsCount: hydrated ? orgs.length : 0,
       activeOrgs, totalProjects, totalUsers, totalAnalyses,
-      analysesTrend: trend(totalAnalyses, prevAnalyses),
-      totalCost, prevTotalCost,
-      costTrend: trend(totalCost, prevTotalCost),
+      totalCost, totalStorageGB,
       avgCostPerAnalyse: totalAnalyses > 0 ? totalCost / totalAnalyses : 0,
-      totalStorageGB,
       monthlyTotalsData: monthlyTotals(),
       monthlyBudget: orgs.reduce((s, o) => s + (o.monthlyBudget ?? 0), 0),
     };
@@ -420,7 +436,7 @@ export default function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Greeting + last opened */}
+        {/* Greeting */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <p className="text-[11px] font-medium text-[#7B8299] uppercase tracking-widest mb-1">
@@ -458,8 +474,8 @@ export default function AdminPage() {
             note={hydrated ? `${orgs.filter(o => o.status !== "active").length} inaktiv` : undefined} />
           <KpiCard label="Projekte"       value={kpiData.totalProjects.toString()} />
           <KpiCard label="Benutzer"       value={kpiData.totalUsers.toString()} />
-          <KpiCard label="Analysen / Mo." value={kpiData.totalAnalyses.toString()} trend={kpiData.analysesTrend} />
-          <KpiCard label="Kosten / Mo."   value={`CHF ${kpiData.totalCost.toFixed(2)}`} trend={kpiData.costTrend} accent />
+          <KpiCard label="Analysen / Mo." value={kpiData.totalAnalyses.toString()} />
+          <KpiCard label="Kosten / Mo."   value={`CHF ${kpiData.totalCost.toFixed(2)}`} accent />
           <KpiCard label="Ø / Analyse"    value={`CHF ${kpiData.avgCostPerAnalyse.toFixed(2)}`} accent />
           <KpiCard label="Speicher ges."  value={`${kpiData.totalStorageGB.toFixed(1)} GB`} />
         </div>
@@ -478,7 +494,7 @@ export default function AdminPage() {
           />
           <QuickActionBtn
             label="Bericht exportieren"
-            onClick={() => addToast("CSV-Export wird vorbereitet...", "info")}
+            onClick={() => addToast("Noch keine Daten verfügbar.", "info")}
             icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 11V3M6 8L9 11L12 8M3 13V15H15V13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>}
           />
           <QuickActionBtn
@@ -495,7 +511,7 @@ export default function AdminPage() {
             costs={MOCK_COSTS.filter(c => c.month === currentMonth())}
             monthlyTotals={kpiData.monthlyTotalsData}
             currentMonth={currentMonth()}
-            prevMonthTotal={kpiData.prevTotalCost}
+            prevMonthTotal={0}
             monthlyBudget={kpiData.monthlyBudget}
             fmtMonth={fmtMonth}
           />
@@ -528,7 +544,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {!hydrated ? (
+          {!hydrated || seeding ? (
             <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl h-48 animate-pulse" />
           ) : filtered.length === 0 ? (
             <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
@@ -555,7 +571,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Bottom two-col */}
+        {/* Cost table + sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2 space-y-4">
             <SectionHeader title="Kosten pro Organisation" />
@@ -563,24 +579,25 @@ export default function AdminPage() {
               <div>
                 <h2 className="text-base font-semibold text-white">Kostendetails</h2>
                 <p className="text-xs text-[#7B8299] mt-0.5">
-                  {filteredCosts.length} {filteredCosts.length === 1 ? "Eintrag" : "Einträge"}
-                  {costSearch ? ` für „${costSearch}"` : ""}
+                  {filteredCosts.length === 0 ? "Noch keine Kostendaten" : `${filteredCosts.length} Einträge`}
                 </p>
               </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <select
-                  value={costMonth}
-                  onChange={e => setCostMonth(e.target.value)}
-                  className="border border-[rgba(133,166,233,0.25)] rounded-xl px-3 py-2.5 text-sm text-white bg-[rgba(23,37,64,0.6)] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors"
-                >
-                  {costMonths.map(m => (
-                    <option key={m} value={m}>{fmtMonth(m)}</option>
-                  ))}
-                </select>
-                <div className="flex-1 sm:w-44">
-                  <SearchInput value={costSearch} onChange={setCostSearch} placeholder="Organisation..." />
+              {costMonths.length > 0 && (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <select
+                    value={costMonth}
+                    onChange={e => setCostMonth(e.target.value)}
+                    className="border border-[rgba(133,166,233,0.25)] rounded-xl px-3 py-2.5 text-sm text-white bg-[rgba(23,37,64,0.6)] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors"
+                  >
+                    {costMonths.map(m => (
+                      <option key={m} value={m}>{fmtMonth(m)}</option>
+                    ))}
+                  </select>
+                  <div className="flex-1 sm:w-44">
+                    <SearchInput value={costSearch} onChange={setCostSearch} placeholder="Organisation..." />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             <CostTable costs={filteredCosts} />
           </div>
