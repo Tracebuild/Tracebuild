@@ -127,3 +127,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
   ALTER TABLE chat_messages ADD COLUMN cost_usd numeric;
 EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+-- ── 20240100: chat_messages — thread support ─────────────────────────────────
+
+DO $$ BEGIN
+  ALTER TABLE chat_messages ADD COLUMN thread_id uuid;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_thread
+  ON chat_messages(project_id, thread_id, created_at);
