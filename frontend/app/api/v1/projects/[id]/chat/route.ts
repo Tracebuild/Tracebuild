@@ -5,11 +5,8 @@ import { anthropic } from "@/lib/anthropic";
 export const maxDuration = 120;
 
 const MODEL = "claude-haiku-4-5-20251001";
-// Haiku 4.5 pricing per 1M tokens
 const PRICE_IN  = 0.80 / 1_000_000;
 const PRICE_OUT = 4.00 / 1_000_000;
-
-// ── System prompt builder ─────────────────────────────────────────────────────
 
 interface ProjectRow {
   name: string;
@@ -33,10 +30,9 @@ function buildSystemPrompt(
   normRows: NormRow[],
   lastItems: AnalysisItemRow[],
 ): string {
-  const name       = project.name;
-  const gemeinde   = project.location?.municipality ?? "unbekannt";
-  const kanton     = project.location?.canton       ?? "unbekannt";
-  const bauzone    = project.bauzone                ?? "nicht ermittelt";
+  const gemeinde = project.location?.municipality ?? "unbekannt";
+  const kanton   = project.location?.canton       ?? "unbekannt";
+  const bauzone  = project.bauzone                ?? "nicht ermittelt";
 
   const norms = normRows.map(r => r.norms).filter(Boolean) as NonNullable<NormRow["norms"]>[];
   const normenListe = norms.length > 0
@@ -48,7 +44,7 @@ function buildSystemPrompt(
     ? failWarn.map(i => `- [${i.status.toUpperCase()}] ${i.norm_title ?? "Norm"}: ${i.note}`).join("\n")
     : "Keine offenen Prüfpunkte aus der letzten Analyse.";
 
-  return `Du bist ein Baurechtsassistent für das Projekt "${name}" in ${gemeinde}, Kanton ${kanton}, Bauzone ${bauzone}.
+  return `Du bist ein Baurechtsassistent für das Projekt "${project.name}" in ${gemeinde}, Kanton ${kanton}, Bauzone ${bauzone}.
 
 Projektkontext:
 
@@ -67,12 +63,12 @@ Du kannst nicht:
 - Rechtsverbindliche Aussagen machen (weise darauf hin)
 - Auf Dokumente ausserhalb des Projekts zugreifen
 
-Antworte auf Deutsch. Sei präzise und praxisorientiert.`;
+Antworte auf Deutsch. Strukturiere längere Antworten mit Überschriften und Listen. Sei präzise und praxisorientiert.`;
 }
 
 // ── GET — load history ────────────────────────────────────────────────────────
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
@@ -86,13 +82,23 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     .single();
   if (!project) return err("Projekt nicht gefunden", 404);
 
-  const { data, error } = await admin
+  const url      = new URL(req.url);
+  const threadId = url.searchParams.get("thread");
+
+  let query: any = admin
     .from("chat_messages")
-    .select("id, role, content, created_at")
+    .select("id, role, content, created_at, thread_id")
     .eq("project_id", params.id)
     .order("created_at", { ascending: true })
     .limit(100);
 
+  if (threadId === "legacy") {
+    query = query.is("thread_id", null);
+  } else if (threadId) {
+    query = query.eq("thread_id", threadId);
+  }
+
+  const { data, error } = await query;
   if (error) return err(error.message, 500);
   return ok(data);
 }
@@ -113,20 +119,33 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .single();
   if (projectError || !project) return err(`Projekt nicht gefunden (${projectError?.message ?? "no data"})`, 404);
 
-  const body = await request.json() as { content?: string };
-  const content = body.content?.trim();
+  const body = await request.json() as { content?: string; thread_id?: string };
+  const content  = body.content?.trim();
+  const threadId = body.thread_id ?? null;
   if (!content) return err("Nachricht fehlt");
 
   // Save user message
-  await admin.from("chat_messages").insert({ project_id: params.id, role: "user", content });
+  await admin.from("chat_messages").insert({
+    project_id: params.id,
+    role: "user",
+    content,
+    thread_id: threadId,
+  });
 
-  // Load last 20 messages for context
-  const { data: historyRows } = await admin
+  // Load history for this thread (last 20 messages)
+  let histQuery: any = admin
     .from("chat_messages")
     .select("role, content")
     .eq("project_id", params.id)
     .order("created_at", { ascending: true })
     .limit(20);
+
+  if (threadId === null) {
+    histQuery = histQuery.is("thread_id", null);
+  } else {
+    histQuery = histQuery.eq("thread_id", threadId);
+  }
+  const { data: historyRows } = await histQuery;
 
   // Load project norms
   const { data: normRows } = await admin
@@ -134,7 +153,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .select("norms(id, title, category, text)")
     .eq("project_id", params.id);
 
-  // Load last analysis items (fail/warn for summary)
+  // Load last analysis items
   const { data: docRows } = await admin
     .from("documents")
     .select("id")
@@ -173,7 +192,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     content: m.content,
   }));
 
-  // SSE stream
   const encoder = new TextEncoder();
   let fullResponse = "";
 
@@ -198,16 +216,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
           }
         }
 
-        // Cost tracking
-        const final = await claudeStream.finalMessage();
+        const final  = await claudeStream.finalMessage();
         const costUsd = final.usage.input_tokens * PRICE_IN + final.usage.output_tokens * PRICE_OUT;
 
-        // Save assistant message + cost
         await admin.from("chat_messages").insert({
           project_id: params.id,
           role: "assistant",
           content: fullResponse,
           cost_usd: costUsd,
+          thread_id: threadId,
         });
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
