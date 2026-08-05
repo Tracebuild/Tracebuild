@@ -6,7 +6,7 @@ import Image from "next/image";
 // ── Particle engine ────────────────────────────────────────────────────────────
 const N = 800;
 const SEQ = [0, 1, 2, 3, 4, 2, 1, 0];
-const SA = [255, 138, 92], SB = [200, 105, 224], SC = [91, 139, 247];
+const SA = [79, 209, 255], SB = [56, 189, 248], SC = [40, 98, 215];
 type P3 = { x: number; y: number; z: number };
 type Seg = { a: P3; b: P3 };
 
@@ -186,22 +186,22 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        body { margin:0; background:linear-gradient(150deg,#160f0d 0%,#120a16 45%,#0a0e18 100%) fixed; }
+        body { margin:0; background:linear-gradient(150deg,#0a1a24 0%,#0a1420 45%,#070b14 100%) fixed; }
         .lp-nav-link { font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:#9a9ba3; font-weight:500; text-decoration:none; transition:color .2s; }
         .lp-nav-link:hover { color:#fff; }
         .lp-nav-login { font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; color:#fff; background:rgba(20,20,24,.55); border:1px solid rgba(255,255,255,.09); border-radius:9px; padding:8px 16px; font-weight:500; text-decoration:none; transition:border-color .2s, background .2s; }
-        .lp-nav-login:hover { border-color:#5b8bf7; background:rgba(91,139,247,.14); }
-        .lp-btn-grad { background:linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7); color:#fff; padding:15px 28px; border-radius:10px; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:filter .2s; }
+        .lp-nav-login:hover { border-color:#2862D7; background:rgba(40,98,215,.14); }
+        .lp-btn-grad { background:linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7); color:#fff; padding:15px 28px; border-radius:10px; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:filter .2s; }
         .lp-btn-grad:hover { filter:brightness(1.15); }
         .lp-btn-outline { color:#fff; background:rgba(20,20,24,.5); border:1px solid rgba(255,255,255,.09); padding:15px 28px; border-radius:10px; font-size:13.5px; font-weight:500; text-decoration:none; transition:border-color .2s; }
         .lp-btn-outline:hover { border-color:rgba(255,255,255,.35); }
         .lp-price-btn-outline { display:block; text-align:center; padding:12px; border-radius:9px; border:1px solid rgba(255,255,255,.16); color:#fff; font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; font-weight:500; text-decoration:none; transition:border-color .2s; }
         .lp-price-btn-outline:hover { border-color:rgba(255,255,255,.4); }
-        .lp-price-btn-grad { display:block; text-align:center; padding:12px; border-radius:9px; background:linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7); color:#fff; font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; font-weight:600; text-decoration:none; transition:filter .2s; }
+        .lp-price-btn-grad { display:block; text-align:center; padding:12px; border-radius:9px; background:linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7); color:#fff; font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; font-weight:600; text-decoration:none; transition:filter .2s; }
         .lp-price-btn-grad:hover { filter:brightness(1.15); }
-        .lp-cta-btn { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7); color:#fff; padding:16px 34px; border-radius:10px; font-size:13.5px; font-weight:600; text-decoration:none; transition:filter .2s; }
+        .lp-cta-btn { display:inline-flex; align-items:center; gap:6px; background:linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7); color:#fff; padding:16px 34px; border-radius:10px; font-size:13.5px; font-weight:600; text-decoration:none; transition:filter .2s; }
         .lp-cta-btn:hover { filter:brightness(1.15); }
-        .lp-talk-btn { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7); color:#fff; padding:13px 24px; border-radius:10px; font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; font-weight:600; text-decoration:none; transition:filter .2s; margin-top:34px; }
+        .lp-talk-btn { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7); color:#fff; padding:13px 24px; border-radius:10px; font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; font-weight:600; text-decoration:none; transition:filter .2s; margin-top:34px; }
         .lp-talk-btn:hover { filter:brightness(1.15); }
         .lp-footer-link { font-size:13.5px; color:#9a9ba3; text-decoration:none; transition:color .2s; }
         .lp-footer-link:hover { color:#fff; }
@@ -211,9 +211,9 @@ export default function LandingPage() {
       <div style={{ background:"transparent", color:"#fff", position:"relative", fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',sans-serif", WebkitFontSmoothing:"antialiased" }}>
 
         {/* Ambient blobs */}
-        <div style={{ position:"fixed", top:"-12%", left:"-14%", width:"55vw", height:"55vw", maxWidth:800, maxHeight:800, background:"radial-gradient(circle,#ff8a5c 0%,transparent 70%)", filter:"blur(70px)", opacity:.16, zIndex:-1, pointerEvents:"none", animation:"glowPulse 11s ease-in-out infinite" }} />
-        <div style={{ position:"fixed", top:"22%", right:"-16%", width:"50vw", height:"50vw", maxWidth:700, maxHeight:700, background:"radial-gradient(circle,#c869e0 0%,transparent 70%)", filter:"blur(80px)", opacity:.15, zIndex:-1, pointerEvents:"none", animation:"glowPulse 14s ease-in-out infinite", animationDelay:"-4s" }} />
-        <div style={{ position:"fixed", bottom:"-16%", left:"8%", width:"60vw", height:"60vw", maxWidth:850, maxHeight:850, background:"radial-gradient(circle,#5b8bf7 0%,transparent 70%)", filter:"blur(80px)", opacity:.17, zIndex:-1, pointerEvents:"none", animation:"glowPulse 17s ease-in-out infinite", animationDelay:"-8s" }} />
+        <div style={{ position:"fixed", top:"-12%", left:"-14%", width:"55vw", height:"55vw", maxWidth:800, maxHeight:800, background:"radial-gradient(circle,#4fd1ff 0%,transparent 70%)", filter:"blur(70px)", opacity:.16, zIndex:-1, pointerEvents:"none", animation:"glowPulse 11s ease-in-out infinite" }} />
+        <div style={{ position:"fixed", top:"22%", right:"-16%", width:"50vw", height:"50vw", maxWidth:700, maxHeight:700, background:"radial-gradient(circle,#38bdf8 0%,transparent 70%)", filter:"blur(80px)", opacity:.15, zIndex:-1, pointerEvents:"none", animation:"glowPulse 14s ease-in-out infinite", animationDelay:"-4s" }} />
+        <div style={{ position:"fixed", bottom:"-16%", left:"8%", width:"60vw", height:"60vw", maxWidth:850, maxHeight:850, background:"radial-gradient(circle,#2862D7 0%,transparent 70%)", filter:"blur(80px)", opacity:.17, zIndex:-1, pointerEvents:"none", animation:"glowPulse 17s ease-in-out infinite", animationDelay:"-8s" }} />
 
         {/* Particle canvas */}
         <canvas ref={canvasRef} style={{ position:"fixed", inset:0, width:"100vw", height:"100vh", zIndex:0, pointerEvents:"none", display:"block" }} />
@@ -224,7 +224,7 @@ export default function LandingPage() {
             <div style={{ display:"flex", alignItems:"center", gap:9 }}>
               <Image src="/Logo-new.png" alt="TraceBuild" width={533} height={400} style={{ height:30, width:"auto", objectFit:"contain", display:"block" }} priority />
               <span style={{ fontSize:15, fontWeight:500, letterSpacing:"-0.01em" }}>
-                Trace<span style={{ background:"linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7)", WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>Build</span>
+                Trace<span style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>Build</span>
               </span>
             </div>
             <nav style={{ display:"flex", alignItems:"center", gap:32 }}>
@@ -242,7 +242,7 @@ export default function LandingPage() {
             KI-gestützte Planprüfung
           </div>
           <h1 style={{ fontSize:"clamp(34px,6.4vw,88px)", fontWeight:600, color:"#fff", lineHeight:1.08, letterSpacing:"-0.03em", margin:"0 0 22px", } as React.CSSProperties}>
-            Baupläne <span style={{ background:"linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7)", WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>prüfen.</span><br />
+            Baupläne <span style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>prüfen.</span><br />
             Normen einhalten.
           </h1>
           <p style={{ fontSize:17, color:"#9a9ba3", maxWidth:480, lineHeight:1.6, margin:"0 auto 36px" }}>
@@ -289,7 +289,7 @@ export default function LandingPage() {
                   <Image src="/Logo-new.png" alt="" width={533} height={400} style={{ height:16, width:"auto", objectFit:"contain" }} />
                   <span style={{ fontSize:12, color:"#fff" }}>TraceBuild</span>
                 </div>
-                <div style={{ background:"linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7)", color:"#0B0C0E", borderRadius:6, padding:"8px 10px", fontSize:10.5, fontWeight:600, marginBottom:10 }}>+ Neue Analyse</div>
+                <div style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", color:"#0B0C0E", borderRadius:6, padding:"8px 10px", fontSize:10.5, fontWeight:600, marginBottom:10 }}>+ Neue Analyse</div>
                 {["Übersicht","Projekte","Berichte","Normen & Regeln"].map(item => (
                   <div key={item} style={{ padding:"7px 8px", borderRadius:6, fontSize:10.5, color:"#7B8299" }}>{item}</div>
                 ))}
@@ -303,7 +303,7 @@ export default function LandingPage() {
                     <div style={{ fontSize:12.5, color:"#fff", fontWeight:500 }}>Grundriss_EG.pdf</div>
                     <div style={{ fontSize:9, color:"#6B7086", marginTop:2 }}>Hochgeladen · 10:32</div>
                   </div>
-                  <div style={{ background:"linear-gradient(90deg,#ff8a5c,#c869e0 55%,#5b8bf7)", color:"#0B0C0E", borderRadius:6, padding:"6px 12px", fontSize:10, fontWeight:600 }}>Bericht erstellen</div>
+                  <div style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", color:"#0B0C0E", borderRadius:6, padding:"6px 12px", fontSize:10, fontWeight:600 }}>Bericht erstellen</div>
                 </div>
                 <div style={{ flex:1, position:"relative", padding:16 }}>
                   <svg viewBox="0 0 380 250" style={{ width:"100%", height:"100%", display:"block" }}>
@@ -340,7 +340,7 @@ export default function LandingPage() {
                 <div style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(91,139,247,.08)", borderRadius:8, padding:10 }}>
                   <svg viewBox="0 0 36 36" style={{ width:38, height:38, flexShrink:0 }}>
                     <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="3" />
-                    <circle cx="18" cy="18" r="15" fill="none" stroke="#5b8bf7" strokeWidth="3" strokeDasharray="94.2" strokeDashoffset="26.4" transform="rotate(-90 18 18)" />
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="#2862D7" strokeWidth="3" strokeDasharray="94.2" strokeDashoffset="26.4" transform="rotate(-90 18 18)" />
                   </svg>
                   <div>
                     <div style={{ fontSize:13, color:"#fff", fontWeight:600 }}>72%</div>
@@ -398,7 +398,7 @@ export default function LandingPage() {
 
               {/* Team */}
               <div style={{ position:"relative", background:"rgba(40,98,215,.08)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(91,139,247,.35)", borderRadius:18, padding:"36px 30px" }}>
-                <span style={{ position:"absolute", top:0, left:24, right:24, height:2, background:"linear-gradient(90deg,#ff8a5c,#5b8bf7)", borderRadius:2 }} />
+                <span style={{ position:"absolute", top:0, left:24, right:24, height:2, background:"linear-gradient(90deg,#4fd1ff,#2862D7)", borderRadius:2 }} />
                 <p style={{ fontSize:12.5, color:"#8fb3f5", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Team · Beliebt</p>
                 <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>CHF 349<span style={{ fontSize:13, color:"#9a9ba3", fontWeight:400 }}> /Monat</span></p>
                 <p style={{ fontSize:13, color:"#9a9ba3", margin:"0 0 28px" }}>Für wachsende Büros</p>
@@ -441,7 +441,7 @@ export default function LandingPage() {
                     <div>
                       <p style={{ fontSize:15, color:"#fff", fontWeight:500, margin:"0 0 3px" }}>{name}</p>
                       <p style={{ fontSize:13, color:"#9a9ba3", margin:"0 0 8px" }}>{role}</p>
-                      <a href={`mailto:${email}`} style={{ fontSize:13, color:"#5b8bf7", textDecoration:"none" }}>{email}</a>
+                      <a href={`mailto:${email}`} style={{ fontSize:13, color:"#2862D7", textDecoration:"none" }}>{email}</a>
                     </div>
                   </div>
                 ))}
