@@ -4,26 +4,76 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 // ── Particle engine ────────────────────────────────────────────────────────────
-const N = 1800;
+const N = 800;
 const SEQ = [0, 1, 2, 3, 4, 2, 1, 0];
 const SA = [255, 138, 92], SB = [200, 105, 224], SC = [91, 139, 247];
 type P3 = { x: number; y: number; z: number };
+type Seg = { a: P3; b: P3 };
 
 function pr(s: number) { const x = Math.sin(s) * 43758.5453; return x - Math.floor(x); }
 function lp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
+function alongSegments(segs: Seg[], idx: number, total: number): P3 {
+  const per = total / segs.length;
+  const si = Math.min(segs.length - 1, Math.floor(idx / per));
+  const t = (idx / per) - si;
+  const s = segs[si];
+  return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t, z: s.a.z + (s.b.z - s.a.z) * t };
+}
+
 function buildShapes(): P3[][] {
-  const ring: P3[] = [], wave: P3[] = [], helix: P3[] = [], disk: P3[] = [], funnel: P3[] = [];
-  for (let i = 0; i < N; i++) {
-    const u = i / N;
-    { const a = pr(i*5.3)*Math.PI*2, r = 0.66+pr(i*7.1)*0.36; ring.push({ x: Math.cos(a)*r, y: Math.sin(a)*r*0.88, z: (pr(i*2.2)-.5)*.12 }); }
-    { const x=(u*2-1)*1.15, by=Math.sin(u*Math.PI*2.2)*.18+Math.sin(u*Math.PI*5+1.3)*.06, jy=(pr(i*1.7)-.5)*.2; wave.push({ x, y: by*.6+jy*.5-.02, z: (pr(i*3.1)-.5)*.3 }); }
-    { const s=i%2, tt=u*Math.PI*4, r=.3, o=s?Math.PI:0; helix.push({ x: Math.cos(tt+o)*r+(pr(i*9)-.5)*.015, y: (u*2-1)*.85, z: Math.sin(tt+o)*r+(pr(i*11)-.5)*.015 }); }
-    { let x=0,y=0,z=0; if(i%5===0){ const th=pr(i*3)*Math.PI*2,ph=Math.acos(2*pr(i*5)-1),r=.9; x=r*Math.sin(ph)*Math.cos(th); y=r*Math.sin(ph)*Math.sin(th)*.6; z=r*Math.cos(ph); } else { const a=pr(i*4.4)*Math.PI*2,r=.44+pr(i*6.6)*.28; x=Math.cos(a)*r; y=Math.sin(a)*r*.22; z=(pr(i*8.8)-.5)*.05; } disk.push({x,y,z}); }
-    { const a=u*Math.PI*10, r=.05+u*.78; funnel.push({ x: Math.cos(a)*r, y: (u*2-1)*.85, z: Math.sin(a)*r }); }
+  const ring: P3[] = [], grid: P3[] = [], cube: P3[] = [], radar: P3[] = [], pyramid: P3[] = [];
+
+  // wireframe cube
+  const cs = 0.62;
+  const cn: P3[] = [
+    {x:-cs,y:-cs,z:-cs},{x:cs,y:-cs,z:-cs},{x:cs,y:cs,z:-cs},{x:-cs,y:cs,z:-cs},
+    {x:-cs,y:-cs,z:cs},{x:cs,y:-cs,z:cs},{x:cs,y:cs,z:cs},{x:-cs,y:cs,z:cs},
+  ];
+  const cubeEdges: Seg[] = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]]
+    .map(([a,b]) => ({a:cn[a],b:cn[b]}));
+
+  // wireframe pyramid
+  const bs = 0.68;
+  const base: P3[] = [{x:-bs,y:.5,z:-bs},{x:bs,y:.5,z:-bs},{x:bs,y:.5,z:bs},{x:-bs,y:.5,z:bs}];
+  const apex: P3 = {x:0,y:-.62,z:0};
+  const pyrEdges: Seg[] = [
+    {a:base[0],b:base[1]},{a:base[1],b:base[2]},{a:base[2],b:base[3]},{a:base[3],b:base[0]},
+    {a:base[0],b:apex},{a:base[1],b:apex},{a:base[2],b:apex},{a:base[3],b:apex},
+  ];
+
+  // blueprint grid plane
+  const gridLines: Seg[] = [];
+  const glExt = 0.85;
+  for (let k = 0; k < 9; k++) {
+    const v = -glExt + 2*glExt*(k/8);
+    gridLines.push({a:{x:-glExt,y:v,z:0},b:{x:glExt,y:v,z:0}});
+    gridLines.push({a:{x:v,y:-glExt,z:0},b:{x:v,y:glExt,z:0}});
   }
-  const tight = (arr: P3[]) => arr.map(p => ({ x: p.x*.82, y: p.y*.82, z: p.z*.82 }));
-  return [tight(ring), tight(wave), tight(helix), tight(disk), tight(funnel)];
+
+  // radar: concentric rings + 8 spokes
+  const radarSegs: Seg[] = [];
+  [.28,.5,.72,.92].forEach(rad => {
+    for (let k = 0; k < 24; k++) {
+      const a1=(k/24)*Math.PI*2, a2=((k+1)/24)*Math.PI*2;
+      radarSegs.push({a:{x:Math.cos(a1)*rad,y:Math.sin(a1)*rad*.9,z:0},b:{x:Math.cos(a2)*rad,y:Math.sin(a2)*rad*.9,z:0}});
+    }
+  });
+  for (let k = 0; k < 8; k++) {
+    const ang=(k/8)*Math.PI*2;
+    radarSegs.push({a:{x:0,y:0,z:0},b:{x:Math.cos(ang)*.92,y:Math.sin(ang)*.92*.9,z:0}});
+  }
+
+  for (let i = 0; i < N; i++) {
+    const a = pr(i*5.3)*Math.PI*2, r = .66+pr(i*7.1)*.36;
+    ring.push({x:Math.cos(a)*r, y:Math.sin(a)*r*.88, z:(pr(i*2.2)-.5)*.12});
+    grid.push(alongSegments(gridLines, i, N));
+    cube.push(alongSegments(cubeEdges, i, N));
+    radar.push(alongSegments(radarSegs, i, N));
+    pyramid.push(alongSegments(pyrEdges, i, N));
+  }
+  const tight = (arr: P3[]) => arr.map(p => ({x:p.x*.82,y:p.y*.82,z:p.z*.82}));
+  return [tight(ring), tight(grid), tight(cube), tight(radar), tight(pyramid)];
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -84,7 +134,7 @@ export default function LandingPage() {
     const stops = SEQ.length - 1;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
-      if ((++skip % 3) !== 0) return;
+      if ((++skip % 4) !== 0) return;
       try {
         const w = canvas.width, h = canvas.height, time = (now - t0) / 1000;
         ctx.clearRect(0,0,w,h);
@@ -101,8 +151,7 @@ export default function LandingPage() {
         for (let i = 0; i < N; i++) {
           const a = sA[i], b = sB[i], c = cur[i];
           c.x += (lp(a.x,b.x,lt)-c.x)*.16; c.y += (lp(a.y,b.y,lt)-c.y)*.16; c.z += (lp(a.z,b.z,lt)-c.z)*.16;
-          const dr = Math.sin(time*1.3+i*.6)*.012;
-          const dx=c.x+dr, dy=c.y+dr*.7, dz=c.z+Math.cos(time*1.1+i*.5)*.012;
+          const dx=c.x, dy=c.y, dz=c.z;
           let rx=dx*cosR+dz*sinR, rz=-dx*sinR+dz*cosR;
           let ry=dy*cosT-rz*sinT; rz=dy*sinT+rz*cosT;
           const psp = Math.min(5, Math.max(.2, 2.6/Math.max(.4, 2.6+rz)));
