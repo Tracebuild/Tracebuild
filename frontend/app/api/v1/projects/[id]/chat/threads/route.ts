@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   }
 
   // Newest first
-  const threads = [...map.entries()]
+  const threads = Array.from(map.entries())
     .map(([id, t]) => ({ id, ...t }))
     .reverse();
 

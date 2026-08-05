@@ -26,9 +26,10 @@ function parseInline(text: string): ReactNode {
   const regex = /(\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*)/g;
   let last = 0;
   let idx  = 0;
+  let m: RegExpExecArray | null;
 
-  for (const m of text.matchAll(regex)) {
-    if (m.index! > last) parts.push(text.slice(last, m.index));
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
     if (m[0].startsWith("**")) {
       parts.push(<strong key={idx++} className="font-semibold">{m[2]}</strong>);
     } else if (m[0].startsWith("`")) {
@@ -40,7 +41,7 @@ function parseInline(text: string): ReactNode {
     } else {
       parts.push(<em key={idx++}>{m[4]}</em>);
     }
-    last = m.index! + m[0].length;
+    last = m.index + m[0].length;
   }
   if (last < text.length) parts.push(text.slice(last));
   return parts.length === 1 ? parts[0] : <>{parts}</>;
