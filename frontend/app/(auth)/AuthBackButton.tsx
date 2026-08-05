@@ -3,44 +3,34 @@
 import Link from "next/link";
 import Image from "next/image";
 
-const EASE = "cubic-bezier(.52,.01,0,1)";
-
 export default function AuthBackButton() {
   return (
     <Link
       href="/"
       style={{
-        position: "absolute", top: 24, left: 24, zIndex: 20,
+        position: "fixed", top: 24, left: 24, zIndex: 20,
         display: "flex", alignItems: "center", gap: 9,
         textDecoration: "none",
-        border: "1px solid rgba(133,166,233,0.28)",
-        borderRadius: 10, padding: "9px 16px",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        background: "rgba(23,37,64,0.4)",
-        transition: `all .4s ${EASE}`,
+        border: "1px solid rgba(255,255,255,.09)",
+        borderRadius: 9, padding: "9px 16px",
+        background: "rgba(20,20,24,.55)",
+        transition: "border-color .2s, background .2s",
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLElement;
-        el.style.background = "rgba(40,98,215,0.14)";
-        el.style.borderColor = "rgba(133,166,233,0.5)";
+        el.style.borderColor = "#2862D7";
+        el.style.background = "rgba(40,98,215,.14)";
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLElement;
-        el.style.background = "rgba(23,37,64,0.4)";
-        el.style.borderColor = "rgba(133,166,233,0.28)";
+        el.style.borderColor = "rgba(255,255,255,.09)";
+        el.style.background = "rgba(20,20,24,.55)";
       }}
     >
-      <Image
-        src="/Logo-new.png"
-        alt=""
-        width={533}
-        height={400}
-        style={{ height: 22, width: "auto", objectFit: "contain" }}
-      />
-      <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.01em" }}>
-        <span style={{ color: "#FFFFFF" }}>Trace</span>
-        <span style={{ color: "#2862D7" }}>Build</span>
+      <Image src="/Logo-new.png" alt="" width={533} height={400} style={{ height: 20, width: "auto", objectFit: "contain" }} />
+      <span style={{ fontSize: 15, fontWeight: 500, letterSpacing: "-0.01em" }}>
+        <span style={{ color: "#fff" }}>Trace</span>
+        <span style={{ background: "linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>Build</span>
       </span>
     </Link>
   );
