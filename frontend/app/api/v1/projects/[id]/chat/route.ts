@@ -85,7 +85,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const url      = new URL(req.url);
   const threadId = url.searchParams.get("thread");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = admin
     .from("chat_messages")
     .select("id, role, content, created_at, thread_id")
@@ -134,7 +133,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
 
   // Load history for this thread (last 20 messages)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let histQuery: any = admin
     .from("chat_messages")
     .select("role, content")
