@@ -184,7 +184,12 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">Tarif</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-[#ABAEBB]">Tarif</label>
+              <span className="text-[10px] font-semibold text-[#85A6E9] bg-[#2862D7]/10 px-2 py-0.5 rounded uppercase tracking-wider">
+                Nur TraceBuild-Intern
+              </span>
+            </div>
             <select
               value={planTier}
               onChange={e => setPlanTier(e.target.value as PlanTier)}
@@ -194,6 +199,9 @@ export default function OrgModal({ org, onSave, onClose }: Props) {
               <option value="business">Business</option>
               <option value="enterprise">Enterprise</option>
             </select>
+            <p className="text-[11px] text-[#7B8299] mt-1">
+              Abos werden ausschliesslich durch TraceBuild eingerichtet — keine Selbstverwaltung für Kunden.
+            </p>
           </div>
 
           {!org?.isDefault && (
