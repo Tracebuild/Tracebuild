@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Organization, OrgCost, PlanTier, OrgStatus } from "./types";
 import { fmtMonth } from "./mockCosts";
 
@@ -163,15 +163,15 @@ function MitgliederTab({
   const [adding, setAdding] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`);
     const json = await res.json();
     setMembers(json.data ?? []);
     setLoading(false);
-  }
+  }, [org.id]);
 
-  useEffect(() => { load(); }, [org.id]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
