@@ -360,7 +360,7 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.14em", margin: "0 0 20px", textAlign: "center" }}>So funktioniert's</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.14em", margin: "0 0 20px", textAlign: "center" }}>{"So funktioniert's"}</p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 28 }}>
                 {WORKFLOW_STEPS.map(w => (
                   <div key={w.number} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
           {/* No search results */}
           {!loading && projects.length > 0 && search.trim() && filteredProjects.length === 0 && (
             <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.18)", borderRadius: 18, padding: 40, textAlign: "center" }}>
-              <p style={{ fontSize: 14, color: "#7B8299", margin: 0 }}>Keine Projekte für „{search}"</p>
+              <p style={{ fontSize: 14, color: "#7B8299", margin: 0 }}>{`Keine Projekte für „${search}"`}</p>
             </div>
           )}
 
