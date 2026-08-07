@@ -41,11 +41,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (existing) return err("Benutzer ist bereits Mitglied dieser Organisation.");
 
-  const { data: authUser } = await admin.auth.admin.getUserByEmail(email);
-  if (!authUser?.user) return err("Kein Supabase-Konto mit dieser E-Mail gefunden.");
+  const { data: listData, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  if (listError) return err(listError.message, 500);
+  const authUser = (listData as any)?.users?.find((u: any) => u.email === email);
+  if (!authUser) return err("Kein Supabase-Konto mit dieser E-Mail gefunden.");
 
   const { error } = await admin.from("users").insert({
-    id: authUser.user.id,
+    id: authUser.id,
     org_id: params.id,
     email,
     role,
