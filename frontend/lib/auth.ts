@@ -79,23 +79,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
   const row = rows?.[0] ?? null;
 
-  if (!row) {
-    const { data: org } = await admin
-      .from("organizations")
-      .insert({ name: `Org von ${email}` })
-      .select()
-      .single();
-    if (!org) return null;
-
-    await admin.from("users").insert({
-      id: user.id,
-      org_id: org.id,
-      email,
-      role: "org_admin",
-    });
-
-    return { id: user.id, email, org_id: org.id, role: "org_admin" };
-  }
+  if (!row) return null;
 
   return {
     id:     user.id,
