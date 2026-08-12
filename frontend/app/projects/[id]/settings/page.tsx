@@ -87,7 +87,7 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="max-w-xl">
-      <h2 className="text-base font-semibold text-stone-800 mb-6">Projekteinstellungen</h2>
+      <h2 className="text-base font-semibold text-white mb-6">Projekteinstellungen</h2>
 
       <form onSubmit={handleSave} className="bg-white border border-[#e7e2d9] rounded-xl p-5 space-y-4">
         <div>

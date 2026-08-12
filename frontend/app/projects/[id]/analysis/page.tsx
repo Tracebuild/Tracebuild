@@ -8,16 +8,21 @@ import {
   type Confidence,
   CATEGORY_LABELS,
   CONFIDENCE_LABELS,
-  CONFIDENCE_STYLE,
 } from "@/lib/domains/bau";
 
-// ── Config maps ───────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  ok:   { label: "Konform",  title: "Konforme Punkte", bg: "bg-green-50",  text: "text-green-700",  badge: "bg-green-100 text-green-700",  dot: "bg-green-500",  border: "border-green-200" },
-  fail: { label: "Verstoss", title: "Verstösse",        bg: "bg-red-50",    text: "text-red-700",    badge: "bg-red-100 text-red-700",      dot: "bg-red-500",    border: "border-red-200"   },
-  warn: { label: "Unklar",   title: "Unklare Punkte",   bg: "bg-amber-50",  text: "text-amber-700",  badge: "bg-amber-100 text-amber-700",  dot: "bg-amber-500",  border: "border-amber-200" },
+const S = {
+  ok:   { label: "Konform",  title: "Konforme Punkte", color: "#4ADE80", bg: "rgba(74,222,128,0.08)",  border: "rgba(74,222,128,0.2)"  },
+  fail: { label: "Verstoss", title: "Verstösse",        color: "#F87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.2)" },
+  warn: { label: "Unklar",   title: "Unklare Punkte",   color: "#FBBF24", bg: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.2)"  },
 } as const;
+
+const CARD = {
+  background: "rgba(23,37,64,0.55)",
+  border: "1px solid rgba(133,166,233,0.18)",
+  borderRadius: 14,
+};
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -43,92 +48,100 @@ interface RawGetAnalysis {
 // ── CheckCard ─────────────────────────────────────────────────────────────────
 
 function CheckCard({ item }: { item: AnalysisItem }) {
-  const cfg = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.warn;
-  const [expanded, setExpanded] = useState(false);
+  const cfg = S[item.status as keyof typeof S] ?? S.warn;
 
   return (
-    <div className={`${cfg.bg} border ${cfg.border} rounded-xl p-4`}>
-      <div className="flex items-start gap-3">
-        {/* Status badge */}
-        <span className={`${cfg.badge} text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 flex items-center gap-1.5`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+    <div style={{
+      background: cfg.bg,
+      border: `1px solid ${cfg.border}`,
+      borderRadius: 12,
+      padding: "14px 16px",
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: cfg.bg, border: `1px solid ${cfg.border}`,
+          color: cfg.color, fontSize: 11, fontWeight: 600,
+          padding: "3px 8px", borderRadius: 50, flexShrink: 0, marginTop: 2,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
           {cfg.label}
         </span>
 
-        <div className="flex-1 min-w-0">
-          {/* Norm title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
           {item.norm_title && (
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-0.5 truncate">
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#7B8299", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
               {item.norm_title}
             </p>
           )}
+          <p style={{ fontSize: 13.5, fontWeight: 500, color: cfg.color, lineHeight: 1.45 }}>{item.note}</p>
 
-          {/* Finding */}
-          <p className={`text-sm font-medium ${cfg.text} leading-snug`}>{item.note}</p>
-
-          {/* Suggestion */}
           {item.suggestion && (
-            <div className="mt-2 flex items-start gap-1.5">
-              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div style={{ marginTop: 8, display: "flex", alignItems: "flex-start", gap: 6 }}>
+              <svg style={{ width: 14, height: 14, color: "#7B8299", flexShrink: 0, marginTop: 1 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              <p className="text-sm text-stone-500 leading-relaxed">{item.suggestion}</p>
+              <p style={{ fontSize: 13, color: "#ABAEBB", lineHeight: 1.5 }}>{item.suggestion}</p>
             </div>
           )}
 
-          {/* Meta row: category, confidence, page */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             {item.category && (
-              <span className="text-xs bg-white/60 text-stone-500 px-2 py-0.5 rounded-full border border-stone-200">
+              <span style={{ fontSize: 11, background: "rgba(133,166,233,0.1)", color: "#85A6E9", padding: "2px 8px", borderRadius: 50, border: "1px solid rgba(133,166,233,0.2)" }}>
                 {CATEGORY_LABELS[item.category as Category] ?? item.category}
               </span>
             )}
             {item.confidence && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CONFIDENCE_STYLE[item.confidence as Confidence] ?? "bg-stone-100 text-stone-500"}`}>
+              <span style={{ fontSize: 11, background: "rgba(23,37,64,0.8)", color: "#7B8299", padding: "2px 8px", borderRadius: 50, border: "1px solid rgba(133,166,233,0.12)" }}>
                 Konfidenz: {CONFIDENCE_LABELS[item.confidence as Confidence] ?? item.confidence}
               </span>
             )}
             {item.page_reference != null && (
-              <span className="text-xs text-stone-400">
-                S. {item.page_reference}
-              </span>
+              <span style={{ fontSize: 11, color: "#7B8299" }}>S. {item.page_reference}</span>
             )}
           </div>
         </div>
-
-        {/* Expand / collapse for long suggestions */}
-        {item.suggestion && item.suggestion.length > 120 && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 p-1 text-stone-300 hover:text-stone-500 transition-colors"
-          >
-            <svg className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        )}
       </div>
     </div>
+  );
+}
+
+// ── FilterPill ────────────────────────────────────────────────────────────────
+
+function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "5px 14px", borderRadius: 50, fontSize: 12, fontWeight: 500,
+        background: active ? "#2862D7" : "rgba(133,166,233,0.08)",
+        color: active ? "#fff" : "#7B8299",
+        border: `1px solid ${active ? "#2862D7" : "rgba(133,166,233,0.15)"}`,
+        cursor: "pointer", transition: "all .15s", fontFamily: "inherit",
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AnalysisPage({ params }: { params: { id: string } }) {
-  const [analyses, setAnalyses] = useState<AnalysisWithDoc[]>([]);
+  const [analyses, setAnalyses]             = useState<AnalysisWithDoc[]>([]);
   const [localPlanTypes, setLocalPlanTypes] = useState<string[]>([]);
-  const [view, setView] = useState<"overview" | "plantype">("overview");
+  const [view, setView]                     = useState<"overview" | "plantype">("overview");
   const [selectedPlanType, setSelectedPlanType] = useState<string>("");
   const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisWithDoc | null>(null);
   const [showNewTypeInput, setShowNewTypeInput] = useState(false);
-  const [newTypeName, setNewTypeName] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [newTypeName, setNewTypeName]       = useState("");
+  const [uploading, setUploading]           = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
+  const [dragOver, setDragOver]             = useState(false);
+  const [menuOpenId, setMenuOpenId]         = useState<string | null>(null);
   const [overviewFilter, setOverviewFilter] = useState<"all" | "fail" | "warn">("all");
-  const [overviewOpen, setOverviewOpen] = useState(true);
-  const [detailFilter, setDetailFilter] = useState<"all" | "fail" | "warn" | "ok">("all");
+  const [overviewOpen, setOverviewOpen]     = useState(true);
+  const [detailFilter, setDetailFilter]     = useState<"all" | "fail" | "warn" | "ok">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -234,10 +247,11 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
 
     return (
       <div>
-        <div className="flex items-center justify-between mb-6">
+        {/* Header row */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
-            <h2 className="text-base font-semibold text-stone-800">Planarten</h2>
-            <p className="text-sm text-stone-400 mt-0.5">
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: 0 }}>Plan-Analyse</h2>
+            <p style={{ fontSize: 13, color: "#7B8299", marginTop: 3 }}>
               {allPlanTypes.length === 0
                 ? "Noch keine Planarten angelegt"
                 : `${allPlanTypes.length} Planart${allPlanTypes.length !== 1 ? "en" : ""}`}
@@ -245,17 +259,27 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           </div>
           <button
             onClick={() => setShowNewTypeInput(true)}
-            className="flex items-center gap-2 bg-[#B7926A] hover:bg-[#a67e5a] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: "linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)",
+              color: "#fff", padding: "9px 18px", borderRadius: 10,
+              fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+              fontFamily: "inherit", boxShadow: "0 4px 16px rgba(40,98,215,0.35)",
+              transition: "filter .15s",
+            }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.filter = "brightness(1.1)"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.filter = "none"}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Planart hinzufügen
           </button>
         </div>
 
+        {/* New type input */}
         {showNewTypeInput && (
-          <div className="bg-white border border-[#e7e2d9] rounded-xl p-4 mb-4 flex items-center gap-3">
+          <div style={{ ...CARD, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
             <input
               type="text"
               autoFocus
@@ -266,66 +290,64 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                 if (e.key === "Escape") { setShowNewTypeInput(false); setNewTypeName(""); }
               }}
               placeholder="z.B. Grundriss EG, Schnitt A-A, Fassade Süd…"
-              className="flex-1 border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-[#B7926A] focus:ring-1 focus:ring-[#B7926A]/30"
+              style={{
+                flex: 1, background: "rgba(23,37,64,0.8)", border: "1px solid rgba(133,166,233,0.25)",
+                borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#fff",
+                outline: "none", fontFamily: "inherit",
+              }}
             />
             <button
               onClick={createPlanType}
               disabled={!newTypeName.trim()}
-              className="bg-[#B7926A] hover:bg-[#a67e5a] text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-40 transition-colors"
+              style={{
+                background: "#2862D7", color: "#fff", padding: "8px 16px", borderRadius: 8,
+                fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+                fontFamily: "inherit", opacity: !newTypeName.trim() ? 0.4 : 1,
+              }}
             >
               Erstellen
             </button>
             <button
               onClick={() => { setShowNewTypeInput(false); setNewTypeName(""); }}
-              className="text-stone-400 hover:text-stone-700 px-1 text-xl leading-none"
+              style={{ color: "#7B8299", background: "none", border: "none", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
             >
               ×
             </button>
           </div>
         )}
 
-        {/* Offene Punkte overview */}
+        {/* Offene Punkte panel */}
         {typesWithAnalyses.length > 0 && (
-          <div className="bg-white border border-[#e7e2d9] rounded-xl mb-6 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#f0ece6]">
+          <div style={{ ...CARD, marginBottom: 24, overflow: "hidden" }}>
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 16px", borderBottom: "1px solid rgba(133,166,233,0.1)",
+            }}>
               <button
                 onClick={() => setOverviewOpen((o) => !o)}
-                className="flex items-center gap-2 group"
+                style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}
               >
-                <svg
-                  className={`w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-all ${overviewOpen ? "rotate-0" : "-rotate-90"}`}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
+                <svg style={{ width: 12, height: 12, color: "#7B8299", transform: overviewOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .2s" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-                <span className="text-xs font-semibold text-stone-400 group-hover:text-stone-600 uppercase tracking-wide transition-colors">
-                  Offene Punkte
-                </span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#7B8299", textTransform: "uppercase", letterSpacing: "0.1em" }}>Offene Punkte</span>
               </button>
               {overviewOpen && (
-                <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5">
+                <div style={{ display: "flex", gap: 4 }}>
                   {([
-                    { key: "all",  label: `Alle (${totalFail + totalWarn})` },
-                    { key: "fail", label: `Verstösse (${totalFail})` },
-                    { key: "warn", label: `Warnungen (${totalWarn})` },
-                  ] as const).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setOverviewFilter(key)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                        overviewFilter === key
-                          ? "bg-white text-stone-800 shadow-sm"
-                          : "text-stone-500 hover:text-stone-700"
-                      }`}
-                    >
+                    { key: "all" as const,  label: `Alle (${totalFail + totalWarn})` },
+                    { key: "fail" as const, label: `Verstösse (${totalFail})` },
+                    { key: "warn" as const, label: `Warnungen (${totalWarn})` },
+                  ]).map(({ key, label }) => (
+                    <FilterPill key={key} active={overviewFilter === key} onClick={() => setOverviewFilter(key)}>
                       {label}
-                    </button>
+                    </FilterPill>
                   ))}
                 </div>
               )}
             </div>
             {overviewOpen && (
-              <div className="overflow-y-auto max-h-[380px] divide-y divide-[#f7f5f2]">
+              <div style={{ overflowY: "auto", maxHeight: 360 }}>
                 {typesWithAnalyses.map((type) => {
                   const latest = latestByType[type];
                   const count = analyses.filter((a) => a.planType === type).length;
@@ -336,56 +358,56 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                   const fCount = allItems.filter(i => i.status === "fail").length;
                   const wCount = allItems.filter(i => i.status === "warn").length;
                   const overallStatus = fCount > 0 ? "kritisch" : wCount > 0 ? "warnung" : "konform";
-                  const badgeStyle = {
-                    kritisch: "bg-red-50 text-red-700 border-red-100",
-                    warnung:  "bg-amber-50 text-amber-700 border-amber-100",
-                    konform:  "bg-green-50 text-green-700 border-green-100",
-                  };
-                  const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" };
+                  const badgeColor = { kritisch: "#F87171", warnung: "#FBBF24", konform: "#4ADE80" }[overallStatus];
+                  const badgeLabel = { kritisch: "Kritisch", warnung: "Warnung", konform: "Konform" }[overallStatus];
 
                   return (
-                    <div key={type}>
+                    <div key={type} style={{ borderBottom: "1px solid rgba(133,166,233,0.08)" }}>
                       <button
                         onClick={() => openPlanType(type)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf8f5] transition-colors text-left group"
+                        style={{
+                          width: "100%", display: "flex", alignItems: "center", gap: 12,
+                          padding: "10px 16px", background: "none", border: "none", cursor: "pointer",
+                          fontFamily: "inherit", textAlign: "left",
+                          transition: "background .15s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.05)"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "none"}
                       >
-                        <span className="flex-1 text-sm font-semibold text-stone-700 group-hover:text-[#8b6344] transition-colors truncate">{type}</span>
-                        <span className="text-xs text-stone-400">V{count}</span>
-                        <span className="text-xs text-stone-400">
+                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{type}</span>
+                        <span style={{ fontSize: 11, color: "#7B8299" }}>V{count}</span>
+                        <span style={{ fontSize: 11, color: "#7B8299" }}>
                           {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                         </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border shrink-0 ${badgeStyle[overallStatus]}`}>
-                          {badgeLabel[overallStatus]}
+                        <span style={{ fontSize: 11, fontWeight: 600, color: badgeColor, background: `${badgeColor}18`, border: `1px solid ${badgeColor}40`, padding: "2px 8px", borderRadius: 50, flexShrink: 0 }}>
+                          {badgeLabel}
                         </span>
-                        <svg className="w-3.5 h-3.5 text-stone-300 group-hover:text-[#B7926A] shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg style={{ width: 12, height: 12, color: "#7B8299", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
                       {visibleItems.length === 0 ? (
-                        <div className="px-4 pb-3">
-                          <p className="text-xs text-stone-300 italic">
+                        <div style={{ padding: "0 16px 10px" }}>
+                          <p style={{ fontSize: 12, color: "#7B8299", fontStyle: "italic" }}>
                             {overviewFilter === "fail" ? "Keine Verstösse" : overviewFilter === "warn" ? "Keine Warnungen" : "Alle Prüfpunkte konform"}
                           </p>
                         </div>
                       ) : (
-                        <div className="px-4 pb-3 space-y-1">
+                        <div style={{ padding: "0 16px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                           {visibleItems.map((item) => {
-                            const cfg = STATUS_CONFIG[item.status];
+                            const cfg = S[item.status as keyof typeof S] ?? S.warn;
                             return (
-                              <div key={item.id} className={`${cfg.bg} border ${cfg.border} rounded-lg px-3 py-2 flex items-center gap-2`}>
-                                <span className={`${cfg.badge} text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 flex items-center gap-1`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} shrink-0`} />
+                              <div key={item.id} style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 8, padding: "6px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}`, padding: "1px 7px", borderRadius: 50, flexShrink: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
                                   {cfg.label}
                                 </span>
                                 {item.norm_title && (
-                                  <span className="text-xs text-stone-400 shrink-0 hidden sm:inline truncate max-w-[120px]">{item.norm_title}</span>
+                                  <span style={{ fontSize: 11, color: "#7B8299", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>{item.norm_title}</span>
                                 )}
-                                <p className={`text-sm font-medium ${cfg.text} flex-1 min-w-0 line-clamp-1`}>{item.note}</p>
-                                <button
-                                  onClick={() => openPlanType(type)}
-                                  className="shrink-0 text-stone-300 hover:text-[#B7926A] transition-colors ml-1"
-                                >
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <p style={{ fontSize: 12.5, fontWeight: 500, color: cfg.color, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: 0 }}>{item.note}</p>
+                                <button onClick={() => openPlanType(type)} style={{ background: "none", border: "none", cursor: "pointer", color: "#7B8299", flexShrink: 0 }}>
+                                  <svg style={{ width: 12, height: 12 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                   </svg>
                                 </button>
@@ -402,22 +424,25 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
+        {/* Plan type grid */}
         {allPlanTypes.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-[#ddd8cf] rounded-2xl p-16 text-center">
-            <div className="w-14 h-14 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-7 h-7 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          <div style={{ ...CARD, padding: "64px 16px", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, background: "rgba(133,166,233,0.1)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <svg style={{ width: 28, height: 28, color: "#7B8299" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-stone-600">Keine Planarten vorhanden</p>
-            <p className="text-xs text-stone-400 mt-1">Füge eine Planart hinzu um mit der Analyse zu beginnen</p>
-            <button onClick={() => setShowNewTypeInput(true)} className="mt-4 text-sm text-[#B7926A] hover:text-[#a67e5a] font-medium transition-colors">
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#ABAEBB", margin: "0 0 4px" }}>Keine Planarten vorhanden</p>
+            <p style={{ fontSize: 12.5, color: "#7B8299", margin: 0 }}>Füge eine Planart hinzu um mit der Analyse zu beginnen</p>
+            <button
+              onClick={() => setShowNewTypeInput(true)}
+              style={{ marginTop: 16, fontSize: 13, color: "#85A6E9", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}
+            >
               + Erste Planart erstellen
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
             {allPlanTypes.map((type) => {
               const latest = latestByType[type];
               const count = analyses.filter((a) => a.planType === type).length;
@@ -425,33 +450,55 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               const failCount = latestItems.filter((i) => i.status === "fail").length;
               const warnCount = latestItems.filter((i) => i.status === "warn").length;
               const okCount   = latestItems.filter((i) => i.status === "ok").length;
-              const borderColor = !latest ? "border-[#e7e2d9]" : failCount > 0 ? "border-red-200" : warnCount > 0 ? "border-amber-200" : "border-green-200";
+              const borderColor = !latest
+                ? "rgba(133,166,233,0.18)"
+                : failCount > 0 ? "rgba(248,113,113,0.35)"
+                : warnCount > 0 ? "rgba(251,191,36,0.35)"
+                : "rgba(74,222,128,0.35)";
 
               return (
                 <button
                   key={type}
                   onClick={() => openPlanType(type)}
-                  className={`text-left bg-white border ${borderColor} rounded-xl p-4 hover:shadow-sm transition-all group`}
+                  style={{
+                    textAlign: "left", background: "rgba(23,37,64,0.55)", border: `1px solid ${borderColor}`,
+                    borderRadius: 14, padding: "18px", cursor: "pointer", transition: "all .2s",
+                    fontFamily: "inherit",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(40,98,215,0.08)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(23,37,64,0.55)"; (e.currentTarget as HTMLElement).style.transform = "none"; }}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="font-semibold text-stone-800 truncate group-hover:text-[#8b6344] transition-colors">{type}</p>
-                    <svg className="w-4 h-4 text-stone-300 group-hover:text-[#B7926A] transition-colors shrink-0 ml-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 8 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{type}</p>
+                    <svg style={{ width: 14, height: 14, color: "#7B8299", flexShrink: 0, marginLeft: 8, marginTop: 2 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
                   {latest ? (
                     <>
-                      <p className="text-xs text-stone-400 mb-3">
+                      <p style={{ fontSize: 11.5, color: "#7B8299", marginBottom: 10 }}>
                         {count} Version{count !== 1 ? "en" : ""} · {new Date(latest.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                       </p>
-                      <div className="flex items-center gap-3">
-                        {failCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />{failCount}</span>}
-                        {warnCount > 0 && <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />{warnCount}</span>}
-                        {okCount   > 0 && <span className="flex items-center gap-1 text-xs font-medium text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />{okCount}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {failCount > 0 && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#F87171" }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F87171" }} />{failCount}
+                          </span>
+                        )}
+                        {warnCount > 0 && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#FBBF24" }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FBBF24" }} />{warnCount}
+                          </span>
+                        )}
+                        {okCount > 0 && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "#4ADE80" }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80" }} />{okCount}
+                          </span>
+                        )}
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-stone-300">Noch kein Plan hochgeladen</p>
+                    <p style={{ fontSize: 12, color: "#7B8299" }}>Noch kein Plan hochgeladen</p>
                   )}
                 </button>
               );
@@ -476,24 +523,32 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
     : items.filter((i) => i.status === detailFilter);
 
   return (
-    <div className="flex gap-5 min-h-[520px]">
+    <div style={{ display: "flex", gap: 20, minHeight: 520 }}>
       {/* Sidebar */}
-      <div className="w-52 shrink-0 flex flex-col gap-2">
+      <div style={{ width: 212, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
         <button
           onClick={() => { setView("overview"); setSelectedAnalysis(null); }}
-          className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-700 transition-colors px-1 pt-1 pb-1"
+          style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#7B8299",
+            background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
+            padding: "4px 0", transition: "color .15s",
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#ABAEBB"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#7B8299"}
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg style={{ width: 13, height: 13 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Planarten
         </button>
 
-        <p className="text-sm font-semibold text-stone-800 px-1 pb-1 truncate">{selectedPlanType}</p>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", padding: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selectedPlanType}
+        </p>
 
         {typeAnalyses.length > 0 && (
           <>
-            <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide px-1">
+            <p style={{ fontSize: 10, fontWeight: 700, color: "#7B8299", textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 0 2px" }}>
               Versionen · {typeAnalyses.length}
             </p>
             {typeAnalyses.map((a, idx) => {
@@ -503,51 +558,66 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               const w = aItems.filter((i) => i.status === "warn").length;
               const o = aItems.filter((i) => i.status === "ok").length;
               return (
-                <div key={a.id} className="relative">
+                <div key={a.id} style={{ position: "relative" }}>
                   <button
                     onClick={() => { setSelectedAnalysis(a); setDetailFilter("all"); }}
-                    className={`w-full text-left px-3 py-3 rounded-xl border transition-all ${
-                      isActive
-                        ? "border-[#B7926A] bg-[#fdf8f3] shadow-sm"
-                        : "border-[#e7e2d9] bg-white hover:border-[#c8a882] hover:bg-[#faf8f5]"
-                    }`}
+                    style={{
+                      width: "100%", textAlign: "left", padding: "12px", borderRadius: 12,
+                      border: `1px solid ${isActive ? "#2862D7" : "rgba(133,166,233,0.18)"}`,
+                      background: isActive ? "rgba(40,98,215,0.12)" : "rgba(23,37,64,0.55)",
+                      cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+                    }}
+                    onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.borderColor = "rgba(133,166,233,0.4)"; }}
+                    onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.borderColor = "rgba(133,166,233,0.18)"; }}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <p className={`text-xs font-semibold uppercase tracking-wide ${isActive ? "text-[#8b6344]" : "text-stone-400"}`}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: isActive ? "#85A6E9" : "#7B8299", margin: 0 }}>
                         V{typeAnalyses.length - idx}
                       </p>
                       <div
                         onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === a.id ? null : a.id); }}
-                        className="w-5 h-5 flex items-center justify-center rounded hover:bg-black/5 cursor-pointer"
+                        style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, cursor: "pointer", color: "#7B8299" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.1)"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "none"}
                       >
-                        <svg className="w-3.5 h-3.5 text-stone-400" fill="currentColor" viewBox="0 0 24 24">
+                        <svg style={{ width: 13, height: 13 }} fill="currentColor" viewBox="0 0 24 24">
                           <circle cx="12" cy="5" r="1.5" />
                           <circle cx="12" cy="12" r="1.5" />
                           <circle cx="12" cy="19" r="1.5" />
                         </svg>
                       </div>
                     </div>
-                    <p className="text-sm font-medium text-stone-800">
+                    <p style={{ fontSize: 12.5, fontWeight: 500, color: "#fff", margin: 0 }}>
                       {new Date(a.created_at).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                     </p>
                     {aItems.length > 0 && (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        {f > 0 && <span className="flex items-center gap-0.5 text-xs text-red-600"><span className="w-1.5 h-1.5 rounded-full bg-red-500" />{f}</span>}
-                        {w > 0 && <span className="flex items-center gap-0.5 text-xs text-amber-600"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" />{w}</span>}
-                        {o > 0 && <span className="flex items-center gap-0.5 text-xs text-green-600"><span className="w-1.5 h-1.5 rounded-full bg-green-500" />{o}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                        {f > 0 && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600, color: "#F87171" }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "#F87171" }} />{f}</span>}
+                        {w > 0 && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600, color: "#FBBF24" }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "#FBBF24" }} />{w}</span>}
+                        {o > 0 && <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600, color: "#4ADE80" }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ADE80" }} />{o}</span>}
                       </div>
                     )}
                   </button>
                   {menuOpenId === a.id && (
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute right-0 top-1 z-20 bg-white border border-stone-200 rounded-xl shadow-lg py-1 min-w-[140px]"
+                      style={{
+                        position: "absolute", right: 0, top: 4, zIndex: 20,
+                        background: "#0E111B", border: "1px solid rgba(133,166,233,0.18)",
+                        borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.4)", padding: "4px 0", minWidth: 148,
+                      }}
                     >
                       <button
                         onClick={() => { setMenuOpenId(null); deleteAnalysis(a.id); }}
-                        className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        style={{
+                          width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
+                          padding: "8px 12px", fontSize: 13, color: "#F87171", background: "none",
+                          border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background .1s",
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(248,113,113,0.08)"}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "none"}
                       >
-                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg style={{ width: 13, height: 13, flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         Version löschen
@@ -562,7 +632,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
       </div>
 
       {/* Main area */}
-      <div className="flex-1 min-w-0">
+      <div style={{ flex: 1, minWidth: 0 }}>
         {!selectedAnalysis ? (
           <>
             <div
@@ -570,122 +640,127 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
               onClick={() => !uploading && fileRef.current?.click()}
-              className={`w-full border-2 border-dashed rounded-2xl p-16 text-center cursor-pointer transition-colors ${
-                dragOver
-                  ? "border-[#B7926A] bg-[#f3ece3]"
-                  : "border-[#ddd8cf] hover:border-[#c8a882] hover:bg-[#faf8f5] bg-white/60"
-              } ${uploading ? "opacity-60 cursor-not-allowed" : ""}`}
+              style={{
+                width: "100%", border: `2px dashed ${dragOver ? "#2862D7" : "rgba(133,166,233,0.25)"}`,
+                borderRadius: 18, padding: "64px 16px", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer",
+                background: dragOver ? "rgba(40,98,215,0.08)" : "rgba(23,37,64,0.3)",
+                transition: "all .2s", boxSizing: "border-box", opacity: uploading ? 0.7 : 1,
+              }}
             >
-              <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+              <input ref={fileRef} type="file" accept=".pdf,image/*" style={{ display: "none" }} onChange={(e) => handleFiles(e.target.files)} />
               {uploading ? (
-                <div className="space-y-4">
-                  <div className="w-12 h-12 border-2 border-stone-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-base font-semibold text-stone-700">Claude analysiert gegen Normen…</p>
-                  <p className="text-sm text-stone-400">Das dauert ca. 30–60 Sekunden</p>
+                <div>
+                  <div style={{ width: 44, height: 44, border: "2px solid #2862D7", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite", margin: "0 auto 16px" }} />
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "#fff", margin: "0 0 6px" }}>Claude analysiert gegen Normen…</p>
+                  <p style={{ fontSize: 13, color: "#7B8299", margin: 0 }}>Das dauert ca. 30–60 Sekunden</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="w-16 h-16 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto">
-                    <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                <div>
+                  <div style={{ width: 60, height: 60, background: "rgba(40,98,215,0.12)", borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                    <svg style={{ width: 30, height: 30, color: "#85A6E9" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
                   </div>
-                  <div>
-                    <p className="text-base font-semibold text-stone-700">Plan hochladen</p>
-                    <p className="text-sm font-medium text-stone-500 mt-0.5">{selectedPlanType}</p>
-                    <p className="text-sm text-stone-400 mt-1">PDF oder Bild · Drag & Drop oder klicken</p>
-                  </div>
-                  <span className="inline-block text-xs text-stone-300 bg-stone-100 px-3 py-1 rounded-full">max. 20 MB</span>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>Plan hochladen</p>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#85A6E9", margin: "0 0 4px" }}>{selectedPlanType}</p>
+                  <p style={{ fontSize: 13, color: "#7B8299", margin: "0 0 14px" }}>PDF oder Bild · Drag & Drop oder klicken</p>
+                  <span style={{ fontSize: 11, color: "#7B8299", background: "rgba(133,166,233,0.08)", border: "1px solid rgba(133,166,233,0.15)", padding: "4px 12px", borderRadius: 50 }}>max. 20 MB</span>
                 </div>
               )}
             </div>
             {error && (
-              <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 text-center">{error}</p>
+              <div style={{ marginTop: 12, fontSize: 13, color: "#F87171", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: 12, padding: "10px 16px", textAlign: "center" }}>
+                {error}
+              </div>
             )}
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </>
         ) : (() => {
           const vIdx = typeAnalyses.findIndex((a) => a.id === selectedAnalysis.id);
           const vNr  = typeAnalyses.length - vIdx;
           return (
-            <div className="space-y-5">
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
               {/* Header */}
-              <div className="flex items-center justify-between">
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
                 <div>
-                  <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-0.5">
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#7B8299", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
                     {selectedPlanType} · V{vNr}
                   </p>
-                  <h3 className="text-base font-semibold text-stone-800">
-                    {new Date(selectedAnalysis.created_at).toLocaleDateString("de-CH", {
-                      weekday: "long", day: "2-digit", month: "long", year: "numeric",
-                    })}
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", margin: 0 }}>
+                    {new Date(selectedAnalysis.created_at).toLocaleDateString("de-CH", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
                   </h3>
                   {selectedAnalysis.cost_usd != null && (
-                    <p className="text-xs text-stone-400 mt-0.5">Kosten: ${selectedAnalysis.cost_usd.toFixed(4)}</p>
+                    <p style={{ fontSize: 11.5, color: "#7B8299", marginTop: 3 }}>Kosten: ${selectedAnalysis.cost_usd.toFixed(4)}</p>
                   )}
                 </div>
                 <button
                   onClick={() => setSelectedAnalysis(null)}
-                  className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-[#B7926A] transition-colors border border-[#e7e2d9] px-3 py-1.5 rounded-lg hover:border-[#c8a882]"
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#ABAEBB",
+                    background: "rgba(133,166,233,0.08)", border: "1px solid rgba(133,166,233,0.18)",
+                    padding: "7px 12px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+                    transition: "all .15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(40,98,215,0.12)"; (e.currentTarget as HTMLElement).style.borderColor = "#2862D7"; (e.currentTarget as HTMLElement).style.color = "#85A6E9"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.08)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(133,166,233,0.18)"; (e.currentTarget as HTMLElement).style.color = "#ABAEBB"; }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg style={{ width: 13, height: 13 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
                   Neuer Plan
                 </button>
               </div>
 
-              {/* Summary badges */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Stat tiles */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                 {(["fail", "warn", "ok"] as const).map((s) => {
-                  const cfg = STATUS_CONFIG[s];
+                  const cfg = S[s];
+                  const isActive = detailFilter === s;
                   return (
                     <button
                       key={s}
                       onClick={() => setDetailFilter(detailFilter === s ? "all" : s)}
-                      className={`${cfg.bg} border ${cfg.border} rounded-xl p-4 text-left transition-all hover:shadow-sm ${detailFilter === s ? "ring-2 ring-offset-1 ring-current" : ""}`}
+                      style={{
+                        background: cfg.bg, border: `1px solid ${isActive ? cfg.color : cfg.border}`,
+                        borderRadius: 14, padding: "16px", textAlign: "left", cursor: "pointer",
+                        fontFamily: "inherit", transition: "all .15s",
+                        outline: isActive ? `2px solid ${cfg.color}40` : "none",
+                        outlineOffset: 2,
+                      }}
                     >
-                      <div className="flex items-center gap-1.5 mb-3">
-                        <span className={`w-2 h-2 rounded-full ${cfg.dot} shrink-0`} />
-                        <p className={`text-xs font-semibold ${cfg.text} uppercase tracking-wider`}>{cfg.title}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
+                        <p style={{ fontSize: 10, fontWeight: 700, color: cfg.color, textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>{cfg.title}</p>
                       </div>
-                      <p className={`text-3xl font-bold ${cfg.text}`}>{counts![s]}</p>
-                      <p className={`text-xs mt-1 ${cfg.text} opacity-70`}>{counts![s] === 1 ? "Prüfpunkt" : "Prüfpunkte"}</p>
+                      <p style={{ fontSize: 30, fontWeight: 800, color: cfg.color, margin: "0 0 2px" }}>{counts![s]}</p>
+                      <p style={{ fontSize: 11, color: cfg.color, opacity: 0.7, margin: 0 }}>{counts![s] === 1 ? "Prüfpunkt" : "Prüfpunkte"}</p>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Filter tabs */}
-              <div className="flex items-center gap-1 bg-stone-100 rounded-xl p-1 w-fit">
+              {/* Filter pills */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {([
-                  { key: "all",  label: `Alle (${items.length})` },
-                  { key: "fail", label: `Verstösse (${counts!.fail})` },
-                  { key: "warn", label: `Warnungen (${counts!.warn})` },
-                  { key: "ok",   label: `Konform (${counts!.ok})` },
-                ] as const).map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setDetailFilter(key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      detailFilter === key
-                        ? "bg-white text-stone-800 shadow-sm"
-                        : "text-stone-500 hover:text-stone-700"
-                    }`}
-                  >
+                  { key: "all" as const,  label: `Alle (${items.length})` },
+                  { key: "fail" as const, label: `Verstösse (${counts!.fail})` },
+                  { key: "warn" as const, label: `Warnungen (${counts!.warn})` },
+                  { key: "ok" as const,   label: `Konform (${counts!.ok})` },
+                ]).map(({ key, label }) => (
+                  <FilterPill key={key} active={detailFilter === key} onClick={() => setDetailFilter(key)}>
                     {label}
-                  </button>
+                  </FilterPill>
                 ))}
               </div>
 
-              {/* Item list */}
-              <div className="space-y-2">
+              {/* Result list */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {filteredItems.length === 0 ? (
-                  <p className="text-sm text-stone-400 text-center py-10">Keine Prüfpunkte in dieser Kategorie.</p>
+                  <p style={{ fontSize: 13, color: "#7B8299", textAlign: "center", padding: "40px 0" }}>
+                    Keine Prüfpunkte in dieser Kategorie.
+                  </p>
                 ) : (
-                  filteredItems.map((item) => (
-                    <CheckCard key={item.id} item={item} />
-                  ))
+                  filteredItems.map((item) => <CheckCard key={item.id} item={item} />)
                 )}
               </div>
             </div>
