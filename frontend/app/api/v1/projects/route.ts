@@ -1,6 +1,5 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { lookupParcel } from "@/lib/geoportal";
 import { assignNorms } from "@/lib/norm-assignment";
 
 export async function GET() {
@@ -26,12 +25,7 @@ export async function POST(request: Request) {
   const { name, domain = "bau", location = {}, parcel_number, bauzone: bInput } = body;
   if (!name) return err("Name fehlt");
 
-  // Geoportal: auto-fetch bauzone when parcel provided and not manually set
-  let zone: string | null = bInput ?? null;
-  if (parcel_number && !zone && location.municipality) {
-    const geo = await lookupParcel(parcel_number, location.municipality);
-    zone = geo.bauzone;
-  }
+  const zone: string | null = bInput ?? null;
 
   const admin = createAdminClient();
 
