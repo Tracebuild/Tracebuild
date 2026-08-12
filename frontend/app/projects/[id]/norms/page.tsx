@@ -395,10 +395,10 @@ export default function NormenPage({ params }: { params: { id: string } }) {
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div>
-          <h2 className="text-base font-semibold text-stone-800">Normen</h2>
+          <h2 className="text-base font-semibold text-white">Normen</h2>
           {project && (
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="text-sm text-stone-500">
+              <span className="text-sm text-[#ABAEBB]">
                 {project.location.municipality}, Kanton {project.location.canton}
               </span>
               {project.parcel_number && (
