@@ -49,10 +49,6 @@ const WORKFLOW_STEPS = [
   { number: "04", title: "Report",  description: "Prüfbericht exportieren – direkt ins Projektdossier oder an den Auftraggeber." },
 ];
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
 function Toast({ msg }: { msg: string }) {
   return (
     <div style={{
@@ -130,34 +126,6 @@ export default function DashboardPage() {
   const filteredProjects = search.trim()
     ? projects.filter(p => p.name.toLowerCase().includes(search.trim().toLowerCase()))
     : projects;
-
-  const navBtn = (label: string, icon: React.ReactNode, href?: string) => {
-    const base: React.CSSProperties = {
-      display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
-      borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: "pointer",
-      transition: "background .15s, color .15s", textAlign: "left",
-      color: "#7B8299", background: "none", border: "none", fontFamily: "inherit",
-      textDecoration: "none", width: "100%",
-    };
-    if (href) {
-      return (
-        <Link href={href} style={base}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.08)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#7B8299"; }}
-        >
-          {icon}{label}
-        </Link>
-      );
-    }
-    return (
-      <button style={base}
-        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.08)"; (e.currentTarget as HTMLElement).style.color = "#fff"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#7B8299"; }}
-      >
-        {icon}{label}
-      </button>
-    );
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: "radial-gradient(120% 90% at 50% -10%,#182541 0%,#0A0E17 55%)", display: "flex", fontFamily: "'Inter',Arial,Helvetica,sans-serif", color: "#ABAEBB" }}>
