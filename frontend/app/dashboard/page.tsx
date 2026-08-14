@@ -28,6 +28,11 @@ interface MeResponse {
   org: OrgInfo | null;
 }
 
+const LIVIO_JONAS_EMAILS = new Set([
+  "livio.thoma07@gmail.com",
+  "jonasjud87@gmail.com",
+]);
+
 const DONUT = [
   { label: "Abstände",     pct: "42%", color: "#2862D7", dash: "58.06 80.17",  offset: "0" },
   { label: "Bemaßung",     pct: "28%", color: "#38BDF8", dash: "38.70 99.53",  offset: "-58.06" },
@@ -214,7 +219,7 @@ export default function DashboardPage() {
       <main style={{ flex: 1, overflow: "auto", position: "relative" }}>
 
         {/* Admin banner */}
-        {isSuperAdmin && activeOrg && (
+        {isSuperAdmin && activeOrg && LIVIO_JONAS_EMAILS.has(email) && (
           <div style={{ background: "rgba(23,37,64,0.5)", color: "#7B8299", padding: "10px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 500, borderBottom: "1px solid rgba(133,166,233,0.12)", position: "relative", zIndex: 1 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 9, fontWeight: 700, color: "#85A6E9", background: "rgba(40,98,215,0.12)", padding: "2px 8px", borderRadius: 6, textTransform: "uppercase", letterSpacing: "0.1em" }}>Admin</span>
