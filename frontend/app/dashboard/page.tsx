@@ -35,19 +35,22 @@ const DONUT = [
   { label: "Sonstige",     pct: "12%", color: "rgba(133,166,233,0.35)", dash: "16.59 121.64", offset: "-121.64" },
 ];
 
-const ACTIVITIES = [
-  { text: "Geländerhöhe unterschritten", time: "vor 2 Min." },
-  { text: "Türbreite nicht normkonform",  time: "vor 5 Min." },
-  { text: "Abstand zu Wand zu gering",   time: "vor 12 Min." },
-  { text: "Stahlträger nicht bemessen",  time: "vor 18 Min." },
-];
-
 const WORKFLOW_STEPS = [
   { number: "01", title: "Upload",  description: "Bauplan als PDF hochladen. TraceBuild erkennt Plantyp und Massstab automatisch." },
   { number: "02", title: "Analyse", description: "KI prüft jede Seite gegen relevante Normen – präzise und in Minuten." },
   { number: "03", title: "Review",  description: "Ergebnisse einsehen, kommentieren und nach Priorität bearbeiten." },
   { number: "04", title: "Report",  description: "Prüfbericht exportieren – direkt ins Projektdossier oder an den Auftraggeber." },
 ];
+
+function relTime(iso: string): string {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (m < 1)  return "Gerade eben";
+  if (m < 60) return `vor ${m} Min.`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "Gestern" : `vor ${d} Tagen`;
+}
 
 function Toast({ msg }: { msg: string }) {
   return (
@@ -75,6 +78,10 @@ export default function DashboardPage() {
   const [search, setSearch]         = useState("");
   const [toast, setToast]           = useState("");
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [analysesCount, setAnalysesCount] = useState<number | null>(null);
+  const [failCount, setFailCount]         = useState<number | null>(null);
+  const [okPct, setOkPct]                 = useState<number | null>(null);
+  const [activities, setActivities]       = useState<{text:string;time:string;status:string}[]>([]);
 
   function addToast(msg: string) {
     setToast(msg);
@@ -100,6 +107,19 @@ export default function DashboardPage() {
     }
   }
 
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/v1/dashboard/stats");
+      if (!res.ok) return;
+      const json = await res.json();
+      const s = json.data;
+      setAnalysesCount(s.analyses_count);
+      setFailCount(s.fail_count);
+      setOkPct(s.ok_pct);
+      setActivities(s.activities ?? []);
+    } catch { /* ignore */ }
+  }
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data }) => {
@@ -119,6 +139,7 @@ export default function DashboardPage() {
       }
     });
     loadProjects();
+    loadStats();
   }, [router]);
 
   const orgName = activeOrg?.name ?? "Organisation";
@@ -228,10 +249,10 @@ export default function DashboardPage() {
           {/* KPI strip */}
           <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.18)", borderRadius: 18, padding: "28px 8px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, marginBottom: 40 }}>
             {[
-              { label: "Projekte",       value: loading ? "…" : String(projects.length) },
-              { label: "Geprüfte Pläne", value: "128" },
-              { label: "Gefundene Fehler", value: "24" },
-              { label: "Normen geprüft", value: "97.4%" },
+              { label: "Projekte",         value: loading ? "…" : String(projects.length) },
+              { label: "Geprüfte Pläne",   value: analysesCount === null ? "…" : String(analysesCount) },
+              { label: "Gefundene Fehler", value: failCount === null ? "…" : String(failCount) },
+              { label: "Normen geprüft",   value: okPct === null ? "…" : okPct + "%" },
             ].map(k => (
               <div key={k.label} style={{ textAlign: "center", padding: "0 12px" }}>
                 <p style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", margin: "0 0 4px", fontVariantNumeric: "tabular-nums" }}>{k.value}</p>
@@ -269,11 +290,13 @@ export default function DashboardPage() {
             <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.18)", borderRadius: 18, padding: 24 }}>
               <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: "0 0 16px" }}>Letzte Aktivitäten</h3>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {ACTIVITIES.map(a => (
-                  <div key={a.text} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#38BDF8", marginTop: 5, flexShrink: 0 }} />
+                {activities.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#7B8299", margin: 0 }}>Noch keine Analyseergebnisse</p>
+                ) : activities.map((a, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: a.status === "fail" ? "#F87171" : "#FBBF24", marginTop: 5, flexShrink: 0 }} />
                     <span style={{ fontSize: 13, color: "#ABAEBB", flex: 1, lineHeight: 1.4 }}>{a.text}</span>
-                    <span style={{ fontSize: 11, color: "#7B8299", flexShrink: 0, whiteSpace: "nowrap" }}>{a.time}</span>
+                    <span style={{ fontSize: 11, color: "#7B8299", flexShrink: 0, whiteSpace: "nowrap" }}>{relTime(a.time)}</span>
                   </div>
                 ))}
               </div>

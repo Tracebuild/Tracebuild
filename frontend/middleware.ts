@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const { pathname } = request.nextUrl;
-    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register");
+    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/auth/callback");
     const isLandingRoute = pathname === "/";
     const isAdmin        = ADMIN_EMAILS.has(user?.email ?? "");
 

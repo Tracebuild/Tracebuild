@@ -33,21 +33,35 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const admin = createAdminClient();
 
-  const { data: existing } = await admin
+  const { data: existingRow } = await admin
     .from("users")
-    .select("id")
+    .select("id, org_id")
     .eq("email", email)
     .maybeSingle();
 
-  if (existing) return err("Benutzer ist bereits Mitglied dieser Organisation.");
+  if (existingRow) {
+    if (existingRow.org_id === params.id) return err("Benutzer ist bereits Mitglied dieser Organisation.");
+    return err("Benutzer gehört bereits einer anderen Organisation an.");
+  }
 
   const { data: listData, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
   if (listError) return err(listError.message, 500);
   const authUser = (listData as any)?.users?.find((u: any) => u.email === email);
-  if (!authUser) return err("Kein Supabase-Konto mit dieser E-Mail gefunden.");
+
+  let authUserId: string;
+  if (authUser) {
+    authUserId = authUser.id;
+  } else {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${siteUrl}/auth/callback`,
+    });
+    if (inviteError) return err(inviteError.message, 500);
+    authUserId = invited.user.id;
+  }
 
   const { error } = await admin.from("users").insert({
-    id: authUser.id,
+    id: authUserId,
     org_id: params.id,
     email,
     role,
