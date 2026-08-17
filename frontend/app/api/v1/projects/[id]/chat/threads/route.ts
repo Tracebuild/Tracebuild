@@ -22,6 +22,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     .eq("role", "user")
     .order("created_at", { ascending: true });
 
+  // thread_id column not yet migrated — return empty list so UI shows a fresh "Neuer Chat"
+  if (error?.message?.includes("thread_id")) return ok([]);
   if (error) return err(error.message, 500);
 
   // Group by thread_id; null → "legacy" bucket
