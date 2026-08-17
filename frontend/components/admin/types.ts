@@ -70,7 +70,7 @@ export interface OrgCost {
 export interface SystemService {
   name: string;
   key: string;
-  status: "online" | "degraded" | "offline";
+  status: "online" | "degraded" | "offline" | "unknown";
   latencyMs?: number;
   note?: string;
 }
