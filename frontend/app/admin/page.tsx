@@ -9,6 +9,8 @@ import OrgTable from "@/components/admin/OrgTable";
 import OrgModal from "@/components/admin/OrgModal";
 import type { OrgFormData } from "@/components/admin/OrgModal";
 import OrgDetailPanel from "@/components/admin/OrgDetailPanel";
+import InviteUserModal from "@/components/admin/InviteUserModal";
+import type { SentInvite } from "@/components/admin/InviteUserModal";
 import ActivityFeed from "@/components/admin/ActivityFeed";
 import CostTable from "@/components/admin/CostTable";
 import CostOverview from "@/components/admin/CostOverview";
@@ -222,6 +224,7 @@ export default function AdminPage() {
   const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
   const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [lastOpened, setLastOpened] = useState<LastOpenedOrg | null>(null);
   const [costMonth, setCostMonth]   = useState(currentMonth);
@@ -380,6 +383,16 @@ export default function AdminPage() {
     }
   }
 
+  function handleInviteSent(sent: SentInvite[]) {
+    sent.forEach(s => trackActivity("user_invited", s.orgName, s.orgId, s.email));
+    addToast(
+      sent.length === 1
+        ? `Einladung an ${sent[0].email} gesendet.`
+        : `${sent.length} Einladungen gesendet.`,
+      "success"
+    );
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orgs.filter(o => o.name.toLowerCase().includes(q));
@@ -489,7 +502,10 @@ export default function AdminPage() {
           />
           <QuickActionBtn
             label="Benutzer einladen"
-            onClick={() => addToast("Funktion in Kürze verfügbar.", "info")}
+            onClick={() => {
+              if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
+              setInviteModalOpen(true);
+            }}
             icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12 11.5C13.38 11.5 14.5 10.38 14.5 9C14.5 7.62 13.38 6.5 12 6.5C10.62 6.5 9.5 7.62 9.5 9C9.5 10.38 10.62 11.5 12 11.5Z" stroke="currentColor" strokeWidth="1.3" /><path d="M7 15C7 13.34 9.24 12 12 12C14.76 12 17 13.34 17 15M3 5.5V9.5M5.5 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>}
           />
           <QuickActionBtn
@@ -617,6 +633,15 @@ export default function AdminPage() {
         </div>
 
       </main>
+
+      {inviteModalOpen && (
+        <InviteUserModal
+          orgs={orgs}
+          defaultOrgId={lastOpened?.id ?? orgs[0]?.id}
+          onClose={() => setInviteModalOpen(false)}
+          onSent={handleInviteSent}
+        />
+      )}
 
       {modalOpen && (
         <OrgModal
