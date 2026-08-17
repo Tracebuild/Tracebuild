@@ -121,6 +121,14 @@ function buildShapes(): P3[][] {
   return [tight(ring), tight(grid), tight(cube), tight(radar), tight(shield)];
 }
 
+// Crossfade weight for the section at `idx`, given the current (eased, held) stage
+// position. Adjacent sections' weights always sum to 1, so one fades out exactly as
+// the next fades in — a continuous handover instead of independent per-section fades.
+function sectionOpacity(stageF: number, idx: number): number {
+  const d = Math.abs(stageF - idx);
+  return d >= 1 ? 0 : 1 - d;
+}
+
 function computeStageProgress(refs: React.RefObject<HTMLElement | HTMLDivElement | null>[]): number {
   const centers = refs.map(ref => {
     const el = ref.current as HTMLElement | null;
@@ -378,17 +386,6 @@ export default function LandingPage() {
   const ctaRef      = useRef<HTMLElement>(null);
   const footerRef   = useRef<HTMLElement>(null);
 
-  function fade(ref: React.RefObject<HTMLElement | HTMLDivElement | null>, blur: number) {
-    const el = ref.current as HTMLElement | null;
-    if (!el) return;
-    const { top, height } = el.getBoundingClientRect();
-    const dist = Math.abs(top + height / 2 - window.innerHeight / 2);
-    const plateau = window.innerHeight * 0.55, range = window.innerHeight * 1.4;
-    const op = dist <= plateau ? 1 : Math.max(0, Math.min(1, 1 - (dist - plateau) / range));
-    el.style.opacity = op.toFixed(2);
-    el.style.filter  = `blur(${((1 - op) * blur).toFixed(1)}px)`;
-  }
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -409,13 +406,22 @@ export default function LandingPage() {
     window.addEventListener("resize", resize);
 
     const sectionRefs = [heroRef, problemRef, solutionRef, dashRef, trustRef, pricingRef, teamRef, ctaRef];
+    const sectionBlur = [10, 8, 8, 6, 6, 7, 7, 8];
+    const applySectionFades = (stageF: number) => {
+      sectionRefs.forEach((ref, idx) => {
+        const el = ref.current as HTMLElement | null;
+        if (!el) return;
+        const op = sectionOpacity(stageF, idx);
+        el.style.opacity = op.toFixed(2);
+        el.style.filter  = `blur(${((1 - op) * sectionBlur[idx]).toFixed(1)}px)`;
+      });
+    };
     const onScroll = () => {
       stageRef.current = computeStageProgress(sectionRefs);
       setScrolled(window.scrollY > 12);
-      fade(heroRef,10); fade(problemRef,8); fade(solutionRef,8); fade(dashRef,6);
-      fade(trustRef,6); fade(pricingRef,7); fade(teamRef,7); fade(ctaRef,8);
     };
     onScroll();
+    applySectionFades(stageRef.current);
     window.addEventListener("scroll", onScroll, { passive: true });
 
     const stops = SEQ.length - 1;
@@ -423,10 +429,11 @@ export default function LandingPage() {
       raf = requestAnimationFrame(loop);
       skip = (skip + 1) % 2;
       if (skip !== 0) return;
+      const stageF = stageRef.current;
+      applySectionFades(stageF);
       try {
         const w = canvas.width, h = canvas.height, time = (now - t0) / 1000;
         ctx.clearRect(0,0,w,h);
-        const stageF = stageRef.current;
         const isPureRingHold = stageF === 0 || stageF === stops;
         const frac = stops > 0 ? stageF / stops : 0;
         const stage = Math.min(stops-1, Math.floor(stageF));
@@ -501,7 +508,7 @@ export default function LandingPage() {
     maxWidth:640, margin:"0 auto", textAlign:"center", position:"relative", zIndex:1,
     background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px) saturate(107%)", WebkitBackdropFilter:"blur(4.5px) saturate(107%)",
     border:"1px solid rgba(255,255,255,.1)", borderRadius:20, padding:"48px 40px",
-    transition:"opacity .15s linear, filter .15s linear",
+    transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)",
   };
 
   return (
@@ -570,7 +577,7 @@ export default function LandingPage() {
         </header>
 
         {/* HERO */}
-        <section ref={heroRef} style={{ position:"relative", minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"120px 24px 40px", zIndex:1, transition:"opacity .15s linear, filter .15s linear" }}>
+        <section ref={heroRef} style={{ position:"relative", minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", padding:"120px 24px 40px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
           <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"7px 16px", borderRadius:999, background:"rgba(255,255,255,.05)", border:"1px solid rgba(255,255,255,.12)", fontSize:12, color:"#c7c8d1", fontWeight:500, marginBottom:32 }}>
             KI-gestützte Planprüfung
           </div>
@@ -615,7 +622,7 @@ export default function LandingPage() {
 
         {/* DASHBOARD MOCKUP */}
         <section style={{ position:"relative", padding:"0 24px 200px", zIndex:1, display:"flex", justifyContent:"center" }}>
-          <div ref={dashRef} style={{ transition:"opacity .15s linear, filter .15s linear" }}>
+          <div ref={dashRef} style={{ transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
             <div className="lp-dash" style={{ width:"100%", maxWidth:787, aspectRatio:"1536/1024", background:"rgba(14,17,27,.85)", backdropFilter:"blur(9px) saturate(125%)", WebkitBackdropFilter:"blur(9px) saturate(125%)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, boxShadow:"0 60px 120px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07)", overflow:"hidden", display:"grid", gridTemplateColumns:"190px 1fr 280px", fontSize:12 }}>
 
               {/* Sidebar */}
@@ -705,7 +712,7 @@ export default function LandingPage() {
         <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* TRUST STRIP */}
-        <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .15s linear, filter .15s linear", overflow:"hidden" }}>
+        <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)", overflow:"hidden" }}>
           <canvas ref={trustNetRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:0, pointerEvents:"none", display:"block", maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)", WebkitMaskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)" }} />
           <div style={{ maxWidth:880, margin:"0 auto", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"14px 40px", background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, padding:"26px 32px", position:"relative", zIndex:1 }}>
             {["Daten bleiben in der Schweiz","Revisionssicher dokumentiert","Laufend aktualisierte Normdatenbank","Feste Ansprechperson"].map(t => (
@@ -717,7 +724,7 @@ export default function LandingPage() {
         <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* PRICING */}
-        <section id="preise" ref={pricingRef} style={{ position:"relative", padding:"60px 24px 220px", zIndex:1, transition:"opacity .15s linear, filter .15s linear" }}>
+        <section id="preise" ref={pricingRef} style={{ position:"relative", padding:"60px 24px 220px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
           <div style={{ maxWidth:1080, margin:"0 auto" }}>
             <p style={{ fontSize:12, color:"#c69bf0", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 20px", textAlign:"center" }}>Preise</p>
             <h2 style={{ fontSize:"clamp(28px,4vw,46px)", fontWeight:600, color:"#fff", lineHeight:1.2, letterSpacing:"-0.02em", margin:"0 0 16px", textAlign:"center" }}>Pakete, die du verstehst.</h2>
@@ -764,7 +771,7 @@ export default function LandingPage() {
         <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* KONTAKT */}
-        <section id="kontakt" ref={teamRef} style={{ position:"relative", padding:"60px 24px 200px", zIndex:1, transition:"opacity .15s linear, filter .15s linear" }}>
+        <section id="kontakt" ref={teamRef} style={{ position:"relative", padding:"60px 24px 200px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
           <div style={{ maxWidth:840, margin:"0 auto" }}>
             <div style={{ background:"rgba(255,255,255,.03)", backdropFilter:"blur(5px)", WebkitBackdropFilter:"blur(5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:20, padding:48 }}>
               <p style={{ fontSize:12, color:"#8fb3f5", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 14px" }}>Ansprechpersonen</p>
@@ -795,7 +802,7 @@ export default function LandingPage() {
         <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* FINAL CTA */}
-        <section ref={ctaRef} style={{ position:"relative", padding:"20px 24px 220px", textAlign:"center", zIndex:1, transition:"opacity .15s linear, filter .15s linear" }}>
+        <section ref={ctaRef} style={{ position:"relative", padding:"20px 24px 220px", textAlign:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
           <div style={{ maxWidth:720, margin:"0 auto" }}>
             <h2 style={{ fontSize:"clamp(32px,5.6vw,64px)", fontWeight:600, color:"#fff", lineHeight:1.1, letterSpacing:"-0.025em", margin:"0 0 24px" }}>Bereit für deine erste<br />geprüfte Zeichnung?</h2>
             <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.65, margin:"0 0 36px" }}>Schreib uns, was du vorhast — wir melden uns meist innerhalb eines Werktags.</p>
@@ -804,7 +811,7 @@ export default function LandingPage() {
         </section>
 
         {/* FOOTER */}
-        <footer ref={footerRef} style={{ position:"relative", zIndex:1, transition:"opacity .15s linear, filter .15s linear" }}>
+        <footer ref={footerRef} style={{ position:"relative", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
           <div style={{ maxWidth:1080, margin:"0 auto", padding:"0 24px" }}>
             <div style={{ borderTop:"1px solid rgba(255,255,255,.1)", padding:"32px 0", display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:24 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
