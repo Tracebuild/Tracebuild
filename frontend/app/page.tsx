@@ -186,7 +186,7 @@ export default function LandingPage() {
   return (
     <>
       <style>{`
-        body { margin:0; background:linear-gradient(150deg,#0a1a24 0%,#0a1420 45%,#070b14 100%) fixed; }
+        body { margin:0; overflow-x:hidden; background:linear-gradient(150deg,#0a1a24 0%,#0a1420 45%,#070b14 100%) fixed; }
         .lp-nav-link { font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:#9a9ba3; font-weight:500; text-decoration:none; transition:color .2s; }
         .lp-nav-link:hover { color:#fff; }
         .lp-nav-login { font-size:12.5px; letter-spacing:.03em; text-transform:uppercase; color:#fff; background:rgba(20,20,24,.55); border:1px solid rgba(255,255,255,.09); border-radius:9px; padding:8px 16px; font-weight:500; text-decoration:none; transition:border-color .2s, background .2s; }
@@ -206,6 +206,15 @@ export default function LandingPage() {
         .lp-footer-link { font-size:13.5px; color:#9a9ba3; text-decoration:none; transition:color .2s; }
         .lp-footer-link:hover { color:#fff; }
         @keyframes glowPulse { 0%,100%{opacity:.16;transform:scale(1)} 50%{opacity:.28;transform:scale(1.1)} }
+
+        /* Mobile: collapse quick-nav + hide login (login is desktop/laptop only) */
+        @media (max-width: 768px) {
+          .lp-nav-links, .lp-desktop-only { display:none !important; }
+          .lp-dash { grid-template-columns: 1fr !important; aspect-ratio: auto !important; }
+          .lp-dash-sidebar, .lp-dash-main { border-right:none !important; border-bottom:1px solid rgba(255,255,255,.08) !important; }
+          .lp-dash-plan { min-height: 220px !important; }
+          .lp-pricing-grid, .lp-kontakt-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
       <div style={{ background:"transparent", color:"#fff", position:"relative", fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',sans-serif", WebkitFontSmoothing:"antialiased" }}>
@@ -227,12 +236,12 @@ export default function LandingPage() {
                 Trace<span style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", WebkitBackgroundClip:"text", backgroundClip:"text", color:"transparent" }}>Build</span>
               </span>
             </div>
-            <nav style={{ display:"flex", alignItems:"center", gap:32 }}>
+            <nav className="lp-nav-links" style={{ display:"flex", alignItems:"center", gap:32 }}>
               <a href="#story"   className="lp-nav-link">Produkt</a>
               <a href="#preise"  className="lp-nav-link">Preise</a>
               <a href="#kontakt" className="lp-nav-link">Kontakt</a>
             </nav>
-            <a href="/login" className="lp-nav-login">Login</a>
+            <a href="/login" className="lp-nav-login lp-desktop-only">Login</a>
           </div>
         </header>
 
@@ -281,10 +290,10 @@ export default function LandingPage() {
         {/* DASHBOARD MOCKUP */}
         <section style={{ position:"relative", padding:"0 24px 200px", zIndex:1, display:"flex", justifyContent:"center" }}>
           <div ref={dashRef} style={{ transition:"opacity .15s linear, filter .15s linear" }}>
-            <div style={{ width:"100%", maxWidth:787, aspectRatio:"1536/1024", background:"rgba(14,17,27,.85)", backdropFilter:"blur(9px) saturate(125%)", WebkitBackdropFilter:"blur(9px) saturate(125%)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, boxShadow:"0 60px 120px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07)", overflow:"hidden", display:"grid", gridTemplateColumns:"190px 1fr 280px", fontSize:12 }}>
+            <div className="lp-dash" style={{ width:"100%", maxWidth:787, aspectRatio:"1536/1024", background:"rgba(14,17,27,.85)", backdropFilter:"blur(9px) saturate(125%)", WebkitBackdropFilter:"blur(9px) saturate(125%)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, boxShadow:"0 60px 120px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.07)", overflow:"hidden", display:"grid", gridTemplateColumns:"190px 1fr 280px", fontSize:12 }}>
 
               {/* Sidebar */}
-              <div style={{ background:"rgba(255,255,255,.03)", borderRight:"1px solid rgba(255,255,255,.08)", padding:"18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
+              <div className="lp-dash-sidebar" style={{ background:"rgba(255,255,255,.03)", borderRight:"1px solid rgba(255,255,255,.08)", padding:"18px 14px", display:"flex", flexDirection:"column", gap:4 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:16 }}>
                   <Image src="/Logo-new.png" alt="" width={533} height={400} style={{ height:16, width:"auto", objectFit:"contain" }} />
                   <span style={{ fontSize:12, color:"#fff" }}>TraceBuild</span>
@@ -297,7 +306,7 @@ export default function LandingPage() {
               </div>
 
               {/* Main plan view */}
-              <div style={{ borderRight:"1px solid rgba(255,255,255,.08)", display:"flex", flexDirection:"column" }}>
+              <div className="lp-dash-main" style={{ borderRight:"1px solid rgba(255,255,255,.08)", display:"flex", flexDirection:"column" }}>
                 <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(255,255,255,.08)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:12.5, color:"#fff", fontWeight:500 }}>Grundriss_EG.pdf</div>
@@ -305,7 +314,7 @@ export default function LandingPage() {
                   </div>
                   <div style={{ background:"linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)", color:"#0B0C0E", borderRadius:6, padding:"6px 12px", fontSize:10, fontWeight:600 }}>Bericht erstellen</div>
                 </div>
-                <div style={{ flex:1, position:"relative", padding:16 }}>
+                <div className="lp-dash-plan" style={{ flex:1, position:"relative", padding:16 }}>
                   <svg viewBox="0 0 380 250" style={{ width:"100%", height:"100%", display:"block" }}>
                     <rect x="10" y="10" width="360" height="230" fill="none" stroke="rgba(255,255,255,.18)" strokeWidth="1" />
                     <rect x="170" y="10"  width="4" height="100" fill="rgba(255,255,255,.3)" />
@@ -384,7 +393,7 @@ export default function LandingPage() {
             <h2 style={{ fontSize:"clamp(28px,4vw,46px)", fontWeight:600, color:"#fff", lineHeight:1.2, letterSpacing:"-0.02em", margin:"0 0 16px", textAlign:"center" }}>Pakete, die du verstehst.</h2>
             <p style={{ fontSize:16, color:"#9a9ba3", textAlign:"center", maxWidth:460, margin:"0 auto 56px", lineHeight:1.6 }}>Ein klares Abo, alle Kernfunktionen inklusive.</p>
 
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))", gap:16 }}>
+            <div className="lp-pricing-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(270px,1fr))", gap:16 }}>
               {/* Starter */}
               <div style={{ background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:18, padding:"36px 30px" }}>
                 <p style={{ fontSize:12.5, color:"#9a9ba3", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Starter</p>
@@ -429,7 +438,7 @@ export default function LandingPage() {
               <p style={{ fontSize:12, color:"#8fb3f5", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 14px" }}>Ansprechpersonen</p>
               <h2 style={{ fontSize:"clamp(22px,3vw,28px)", fontWeight:600, color:"#fff", lineHeight:1.3, letterSpacing:"-0.01em", margin:"0 0 14px" }}>Ein junges Team, das dein Projekt persönlich begleitet.</h2>
               <p style={{ fontSize:15, color:"#9a9ba3", lineHeight:1.7, margin:"0 0 34px", maxWidth:500 }}>Keine Warteschleife, kein Ticket im System. Jonas und Livio kennen jedes Projekt persönlich — von der ersten Frage bis zur laufenden Nutzung.</p>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:26 }}>
+              <div className="lp-kontakt-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:26 }}>
                 {[
                   { initials:"JJ", name:"Jonas Jud",   role:"Mitgründer", email:"jonas@tracebuild.ch" },
                   { initials:"LT", name:"Livio Thoma", role:"Mitgründer", email:"livio@tracebuild.ch" },
@@ -471,7 +480,7 @@ export default function LandingPage() {
               <div style={{ display:"flex", gap:28 }}>
                 <a href="#preise"                       className="lp-footer-link">Preise</a>
                 <a href="mailto:jonas@tracebuild.ch"    className="lp-footer-link">Kontakt</a>
-                <a href="/login"                        className="lp-footer-link">Login</a>
+                <a href="/login"                        className="lp-footer-link lp-desktop-only">Login</a>
               </div>
             </div>
           </div>
