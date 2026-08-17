@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -18,7 +18,7 @@ import SystemStatus from "@/components/admin/SystemStatus";
 import Toast from "@/components/admin/Toast";
 import InvoicesSection from "@/components/admin/InvoicesSection";
 import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
-import { MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
+import { MOCK_ACTIVITIES } from "@/components/admin/mockOrgData";
 import { organizationService } from "@/lib/services/organizationService";
 import type {
   Organization,
@@ -26,6 +26,7 @@ import type {
   ActivityType,
   LastOpenedOrg,
   ToastMessage,
+  SystemService,
 } from "@/components/admin/types";
 
 const ACTIVITY_KEY    = "tb_admin_activities";
@@ -230,6 +231,9 @@ export default function AdminPage() {
   const [costMonth, setCostMonth]   = useState(currentMonth);
   const [costSearch, setCostSearch] = useState("");
   const [toasts, setToasts]         = useState<ToastMessage[]>([]);
+  const [systemServices, setSystemServices]   = useState<SystemService[]>([]);
+  const [systemCheckedAt, setSystemCheckedAt] = useState<string | null>(null);
+  const [systemLoading, setSystemLoading]     = useState(false);
 
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
@@ -246,6 +250,25 @@ export default function AdminPage() {
       setUserName(extractName(email, data.user.user_metadata ?? {}));
     });
   }, []);
+
+  /* Load live system status */
+  const loadSystemStatus = useCallback(async () => {
+    setSystemLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/system-status");
+      const json = await res.json() as { data: { services: SystemService[]; checkedAt: string } | null; error: string | null };
+      if (json.data) {
+        setSystemServices(json.data.services);
+        setSystemCheckedAt(json.data.checkedAt);
+      }
+    } catch {
+      /* keep previous state */
+    } finally {
+      setSystemLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSystemStatus(); }, [loadSystemStatus]);
 
   /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
@@ -621,7 +644,12 @@ export default function AdminPage() {
           <div className="space-y-4 lg:sticky lg:top-20">
             <ActivityFeed activities={activities} />
             <div id="systemstatus-section">
-              <SystemStatus services={SYSTEM_SERVICES} />
+              <SystemStatus
+                services={systemServices}
+                checkedAt={systemCheckedAt}
+                loading={systemLoading}
+                onRefresh={loadSystemStatus}
+              />
             </div>
           </div>
         </div>
