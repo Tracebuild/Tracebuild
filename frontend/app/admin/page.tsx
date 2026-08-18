@@ -242,6 +242,8 @@ export default function AdminPage() {
   const [systemLoading, setSystemLoading]     = useState(false);
   const [userGroups, setUserGroups]           = useState<OrgUsersGroup[]>([]);
   const [usersLoading, setUsersLoading]       = useState(false);
+  const [userSearch, setUserSearch]           = useState("");
+  const [resendingId, setResendingId]         = useState<string | null>(null);
 
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
@@ -293,6 +295,28 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => { loadAllUsers(); }, [loadAllUsers]);
+
+  async function resendInvite(orgId: string, email: string, role: string) {
+    setResendingId(`${orgId}:${email}`);
+    try {
+      const res = await fetch("/api/v1/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role, org_id: orgId }),
+      });
+      const json = await res.json() as { data: unknown; error: string | null };
+      if (!res.ok || json.error) {
+        addToast(json.error ?? "Einladung konnte nicht erneut gesendet werden.", "error");
+      } else {
+        addToast(`Einladung erneut an ${email} gesendet.`, "success");
+        await loadAllUsers();
+      }
+    } catch {
+      addToast("Einladung konnte nicht erneut gesendet werden.", "error");
+    } finally {
+      setResendingId(null);
+    }
+  }
 
   /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
@@ -469,6 +493,13 @@ export default function AdminPage() {
     return map;
   }, []);
 
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return userGroups
+      .flatMap(g => g.users.map(u => ({ ...u, orgId: g.orgId, orgName: g.orgName })))
+      .filter(u => !q || u.email.toLowerCase().includes(q) || u.orgName.toLowerCase().includes(q));
+  }, [userGroups, userSearch]);
+
   const kpiData = useMemo(() => {
     const cm = currentMonth();
     const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
@@ -642,21 +673,27 @@ export default function AdminPage() {
             <div>
               <h2 className="text-base font-semibold text-white">Alle Nutzer</h2>
               <p className="text-xs text-[#7B8299] mt-0.5">
-                {userGroups.reduce((s, g) => s + g.users.length, 0)} Nutzer in {userGroups.length} {userGroups.length === 1 ? "Organisation" : "Organisationen"}
+                {filteredUsers.length} {filteredUsers.length === 1 ? "Nutzer" : "Nutzer"}
+                {userSearch ? ` für „${userSearch}"` : ` in ${userGroups.length} ${userGroups.length === 1 ? "Organisation" : "Organisationen"}`}
               </p>
             </div>
-            <button
-              onClick={() => {
-                if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
-                setInviteModalOpen(true);
-              }}
-              className="flex-shrink-0 flex items-center gap-1.5 bg-[#2862D7] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#3470E8] active:scale-[0.97] transition-all shadow-sm shadow-[#2862D7]/25 whitespace-nowrap"
-            >
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-              Nutzer einladen
-            </button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:w-56">
+                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="E-Mail oder Organisation..." />
+              </div>
+              <button
+                onClick={() => {
+                  if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
+                  setInviteModalOpen(true);
+                }}
+                className="flex-shrink-0 flex items-center gap-1.5 bg-[#2862D7] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#3470E8] active:scale-[0.97] transition-all shadow-sm shadow-[#2862D7]/25 whitespace-nowrap"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                  <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                Nutzer einladen
+              </button>
+            </div>
           </div>
 
           {usersLoading && userGroups.length === 0 ? (
@@ -665,38 +702,62 @@ export default function AdminPage() {
             <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
               <p className="text-[#ABAEBB] text-sm font-medium">Noch keine Nutzer eingeladen</p>
             </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
+              <p className="text-[#ABAEBB] text-sm font-medium">Keine Nutzer gefunden</p>
+              <button onClick={() => setUserSearch("")} className="mt-2 text-sm text-[#85A6E9] hover:underline">
+                Filter zurücksetzen
+              </button>
+            </div>
           ) : (
             <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[560px]">
+                <table className="w-full text-sm min-w-[680px]">
                   <thead>
                     <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
                       <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">E-Mail</th>
                       <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Organisation</th>
-                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-right">Rolle</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Status</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-right">Rolle</th>
+                      <th className="py-3.5 px-5 w-10" />
                     </tr>
                   </thead>
                   <tbody>
-                    {userGroups.flatMap(group =>
-                      group.users.map((u, i) => (
-                        <tr
-                          key={u.id}
-                          className={`hover:bg-[#1E2D4A]/60 transition-colors border-b border-[rgba(60,63,68,0.3)] last:border-0 ${i === 0 ? "border-t-2 border-t-[rgba(60,63,68,0.5)] first:border-t-0" : ""}`}
-                        >
-                          <td className="px-5 py-3 font-medium text-white">{u.email}</td>
-                          <td className="px-3 py-3 text-[#ABAEBB]">{group.orgName}</td>
-                          <td className="px-5 py-3 text-right">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                              u.role === "org_admin" || u.role === "super_admin"
-                                ? "bg-[#2862D7]/10 text-[#85A6E9]"
-                                : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
-                            }`}>
-                              {ROLE_LABELS[u.role] ?? u.role}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
+                    {filteredUsers.map(u => (
+                      <tr key={u.id} className="hover:bg-[#1E2D4A]/60 transition-colors border-b border-[rgba(60,63,68,0.3)] last:border-0">
+                        <td className="px-5 py-3 font-medium text-white">{u.email}</td>
+                        <td className="px-3 py-3 text-[#ABAEBB]">{u.orgName}</td>
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            u.status === "active" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${u.status === "active" ? "bg-emerald-500" : "bg-amber-400"}`} />
+                            {u.status === "active" ? "Aktiv" : "Ausstehend"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            u.role === "org_admin" || u.role === "super_admin"
+                              ? "bg-[#2862D7]/10 text-[#85A6E9]"
+                              : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
+                          }`}>
+                            {ROLE_LABELS[u.role] ?? u.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          {u.status === "pending" && (
+                            <button
+                              onClick={() => resendInvite(u.orgId, u.email, u.role)}
+                              disabled={resendingId === `${u.orgId}:${u.email}`}
+                              className="text-xs font-medium text-[#85A6E9] hover:text-white disabled:opacity-40 transition-colors whitespace-nowrap"
+                              title="Einladung erneut senden"
+                            >
+                              {resendingId === `${u.orgId}:${u.email}` ? "..." : "Erneut einladen"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
