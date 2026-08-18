@@ -11,6 +11,7 @@ import type { OrgFormData } from "@/components/admin/OrgModal";
 import OrgDetailPanel from "@/components/admin/OrgDetailPanel";
 import InviteUserModal from "@/components/admin/InviteUserModal";
 import type { SentInvite } from "@/components/admin/InviteUserModal";
+import type { OrgUsersGroup } from "@/app/api/v1/admin/all-users/route";
 import ActivityFeed from "@/components/admin/ActivityFeed";
 import CostTable from "@/components/admin/CostTable";
 import CostOverview from "@/components/admin/CostOverview";
@@ -65,6 +66,11 @@ function todayStr(): string {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin", org_admin: "Admin",
+  project_manager: "Manager", member: "Mitglied",
+};
 
 const TRACEBUILD_SEED: OrgFormData = {
   name:           "TraceBuild",
@@ -234,6 +240,8 @@ export default function AdminPage() {
   const [systemServices, setSystemServices]   = useState<SystemService[]>([]);
   const [systemCheckedAt, setSystemCheckedAt] = useState<string | null>(null);
   const [systemLoading, setSystemLoading]     = useState(false);
+  const [userGroups, setUserGroups]           = useState<OrgUsersGroup[]>([]);
+  const [usersLoading, setUsersLoading]       = useState(false);
 
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
@@ -269,6 +277,22 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => { loadSystemStatus(); }, [loadSystemStatus]);
+
+  /* Load all users across all orgs */
+  const loadAllUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/all-users");
+      const json = await res.json() as { data: OrgUsersGroup[] | null; error: string | null };
+      if (json.data) setUserGroups(json.data);
+    } catch {
+      /* keep previous state */
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAllUsers(); }, [loadAllUsers]);
 
   /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
@@ -414,6 +438,7 @@ export default function AdminPage() {
         : `${sent.length} Einladungen gesendet.`,
       "success"
     );
+    loadAllUsers();
   }
 
   const filtered = useMemo(() => {
@@ -607,6 +632,75 @@ export default function AdminPage() {
               onArchive={org => setArchiveTarget(org)}
               onDetail={org => setDetailOrg(org)}
             />
+          )}
+        </div>
+
+        {/* Users */}
+        <div className="space-y-4">
+          <SectionHeader title="Nutzer" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-white">Alle Nutzer</h2>
+              <p className="text-xs text-[#7B8299] mt-0.5">
+                {userGroups.reduce((s, g) => s + g.users.length, 0)} Nutzer in {userGroups.length} {userGroups.length === 1 ? "Organisation" : "Organisationen"}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
+                setInviteModalOpen(true);
+              }}
+              className="flex-shrink-0 flex items-center gap-1.5 bg-[#2862D7] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#3470E8] active:scale-[0.97] transition-all shadow-sm shadow-[#2862D7]/25 whitespace-nowrap"
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+              Nutzer einladen
+            </button>
+          </div>
+
+          {usersLoading && userGroups.length === 0 ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl h-48 animate-pulse" />
+          ) : userGroups.every(g => g.users.length === 0) ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
+              <p className="text-[#ABAEBB] text-sm font-medium">Noch keine Nutzer eingeladen</p>
+            </div>
+          ) : (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[560px]">
+                  <thead>
+                    <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
+                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">E-Mail</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Organisation</th>
+                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-right">Rolle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userGroups.flatMap(group =>
+                      group.users.map((u, i) => (
+                        <tr
+                          key={u.id}
+                          className={`hover:bg-[#1E2D4A]/60 transition-colors border-b border-[rgba(60,63,68,0.3)] last:border-0 ${i === 0 ? "border-t-2 border-t-[rgba(60,63,68,0.5)] first:border-t-0" : ""}`}
+                        >
+                          <td className="px-5 py-3 font-medium text-white">{u.email}</td>
+                          <td className="px-3 py-3 text-[#ABAEBB]">{group.orgName}</td>
+                          <td className="px-5 py-3 text-right">
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              u.role === "org_admin" || u.role === "super_admin"
+                                ? "bg-[#2862D7]/10 text-[#85A6E9]"
+                                : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
+                            }`}>
+                              {ROLE_LABELS[u.role] ?? u.role}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
 

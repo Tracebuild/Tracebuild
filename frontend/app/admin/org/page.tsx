@@ -192,11 +192,12 @@ function InviteModal({
 // ── Member assignment panel ───────────────────────────────────────────────────
 
 function MembersPanel({
-  project, orgUsers, onClose,
+  project, orgUsers, onClose, onToast,
 }: {
   project: OrgProject;
   orgUsers: OrgUser[];
   onClose: () => void;
+  onToast: (msg: string) => void;
 }) {
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,23 +223,35 @@ function MembersPanel({
   async function addMember() {
     if (!selectedUserId) return;
     setAdding(true);
-    await fetch(`/api/v1/admin/projects/${project.id}/members`, {
+    const res = await fetch(`/api/v1/admin/projects/${project.id}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: selectedUserId }),
     });
-    setSelectedUserId("");
-    await load();
+    const json = await res.json().catch(() => null) as { error?: string | null } | null;
+    if (!res.ok || json?.error) {
+      onToast(`Fehler: ${json?.error ?? "Mitglied konnte nicht hinzugefügt werden."}`);
+    } else {
+      setSelectedUserId("");
+      onToast("Mitglied hinzugefügt.");
+      await load();
+    }
     setAdding(false);
   }
 
   async function removeMember(userId: string) {
-    await fetch(`/api/v1/admin/projects/${project.id}/members`, {
+    const res = await fetch(`/api/v1/admin/projects/${project.id}/members`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user_id: userId }),
     });
-    await load();
+    const json = await res.json().catch(() => null) as { error?: string | null } | null;
+    if (!res.ok || json?.error) {
+      onToast(`Fehler: ${json?.error ?? "Mitglied konnte nicht entfernt werden."}`);
+    } else {
+      onToast("Mitglied entfernt.");
+      await load();
+    }
   }
 
   return (
@@ -469,6 +482,7 @@ export default function OrgAdminPage() {
           project={membersProject}
           orgUsers={users}
           onClose={() => setMembersProject(null)}
+          onToast={addToast}
         />
       )}
 
