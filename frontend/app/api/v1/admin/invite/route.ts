@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   if (!ALLOWED_ROLES.includes(role)) return err("Ungültige Rolle");
 
   const admin = createAdminClient();
+  const { origin } = new URL(request.url);
 
   // Only super_admin may target an org other than their own
   let targetOrgId = user.org_id;
@@ -30,20 +31,29 @@ export async function POST(request: Request) {
     targetOrgId = body.org_id;
   }
 
-  // Check if user already exists in this org
+  // Check for an existing account with this email (global — one auth user per email)
   const { data: existing } = await admin
     .from("users")
-    .select("id")
+    .select("id, org_id")
     .eq("email", body.email)
-    .eq("org_id", targetOrgId)
     .maybeSingle();
 
-  if (existing) return err("Benutzer ist bereits Mitglied dieser Organisation");
+  if (existing) {
+    if (existing.org_id !== targetOrgId) {
+      return err("Benutzer gehört bereits einer anderen Organisation an.");
+    }
+    const { data: authUser } = await admin.auth.admin.getUserById(existing.id);
+    if (authUser?.user?.last_sign_in_at) {
+      return err("Benutzer ist bereits aktives Mitglied dieser Organisation.");
+    }
+    // Existing but never signed in — invite was never completed, fall through to resend.
+  }
 
-  // Invite via Supabase Auth
+  // Invite via Supabase Auth — lands the user on /set-password after clicking the email link
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
     body.email,
     {
+      redirectTo: `${origin}/auth/callback?next=/set-password`,
       data: {
         org_id: targetOrgId,
         invited_role: role,
@@ -53,7 +63,7 @@ export async function POST(request: Request) {
 
   if (inviteError) return err(inviteError.message, 500);
 
-  // Pre-create user row so org_id + role are set before first login
+  // Pre-create/update user row so org_id + role are set before first login
   if (invited.user) {
     await admin.from("users").upsert({
       id: invited.user.id,
@@ -63,5 +73,5 @@ export async function POST(request: Request) {
     }, { onConflict: "id" });
   }
 
-  return ok({ email: body.email, role, org_id: targetOrgId }, 201);
+  return ok({ email: body.email, role, org_id: targetOrgId, resent: !!existing }, 201);
 }
