@@ -103,6 +103,26 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return ok(data);
 }
 
+// Anthropic requires strict user/assistant alternation starting with "user".
+// Merge any consecutive same-role rows (can happen if a prior reply failed to
+// save) so a previously-broken thread heals itself instead of 400-ing forever.
+function sanitizeAlternating(
+  rows: { role: string; content: string }[]
+): { role: "user" | "assistant"; content: string }[] {
+  const out: { role: "user" | "assistant"; content: string }[] = [];
+  for (const row of rows) {
+    const role = row.role as "user" | "assistant";
+    const last = out[out.length - 1];
+    if (last && last.role === role) {
+      last.content += "\n\n" + row.content;
+    } else {
+      out.push({ role, content: row.content });
+    }
+  }
+  while (out.length > 0 && out[0].role !== "user") out.shift();
+  return out;
+}
+
 // ── POST — stream response ────────────────────────────────────────────────────
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -120,17 +140,25 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (projectError || !project) return err(`Projekt nicht gefunden (${projectError?.message ?? "no data"})`, 404);
 
   const body = await request.json() as { content?: string; thread_id?: string };
-  const content  = body.content?.trim();
-  const threadId = body.thread_id ?? null;
+  const content = body.content?.trim();
+  // The "legacy" id is a client-side sentinel for the pre-threading bucket (thread_id IS NULL)
+  // — it isn't a real uuid, so it must never be written to or queried against the thread_id column.
+  const rawThreadId = body.thread_id ?? null;
+  const threadId = rawThreadId === "legacy" ? null : rawThreadId;
   if (!content) return err("Nachricht fehlt");
 
   // Save user message
-  await admin.from("chat_messages").insert({
-    project_id: params.id,
-    role: "user",
-    content,
-    thread_id: threadId,
-  });
+  const { data: insertedMsg, error: insertError } = await admin
+    .from("chat_messages")
+    .insert({
+      project_id: params.id,
+      role: "user",
+      content,
+      thread_id: threadId,
+    })
+    .select("id")
+    .single();
+  if (insertError || !insertedMsg) return err(`Nachricht konnte nicht gespeichert werden (${insertError?.message ?? "unbekannt"})`, 500);
 
   // Load history for this thread (last 20 messages)
   let histQuery: any = admin
@@ -187,10 +215,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     lastItems,
   );
 
-  const messages = (historyRows ?? []).map((m: { role: string; content: string }) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
+  const messages = sanitizeAlternating(historyRows ?? []);
+  if (messages.length === 0) {
+    await admin.from("chat_messages").delete().eq("id", insertedMsg.id);
+    return err("Nachrichtenverlauf konnte nicht geladen werden. Bitte erneut versuchen.", 500);
+  }
 
   const encoder = new TextEncoder();
   let fullResponse = "";
@@ -230,6 +259,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       } catch (e) {
+        // Roll back the user message so the thread doesn't end up with two
+        // consecutive "user" rows, which would break every future request
+        // (Anthropic requires strict role alternation).
+        await admin.from("chat_messages").delete().eq("id", insertedMsg.id);
         controller.enqueue(
           encoder.encode(`data: [ERROR] ${e instanceof Error ? e.message : "Fehler"}\n\n`)
         );
