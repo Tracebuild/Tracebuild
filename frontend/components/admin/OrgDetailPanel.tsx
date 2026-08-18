@@ -177,14 +177,14 @@ function MitgliederTab({
     e.preventDefault();
     if (!addEmail.trim()) return;
     setAdding(true);
-    const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`, {
+    const res = await fetch("/api/v1/admin/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: addEmail.trim(), role: addRole }),
+      body: JSON.stringify({ email: addEmail.trim(), role: addRole, org_id: org.id }),
     });
     const json = await res.json();
     if (res.ok) {
-      onToast("Benutzer hinzugefügt.", "success");
+      onToast("Einladung gesendet.", "success");
       setAddEmail("");
       await load();
     } else {

@@ -20,56 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   return ok(data ?? []);
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
-  if (!ADMIN_ROLES.includes(user.role as "super_admin")) return forbidden();
-
-  const body = await req.json().catch(() => null);
-  const email: string | undefined = body?.email?.trim();
-  const role: string = body?.role ?? "member";
-
-  if (!email) return err("E-Mail ist erforderlich.");
-
-  const admin = createAdminClient();
-
-  const { data: existingRow } = await admin
-    .from("users")
-    .select("id, org_id")
-    .eq("email", email)
-    .maybeSingle();
-
-  if (existingRow) {
-    if (existingRow.org_id === params.id) return err("Benutzer ist bereits Mitglied dieser Organisation.");
-    return err("Benutzer gehört bereits einer anderen Organisation an.");
-  }
-
-  const { data: listData, error: listError } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (listError) return err(listError.message, 500);
-  const authUser = (listData as any)?.users?.find((u: any) => u.email === email);
-
-  let authUserId: string;
-  if (authUser) {
-    authUserId = authUser.id;
-  } else {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-    const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${siteUrl}/auth/callback`,
-    });
-    if (inviteError) return err(inviteError.message, 500);
-    authUserId = invited.user.id;
-  }
-
-  const { error } = await admin.from("users").insert({
-    id: authUserId,
-    org_id: params.id,
-    email,
-    role,
-  });
-
-  if (error) return err(error.message, 500);
-  return ok({ message: "Benutzer hinzugefügt." }, 201);
-}
+// Adding members is handled by POST /api/v1/admin/invite (shared invite flow).
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await getAuthUser();
