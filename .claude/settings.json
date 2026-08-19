@@ -7,7 +7,12 @@
       "Bash(powershell.exe -Command \"Start-Sleep -Seconds 3; Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log' -Tail 6\")",
       "Bash(powershell.exe -Command \"Start-Sleep -Seconds 5; \\(Get-Content 'c:\\\\Users\\\\jonas\\\\Documents\\\\Claude\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\backend\\\\uvicorn_err.log'\\)[-1]\")",
       "Bash(powershell.exe -Command \"netstat -ano | findstr ':8000'\")",
-      "Bash(powershell.exe -Command \"Get-Process python | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Output 'done'\")"
+      "Bash(powershell.exe -Command \"Get-Process python | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Output 'done'\")",
+      "Bash(gh run *)",
+      "PowerShell(gh run list --limit 5)",
+      "Bash(npx tsc *)",
+      "Bash(git fetch *)",
+      "Bash(git checkout *)"
     ]
   }
 }
