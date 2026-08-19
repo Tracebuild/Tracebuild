@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Organization, PlanTier } from "./types";
 
 interface Props {
@@ -44,14 +44,143 @@ function formatGB(n: number): string {
   return `${n.toFixed(1)} GB`;
 }
 
+interface MenuPos { top: number; right: number }
+
+function OrgMenu({
+  org, pos, onClose: closeMenu,
+  onOpen, onEdit, onDelete, onPause, onCloseOrg, onArchive,
+}: {
+  org: Organization;
+  pos: MenuPos;
+  onClose: () => void;
+  onOpen: (o: Organization) => void;
+  onEdit: (o: Organization) => void;
+  onDelete: (o: Organization) => void;
+  onPause: (o: Organization) => void;
+  onCloseOrg: (o: Organization) => void;
+  onArchive: (o: Organization) => void;
+}) {
+  const status = org.status ?? "active";
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const vh = window.innerHeight;
+    if (rect.bottom > vh - 8) {
+      ref.current.style.top = `${pos.top - rect.height}px`;
+      ref.current.style.bottom = "auto";
+    }
+  }, [pos]);
+
+  return (
+    <div
+      ref={ref}
+      style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 9999 }}
+      className="bg-[#0E111B] border border-[rgba(60,63,68,0.5)] rounded-xl shadow-2xl py-1.5 min-w-[172px]"
+      onClick={e => e.stopPropagation()}
+    >
+      <button
+        onClick={() => { closeMenu(); onOpen(org); }}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-white hover:bg-[#1E2D4A] transition-colors text-left"
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 6.5H11M7.5 3L11 6.5L7.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Öffnen
+      </button>
+
+      <div className="my-1 h-px bg-[rgba(60,63,68,0.4)]" />
+
+      <button
+        onClick={() => { closeMenu(); onEdit(org); }}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-white hover:bg-[#1E2D4A] transition-colors text-left"
+      >
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M9 1.5L11.5 4L4.5 11H2V8.5L9 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
+        </svg>
+        Bearbeiten
+      </button>
+
+      {status === "active" && (
+        <button
+          onClick={() => { closeMenu(); onPause(org); }}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="2.5" y="2.5" width="3" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+            <rect x="7.5" y="2.5" width="3" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
+          </svg>
+          Pausieren
+        </button>
+      )}
+
+      {status === "paused" && (
+        <button
+          onClick={() => { closeMenu(); onPause(org); }}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors text-left"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M3 2.5L10.5 6.5L3 10.5V2.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+          </svg>
+          Reaktivieren
+        </button>
+      )}
+
+      {status !== "closed" && status !== "archived" && (
+        <button
+          onClick={() => { closeMenu(); onCloseOrg(org); }}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.2" />
+            <path d="M4.5 4.5L8.5 8.5M8.5 4.5L4.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+          Schließen
+        </button>
+      )}
+
+      {status !== "archived" && (
+        <button
+          onClick={() => { closeMenu(); onArchive(org); }}
+          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#ABAEBB] hover:bg-[#1E2D4A] transition-colors text-left"
+        >
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M2 4.5H11M2 4.5V10.5H11V4.5M2 4.5V3A.5.5 0 0 1 2.5 2.5H10.5A.5.5 0 0 1 11 3V4.5M5.5 7H7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="italic">Archivieren</span>
+        </button>
+      )}
+
+      {!org.isDefault && (
+        <>
+          <div className="my-1 h-px bg-[rgba(60,63,68,0.4)]" />
+          <button
+            onClick={() => { closeMenu(); onDelete(org); }}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
+          >
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2 3.5H11M4.5 3.5V2.5H8.5V3.5M4 3.5L4.5 11H8.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Löschen
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function OrgTable({
   orgs, lastActivityMap, costMap,
   onOpen, onEdit, onDelete, onPause, onClose, onArchive, onDetail,
 }: Props) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState<MenuPos>({ top: 0, right: 0 });
 
-  function toggleMenu(id: string) {
-    setOpenMenuId(prev => (prev === id ? null : id));
+  function openMenu(id: string, btn: HTMLButtonElement) {
+    const r = btn.getBoundingClientRect();
+    setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    setOpenMenuId(id);
   }
 
   const headers = [
@@ -62,7 +191,7 @@ export default function OrgTable({
   return (
     <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
       {openMenuId && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+        <div className="fixed inset-0 z-[9998]" onClick={() => setOpenMenuId(null)} />
       )}
 
       <div className="overflow-x-auto">
@@ -165,13 +294,17 @@ export default function OrgTable({
                     {lastAct ?? created}
                   </td>
 
-                  <td className="px-5 py-4 relative">
+                  <td className="px-5 py-4">
                     <button
-                      onClick={(e) => { e.stopPropagation(); toggleMenu(org.id); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (openMenuId === org.id) { setOpenMenuId(null); }
+                        else { openMenu(org.id, e.currentTarget as HTMLButtonElement); }
+                      }}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-[#7B8299] hover:text-white hover:bg-[#1E2D4A] transition-colors"
                       title="Aktionen"
                     >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                         <circle cx="7" cy="2.5"  r="1.2" fill="currentColor" />
                         <circle cx="7" cy="7"    r="1.2" fill="currentColor" />
                         <circle cx="7" cy="11.5" r="1.2" fill="currentColor" />
@@ -179,95 +312,17 @@ export default function OrgTable({
                     </button>
 
                     {openMenuId === org.id && (
-                      <div
-                        className="absolute right-4 top-full mt-1 z-20 bg-[#0E111B] border border-[rgba(60,63,68,0.5)] rounded-xl shadow-2xl py-1.5 min-w-[172px]"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() => { setOpenMenuId(null); onOpen(org); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-white hover:bg-[#1E2D4A] transition-colors text-left"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                            <path d="M2 6.5H11M7.5 3L11 6.5L7.5 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          Öffnen
-                        </button>
-
-                        <div className="my-1 h-px bg-[rgba(60,63,68,0.4)]" />
-
-                        <button
-                          onClick={() => { setOpenMenuId(null); onEdit(org); }}
-                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-white hover:bg-[#1E2D4A] transition-colors text-left"
-                        >
-                          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                            <path d="M9 1.5L11.5 4L4.5 11H2V8.5L9 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
-                          </svg>
-                          Bearbeiten
-                        </button>
-
-                        {status === "active" ? (
-                          <button
-                            onClick={() => { setOpenMenuId(null); onPause(org); }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                              <rect x="2.5" y="2.5" width="3" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-                              <rect x="7.5" y="2.5" width="3" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.2" />
-                            </svg>
-                            Pausieren
-                          </button>
-                        ) : status === "paused" ? (
-                          <button
-                            onClick={() => { setOpenMenuId(null); onPause(org); }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-emerald-400 hover:bg-emerald-500/10 transition-colors text-left"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                              <path d="M3 2.5L10.5 6.5L3 10.5V2.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-                            </svg>
-                            Reaktivieren
-                          </button>
-                        ) : null}
-
-                        {status !== "closed" && status !== "archived" && (
-                          <button
-                            onClick={() => { setOpenMenuId(null); onClose(org); }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.2" />
-                              <path d="M4.5 4.5L8.5 8.5M8.5 4.5L4.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                            </svg>
-                            Schließen
-                          </button>
-                        )}
-
-                        {status !== "archived" && (
-                          <button
-                            onClick={() => { setOpenMenuId(null); onArchive(org); }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#ABAEBB] hover:bg-[#1E2D4A] transition-colors text-left"
-                          >
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                              <path d="M2 4.5H11M2 4.5V10.5H11V4.5M2 4.5V3A.5.5 0 0 1 2.5 2.5H10.5A.5.5 0 0 1 11 3V4.5M5.5 7H7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                            <span className="italic">Archivieren</span>
-                          </button>
-                        )}
-
-                        {!org.isDefault && (
-                          <>
-                            <div className="my-1 h-px bg-[rgba(60,63,68,0.4)]" />
-                            <button
-                              onClick={() => { setOpenMenuId(null); onDelete(org); }}
-                              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                                <path d="M2 3.5H11M4.5 3.5V2.5H8.5V3.5M4 3.5L4.5 11H8.5L9 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                              Löschen
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <OrgMenu
+                        org={org}
+                        pos={menuPos}
+                        onClose={() => setOpenMenuId(null)}
+                        onOpen={onOpen}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onPause={onPause}
+                        onCloseOrg={onClose}
+                        onArchive={onArchive}
+                      />
                     )}
                   </td>
                 </tr>

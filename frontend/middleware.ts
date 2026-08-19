@@ -8,6 +8,9 @@ const ADMIN_EMAILS = new Set([
   "liviocyrill.thomamanser@gmail.com",
 ]);
 
+// Login is desktop/laptop-only — phones are redirected back to the landing page.
+const MOBILE_UA_REGEX = /Android.*Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i;
+
 export async function middleware(request: NextRequest) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next();
@@ -40,9 +43,16 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const { pathname } = request.nextUrl;
-    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register");
+    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/auth/callback");
     const isLandingRoute = pathname === "/";
     const isAdmin        = ADMIN_EMAILS.has(user?.email ?? "");
+
+    const isLoginOrRegister = pathname.startsWith("/login") || pathname.startsWith("/register");
+    if (isLoginOrRegister && MOBILE_UA_REGEX.test(request.headers.get("user-agent") ?? "")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
 
     if (!user && !isAuthRoute && !isLandingRoute) {
       const url = request.nextUrl.clone();
