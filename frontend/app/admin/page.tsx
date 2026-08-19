@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +9,9 @@ import OrgTable from "@/components/admin/OrgTable";
 import OrgModal from "@/components/admin/OrgModal";
 import type { OrgFormData } from "@/components/admin/OrgModal";
 import OrgDetailPanel from "@/components/admin/OrgDetailPanel";
+import InviteUserModal from "@/components/admin/InviteUserModal";
+import type { SentInvite } from "@/components/admin/InviteUserModal";
+import type { OrgUsersGroup } from "@/app/api/v1/admin/all-users/route";
 import ActivityFeed from "@/components/admin/ActivityFeed";
 import CostTable from "@/components/admin/CostTable";
 import CostOverview from "@/components/admin/CostOverview";
@@ -16,7 +19,7 @@ import SystemStatus from "@/components/admin/SystemStatus";
 import Toast from "@/components/admin/Toast";
 import InvoicesSection from "@/components/admin/InvoicesSection";
 import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
-import { MOCK_ACTIVITIES, SYSTEM_SERVICES } from "@/components/admin/mockOrgData";
+import { MOCK_ACTIVITIES } from "@/components/admin/mockOrgData";
 import { organizationService } from "@/lib/services/organizationService";
 import type {
   Organization,
@@ -24,6 +27,7 @@ import type {
   ActivityType,
   LastOpenedOrg,
   ToastMessage,
+  SystemService,
 } from "@/components/admin/types";
 
 const ACTIVITY_KEY    = "tb_admin_activities";
@@ -62,6 +66,11 @@ function todayStr(): string {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 }
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin", org_admin: "Admin",
+  project_manager: "Manager", member: "Mitglied",
+};
 
 const TRACEBUILD_SEED: OrgFormData = {
   name:           "TraceBuild",
@@ -222,11 +231,19 @@ export default function AdminPage() {
   const [pauseTarget, setPauseTarget]     = useState<Organization | null>(null);
   const [closeTarget, setCloseTarget]     = useState<Organization | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Organization | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [lastOpened, setLastOpened] = useState<LastOpenedOrg | null>(null);
   const [costMonth, setCostMonth]   = useState(currentMonth);
   const [costSearch, setCostSearch] = useState("");
   const [toasts, setToasts]         = useState<ToastMessage[]>([]);
+  const [systemServices, setSystemServices]   = useState<SystemService[]>([]);
+  const [systemCheckedAt, setSystemCheckedAt] = useState<string | null>(null);
+  const [systemLoading, setSystemLoading]     = useState(false);
+  const [userGroups, setUserGroups]           = useState<OrgUsersGroup[]>([]);
+  const [usersLoading, setUsersLoading]       = useState(false);
+  const [userSearch, setUserSearch]           = useState("");
+  const [resendingId, setResendingId]         = useState<string | null>(null);
 
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
@@ -243,6 +260,63 @@ export default function AdminPage() {
       setUserName(extractName(email, data.user.user_metadata ?? {}));
     });
   }, []);
+
+  /* Load live system status */
+  const loadSystemStatus = useCallback(async () => {
+    setSystemLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/system-status");
+      const json = await res.json() as { data: { services: SystemService[]; checkedAt: string } | null; error: string | null };
+      if (json.data) {
+        setSystemServices(json.data.services);
+        setSystemCheckedAt(json.data.checkedAt);
+      }
+    } catch {
+      /* keep previous state */
+    } finally {
+      setSystemLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSystemStatus(); }, [loadSystemStatus]);
+
+  /* Load all users across all orgs */
+  const loadAllUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/all-users");
+      const json = await res.json() as { data: OrgUsersGroup[] | null; error: string | null };
+      if (json.data) setUserGroups(json.data);
+    } catch {
+      /* keep previous state */
+    } finally {
+      setUsersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAllUsers(); }, [loadAllUsers]);
+
+  async function resendInvite(orgId: string, email: string, role: string) {
+    setResendingId(`${orgId}:${email}`);
+    try {
+      const res = await fetch("/api/v1/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role, org_id: orgId }),
+      });
+      const json = await res.json() as { data: unknown; error: string | null };
+      if (!res.ok || json.error) {
+        addToast(json.error ?? "Einladung konnte nicht erneut gesendet werden.", "error");
+      } else {
+        addToast(`Einladung erneut an ${email} gesendet.`, "success");
+        await loadAllUsers();
+      }
+    } catch {
+      addToast("Einladung konnte nicht erneut gesendet werden.", "error");
+    } finally {
+      setResendingId(null);
+    }
+  }
 
   /* Load orgs — auto-seed TraceBuild if none exist */
   useEffect(() => {
@@ -380,6 +454,17 @@ export default function AdminPage() {
     }
   }
 
+  function handleInviteSent(sent: SentInvite[]) {
+    sent.forEach(s => trackActivity("user_invited", s.orgName, s.orgId, s.email));
+    addToast(
+      sent.length === 1
+        ? `Einladung an ${sent[0].email} gesendet.`
+        : `${sent.length} Einladungen gesendet.`,
+      "success"
+    );
+    loadAllUsers();
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orgs.filter(o => o.name.toLowerCase().includes(q));
@@ -407,6 +492,13 @@ export default function AdminPage() {
     MOCK_COSTS.filter(c => c.month === currentMonth()).forEach(c => { map[c.orgId] = c.totalCost; });
     return map;
   }, []);
+
+  const filteredUsers = useMemo(() => {
+    const q = userSearch.trim().toLowerCase();
+    return userGroups
+      .flatMap(g => g.users.map(u => ({ ...u, orgId: g.orgId, orgName: g.orgName })))
+      .filter(u => !q || u.email.toLowerCase().includes(q) || u.orgName.toLowerCase().includes(q));
+  }, [userGroups, userSearch]);
 
   const kpiData = useMemo(() => {
     const cm = currentMonth();
@@ -489,7 +581,10 @@ export default function AdminPage() {
           />
           <QuickActionBtn
             label="Benutzer einladen"
-            onClick={() => addToast("Funktion in Kürze verfügbar.", "info")}
+            onClick={() => {
+              if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
+              setInviteModalOpen(true);
+            }}
             icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M12 11.5C13.38 11.5 14.5 10.38 14.5 9C14.5 7.62 13.38 6.5 12 6.5C10.62 6.5 9.5 7.62 9.5 9C9.5 10.38 10.62 11.5 12 11.5Z" stroke="currentColor" strokeWidth="1.3" /><path d="M7 15C7 13.34 9.24 12 12 12C14.76 12 17 13.34 17 15M3 5.5V9.5M5.5 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>}
           />
           <QuickActionBtn
@@ -571,6 +666,105 @@ export default function AdminPage() {
           )}
         </div>
 
+        {/* Users */}
+        <div className="space-y-4">
+          <SectionHeader title="Nutzer" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-white">Alle Nutzer</h2>
+              <p className="text-xs text-[#7B8299] mt-0.5">
+                {filteredUsers.length} {filteredUsers.length === 1 ? "Nutzer" : "Nutzer"}
+                {userSearch ? ` für „${userSearch}"` : ` in ${userGroups.length} ${userGroups.length === 1 ? "Organisation" : "Organisationen"}`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex-1 sm:w-56">
+                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="E-Mail oder Organisation..." />
+              </div>
+              <button
+                onClick={() => {
+                  if (!hydrated || orgs.length === 0) { addToast("Bitte zuerst eine Organisation erstellen.", "info"); return; }
+                  setInviteModalOpen(true);
+                }}
+                className="flex-shrink-0 flex items-center gap-1.5 bg-[#2862D7] text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#3470E8] active:scale-[0.97] transition-all shadow-sm shadow-[#2862D7]/25 whitespace-nowrap"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                  <path d="M5.5 1V10M1 5.5H10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+                Nutzer einladen
+              </button>
+            </div>
+          </div>
+
+          {usersLoading && userGroups.length === 0 ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl h-48 animate-pulse" />
+          ) : userGroups.every(g => g.users.length === 0) ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
+              <p className="text-[#ABAEBB] text-sm font-medium">Noch keine Nutzer eingeladen</p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl p-12 text-center">
+              <p className="text-[#ABAEBB] text-sm font-medium">Keine Nutzer gefunden</p>
+              <button onClick={() => setUserSearch("")} className="mt-2 text-sm text-[#85A6E9] hover:underline">
+                Filter zurücksetzen
+              </button>
+            </div>
+          ) : (
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[680px]">
+                  <thead>
+                    <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
+                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">E-Mail</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Organisation</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Status</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-right">Rolle</th>
+                      <th className="py-3.5 px-5 w-10" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map(u => (
+                      <tr key={u.id} className="hover:bg-[#1E2D4A]/60 transition-colors border-b border-[rgba(60,63,68,0.3)] last:border-0">
+                        <td className="px-5 py-3 font-medium text-white">{u.email}</td>
+                        <td className="px-3 py-3 text-[#ABAEBB]">{u.orgName}</td>
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            u.status === "active" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${u.status === "active" ? "bg-emerald-500" : "bg-amber-400"}`} />
+                            {u.status === "active" ? "Aktiv" : "Ausstehend"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            u.role === "org_admin" || u.role === "super_admin"
+                              ? "bg-[#2862D7]/10 text-[#85A6E9]"
+                              : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
+                          }`}>
+                            {ROLE_LABELS[u.role] ?? u.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          {u.status === "pending" && (
+                            <button
+                              onClick={() => resendInvite(u.orgId, u.email, u.role)}
+                              disabled={resendingId === `${u.orgId}:${u.email}`}
+                              className="text-xs font-medium text-[#85A6E9] hover:text-white disabled:opacity-40 transition-colors whitespace-nowrap"
+                              title="Einladung erneut senden"
+                            >
+                              {resendingId === `${u.orgId}:${u.email}` ? "..." : "Erneut einladen"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Cost table + sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2 space-y-4">
@@ -605,7 +799,12 @@ export default function AdminPage() {
           <div className="space-y-4 lg:sticky lg:top-20">
             <ActivityFeed activities={activities} />
             <div id="systemstatus-section">
-              <SystemStatus services={SYSTEM_SERVICES} />
+              <SystemStatus
+                services={systemServices}
+                checkedAt={systemCheckedAt}
+                loading={systemLoading}
+                onRefresh={loadSystemStatus}
+              />
             </div>
           </div>
         </div>
@@ -617,6 +816,15 @@ export default function AdminPage() {
         </div>
 
       </main>
+
+      {inviteModalOpen && (
+        <InviteUserModal
+          orgs={orgs}
+          defaultOrgId={lastOpened?.id ?? orgs[0]?.id}
+          onClose={() => setInviteModalOpen(false)}
+          onSent={handleInviteSent}
+        />
+      )}
 
       {modalOpen && (
         <OrgModal

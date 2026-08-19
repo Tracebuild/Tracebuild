@@ -20,6 +20,7 @@ interface Props {
 
 export default function ProjectCard({ project, onDeleted }: Props) {
   const [deleting, setDeleting] = useState(false);
+  const [hovered, setHovered]   = useState(false);
 
   async function handleDelete(e: React.MouseEvent) {
     e.preventDefault();
@@ -34,41 +35,52 @@ export default function ProjectCard({ project, onDeleted }: Props) {
   }
 
   const date = new Date(project.created_at).toLocaleDateString("de-CH", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+    day: "2-digit", month: "2-digit", year: "numeric",
   });
 
   return (
     <Link
       href={`/projects/${project.id}/analysis`}
-      className="block bg-white border border-[#e7e2d9] rounded-xl p-5 hover:border-[#c8a882] hover:shadow-sm transition-all group"
+      style={{
+        position: "relative",
+        background: "rgba(23,37,64,0.55)",
+        border: `1px solid ${hovered ? "rgba(40,98,215,0.5)" : "rgba(133,166,233,0.18)"}`,
+        borderRadius: 16, padding: 22, cursor: "pointer", overflow: "hidden",
+        transition: "all .2s",
+        boxShadow: hovered ? "0 20px 40px -12px rgba(0,0,0,0.4)" : "none",
+        transform: hovered ? "translateY(-3px)" : "none",
+        display: "block", textDecoration: "none",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-semibold text-stone-900 truncate group-hover:text-[#8b6344] transition-colors">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {project.name}
           </h3>
-          <p className="text-sm text-stone-500 mt-0.5">
+          <p style={{ fontSize: 12.5, color: "#7B8299", margin: "3px 0 0" }}>
             {project.location?.municipality}, {project.location?.canton}
           </p>
         </div>
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-stone-300 hover:text-red-500 transition-colors shrink-0 text-lg leading-none mt-0.5"
           title="Projekt löschen"
+          style={{ color: "#4B5563", background: "none", border: "none", cursor: "pointer", fontSize: 20, lineHeight: 1, flexShrink: 0, transition: "color .15s", opacity: deleting ? 0.4 : 1 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#4B5563"; }}
         >
           ×
         </button>
       </div>
 
-      <div className="flex items-center gap-3 mt-4">
-        <span className="text-xs bg-[#f3ece3] text-[#8b6344] px-2 py-0.5 rounded-full font-medium flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#B7926A] shrink-0" />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 11, background: "rgba(40,98,215,0.12)", color: "#85A6E9", padding: "3px 9px", borderRadius: "50px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#2862D7", flexShrink: 0 }} />
           {project.domain === "bau" ? "Bau / Architektur" : project.domain}
         </span>
-        <span className="text-xs text-stone-400">{date}</span>
+        <span style={{ fontSize: 11, color: "#7B8299", fontFamily: "monospace" }}>{date}</span>
       </div>
     </Link>
   );

@@ -51,7 +51,7 @@ export default function ActivityFeed({ activities }: Props) {
           <p className="text-xs text-[#7B8299] mt-1">Erstelle oder öffne eine Organisation</p>
         </div>
       ) : (
-        <div className="divide-y divide-[rgba(60,63,68,0.3)] max-h-[520px] overflow-y-auto">
+        <div className="divide-y divide-[rgba(60,63,68,0.3)] max-h-[520px] overflow-y-auto scrollbar-dark">
           {activities.map(a => {
             const c = cfg[a.type];
             return (

@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 interface Thread {
   id: string;
   preview: string;
@@ -19,8 +17,6 @@ interface ChatMessage {
   streaming?: boolean;
 }
 
-// ── Markdown renderer ─────────────────────────────────────────────────────────
-
 function parseInline(text: string): ReactNode {
   const parts: ReactNode[] = [];
   const regex = /(\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*)/g;
@@ -31,10 +27,10 @@ function parseInline(text: string): ReactNode {
   while ((m = regex.exec(text)) !== null) {
     if (m.index > last) parts.push(text.slice(last, m.index));
     if (m[0].startsWith("**")) {
-      parts.push(<strong key={idx++} className="font-semibold">{m[2]}</strong>);
+      parts.push(<strong key={idx++} style={{ fontWeight: 600 }}>{m[2]}</strong>);
     } else if (m[0].startsWith("`")) {
       parts.push(
-        <code key={idx++} className="bg-stone-100 text-stone-700 px-1 py-0.5 rounded text-[0.82em] font-mono">
+        <code key={idx++} style={{ background: "rgba(133,166,233,0.12)", color: "#85A6E9", padding: "1px 5px", borderRadius: 4, fontSize: "0.82em", fontFamily: "monospace" }}>
           {m[3]}
         </code>
       );
@@ -55,7 +51,6 @@ function MarkdownContent({ text }: { text: string }) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block
     if (line.startsWith("```")) {
       const codeLines: string[] = [];
       i++;
@@ -64,7 +59,7 @@ function MarkdownContent({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <pre key={`code-${i}`} className="bg-stone-100 rounded-lg p-3 text-xs font-mono overflow-x-auto my-2 text-stone-700 whitespace-pre">
+        <pre key={`code-${i}`} style={{ background: "rgba(10,14,23,0.6)", borderRadius: 8, padding: 12, fontSize: 12, fontFamily: "monospace", overflow: "auto", margin: "8px 0", color: "#ABAEBB", whiteSpace: "pre" }}>
           {codeLines.join("\n")}
         </pre>
       );
@@ -72,127 +67,96 @@ function MarkdownContent({ text }: { text: string }) {
       continue;
     }
 
-    // Headings
     if (line.startsWith("### ")) {
-      elements.push(
-        <h3 key={i} className="font-semibold text-stone-800 text-sm mt-3 mb-0.5">
-          {parseInline(line.slice(4))}
-        </h3>
-      );
+      elements.push(<h3 key={i} style={{ fontWeight: 600, color: "#ABAEBB", fontSize: 13, margin: "12px 0 2px" }}>{parseInline(line.slice(4))}</h3>);
     } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2 key={i} className="font-bold text-stone-900 text-sm mt-4 mb-1">
-          {parseInline(line.slice(3))}
-        </h2>
-      );
+      elements.push(<h2 key={i} style={{ fontWeight: 700, color: "#fff", fontSize: 13, margin: "16px 0 4px" }}>{parseInline(line.slice(3))}</h2>);
     } else if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={i} className="font-bold text-stone-900 text-base mt-4 mb-1">
-          {parseInline(line.slice(2))}
-        </h1>
-      );
-    }
-    // Unordered list
-    else if (/^[-*] /.test(line)) {
+      elements.push(<h1 key={i} style={{ fontWeight: 700, color: "#fff", fontSize: 14, margin: "16px 0 4px" }}>{parseInline(line.slice(2))}</h1>);
+    } else if (/^[-*] /.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^[-*] /.test(lines[i])) {
         items.push(lines[i].slice(2));
         i++;
       }
       elements.push(
-        <ul key={`ul-${i}`} className="list-disc pl-5 space-y-0.5 my-1.5">
+        <ul key={`ul-${i}`} style={{ paddingLeft: 20, margin: "6px 0" }}>
           {items.map((item, j) => (
-            <li key={j} className="text-sm leading-relaxed">{parseInline(item)}</li>
+            <li key={j} style={{ fontSize: 13, lineHeight: 1.6, color: "#ABAEBB" }}>{parseInline(item)}</li>
           ))}
         </ul>
       );
       continue;
-    }
-    // Ordered list
-    else if (/^\d+\. /.test(line)) {
+    } else if (/^\d+\. /.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^\d+\. /.test(lines[i])) {
         items.push(lines[i].replace(/^\d+\. /, ""));
         i++;
       }
       elements.push(
-        <ol key={`ol-${i}`} className="list-decimal pl-5 space-y-0.5 my-1.5">
+        <ol key={`ol-${i}`} style={{ paddingLeft: 20, margin: "6px 0" }}>
           {items.map((item, j) => (
-            <li key={j} className="text-sm leading-relaxed">{parseInline(item)}</li>
+            <li key={j} style={{ fontSize: 13, lineHeight: 1.6, color: "#ABAEBB" }}>{parseInline(item)}</li>
           ))}
         </ol>
       );
       continue;
-    }
-    // Horizontal rule
-    else if (/^---+$/.test(line.trim())) {
-      elements.push(<hr key={i} className="border-stone-200 my-2" />);
-    }
-    // Empty line → small spacer
-    else if (line.trim() === "") {
-      elements.push(<div key={`sp-${i}`} className="h-1.5" />);
-    }
-    // Paragraph
-    else {
-      elements.push(
-        <p key={i} className="text-sm leading-relaxed">
-          {parseInline(line)}
-        </p>
-      );
+    } else if (/^---+$/.test(line.trim())) {
+      elements.push(<hr key={i} style={{ border: "none", borderTop: "1px solid rgba(133,166,233,0.15)", margin: "8px 0" }} />);
+    } else if (line.trim() === "") {
+      elements.push(<div key={`sp-${i}`} style={{ height: 6 }} />);
+    } else {
+      elements.push(<p key={i} style={{ fontSize: 13, lineHeight: 1.6, color: "#ABAEBB", margin: 0 }}>{parseInline(line)}</p>);
     }
 
     i++;
   }
 
-  return <div className="space-y-0.5">{elements}</div>;
+  return <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>{elements}</div>;
 }
-
-// ── MessageBubble ─────────────────────────────────────────────────────────────
 
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5 ${
-        isUser
-          ? "bg-[#B7926A] text-white"
-          : "bg-stone-100 text-stone-500 border border-stone-200"
-      }`}>
+    <div style={{ display: "flex", gap: 12, flexDirection: isUser ? "row-reverse" : "row" }}>
+      <div style={{
+        flexShrink: 0, width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 10, fontWeight: 700, marginTop: 2,
+        background: isUser ? "#B7926A" : "rgba(133,166,233,0.12)",
+        color: isUser ? "#fff" : "#85A6E9",
+        border: isUser ? "none" : "1px solid rgba(133,166,233,0.2)",
+      }}>
         {isUser ? "Du" : "KI"}
       </div>
 
-      <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-        isUser
-          ? "bg-[#B7926A] text-white rounded-tr-sm"
-          : "bg-white border border-stone-200 text-stone-800 rounded-tl-sm"
-      }`}>
-        {/* Loading dots while waiting for first token */}
+      <div style={{
+        maxWidth: "80%", borderRadius: 16, padding: "10px 14px",
+        ...(isUser
+          ? { background: "#B7926A", color: "#fff", borderTopRightRadius: 4 }
+          : { background: "rgba(23,37,64,0.7)", border: "1px solid rgba(133,166,233,0.15)", borderTopLeftRadius: 4 }
+        ),
+      }}>
         {msg.streaming && msg.content === "" && (
-          <div className="flex gap-1 py-0.5">
-            <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce [animation-delay:0ms]" />
-            <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 bg-stone-300 rounded-full animate-bounce [animation-delay:300ms]" />
+          <div style={{ display: "flex", gap: 4, padding: "2px 0" }}>
+            <span className="animate-bounce" style={{ width: 6, height: 6, background: "#7B8299", borderRadius: "50%", animationDelay: "0ms" }} />
+            <span className="animate-bounce" style={{ width: 6, height: 6, background: "#7B8299", borderRadius: "50%", animationDelay: "150ms" }} />
+            <span className="animate-bounce" style={{ width: 6, height: 6, background: "#7B8299", borderRadius: "50%", animationDelay: "300ms" }} />
           </div>
         )}
 
         {msg.content !== "" && (
-          isUser ? (
-            <span className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</span>
-          ) : (
-            <MarkdownContent text={msg.content} />
-          )
+          isUser
+            ? <span style={{ fontSize: 13, lineHeight: 1.6, color: "#fff", whiteSpace: "pre-wrap" }}>{msg.content}</span>
+            : <MarkdownContent text={msg.content} />
         )}
 
-        {/* Blinking cursor while streaming */}
         {msg.streaming && msg.content !== "" && (
-          <span className="inline-block w-0.5 h-3.5 bg-stone-400 ml-0.5 animate-pulse align-middle" />
+          <span className="animate-pulse" style={{ display: "inline-block", width: 2, height: 14, background: "#7B8299", marginLeft: 2, verticalAlign: "middle" }} />
         )}
       </div>
     </div>
   );
 }
-
-// ── Thread sidebar item ───────────────────────────────────────────────────────
 
 function formatThreadDate(iso: string): string {
   const d    = new Date(iso);
@@ -207,31 +171,29 @@ function ThreadItem({ thread, active, onClick }: { thread: Thread; active: boole
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
-        active
-          ? "bg-[#f3ece3] text-stone-900"
-          : "text-stone-500 hover:bg-stone-100 hover:text-stone-800"
-      }`}
+      style={{
+        width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "inherit", transition: "background .15s",
+        background: active ? "rgba(40,98,215,0.15)" : "none",
+        color: active ? "#85A6E9" : "#7B8299",
+      }}
+      onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.06)"; (e.currentTarget as HTMLElement).style.color = "#ABAEBB"; } }}
+      onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = "none"; (e.currentTarget as HTMLElement).style.color = "#7B8299"; } }}
     >
-      <div className="text-xs font-medium truncate leading-snug">
+      <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>
         {thread.preview || "Neue Konversation"}
       </div>
-      <div className="text-[10px] text-stone-400 mt-0.5">
+      <div style={{ fontSize: 10, color: "#4B5268", marginTop: 2 }}>
         {formatThreadDate(thread.started_at)}
       </div>
     </button>
   );
 }
 
-// ── Starter suggestions ───────────────────────────────────────────────────────
-
 const SUGGESTIONS = [
   "Was sind die Hauptverstösse aus der letzten Analyse?",
   "Welche Normen gelten für dieses Projekt?",
   "Was ist der Grenzabstand in dieser Bauzone?",
 ];
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
@@ -250,7 +212,6 @@ export default function ChatPage() {
   const bottomRef   = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Initialize: load threads and auto-select most recent ──
   useEffect(() => {
     let cancelled = false;
     async function init() {
@@ -285,12 +246,10 @@ export default function ChatPage() {
     return () => { cancelled = true; };
   }, [id]);
 
-  // ── Auto-scroll ──
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ── Select existing thread ──
   async function selectThread(threadId: string) {
     if (activeThreadId === threadId || streaming) return;
     setActiveThreadId(threadId);
@@ -306,7 +265,6 @@ export default function ChatPage() {
     }
   }
 
-  // ── Start new chat ──
   function startNewChat() {
     if (streaming) return;
     setActiveThreadId(crypto.randomUUID());
@@ -315,7 +273,6 @@ export default function ChatPage() {
     textareaRef.current?.focus();
   }
 
-  // ── Refresh thread list without touching active thread / messages ──
   async function refreshThreadList() {
     try {
       const res  = await fetch(`/api/v1/projects/${id}/chat/threads`);
@@ -324,7 +281,6 @@ export default function ChatPage() {
     } catch { /* silent */ }
   }
 
-  // ── Send message ──
   async function handleSend() {
     const text = input.trim();
     if (!text || streaming || !activeThreadId) return;
@@ -394,7 +350,6 @@ export default function ChatPage() {
         const last    = updated[updated.length - 1];
         if (last?.streaming) {
           if (last.content === "") {
-            // Error before any tokens arrived — remove empty bubble
             updated.pop();
           } else {
             updated[updated.length - 1] = { ...last, streaming: false };
@@ -422,30 +377,30 @@ export default function ChatPage() {
 
   const isNewThread = !threads.some(t => t.id === activeThreadId);
 
-  // ── Render ────────────────────────────────────────────────────────────────────
-
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-white rounded-2xl border border-stone-200 overflow-hidden">
+    <div style={{ display: "flex", height: "calc(100vh - 8rem)", background: "rgba(14,17,27,0.7)", border: "1px solid rgba(133,166,233,0.15)", borderRadius: 16, overflow: "hidden" }}>
 
-      {/* ── Thread sidebar ── */}
-      <div className="w-52 shrink-0 border-r border-stone-200 flex flex-col bg-[#FAFAF9]">
-        <div className="p-3 border-b border-stone-100">
+      {/* Thread sidebar */}
+      <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid rgba(133,166,233,0.1)", display: "flex", flexDirection: "column", background: "rgba(10,14,23,0.5)" }}>
+        <div style={{ padding: 12, borderBottom: "1px solid rgba(133,166,233,0.1)" }}>
           <button
             onClick={startNewChat}
             disabled={streaming}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-stone-200 text-xs font-medium text-stone-600 hover:border-[#B7926A] hover:text-[#B7926A] transition-colors disabled:opacity-40"
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", borderRadius: 8, background: "none", border: "1px solid rgba(133,166,233,0.2)", fontSize: 12, fontWeight: 500, color: "#7B8299", cursor: streaming ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: streaming ? 0.4 : 1, transition: "all .15s" }}
+            onMouseEnter={e => { if (!streaming) { (e.currentTarget as HTMLElement).style.borderColor = "#B7926A"; (e.currentTarget as HTMLElement).style.color = "#B7926A"; } }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(133,166,233,0.2)"; (e.currentTarget as HTMLElement).style.color = "#7B8299"; }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Neuer Chat
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <div className="scrollbar-dark" style={{ flex: 1, overflowY: "auto", padding: 8, display: "flex", flexDirection: "column", gap: 2 }}>
           {threadsLoading ? (
-            <div className="flex justify-center pt-6">
-              <div className="w-4 h-4 border-2 border-stone-200 border-t-[#B7926A] rounded-full animate-spin" />
+            <div style={{ display: "flex", justifyContent: "center", paddingTop: 24 }}>
+              <div className="animate-spin" style={{ width: 16, height: 16, border: "2px solid rgba(133,166,233,0.15)", borderTopColor: "#B7926A", borderRadius: "50%" }} />
             </div>
           ) : (
             <>
@@ -457,57 +412,54 @@ export default function ChatPage() {
                 />
               )}
               {threads.length === 0 && !isNewThread && (
-                <p className="text-[10px] text-stone-400 text-center pt-6 px-2">Noch keine Chats</p>
+                <p style={{ fontSize: 10, color: "#4B5268", textAlign: "center", padding: "24px 8px" }}>Noch keine Chats</p>
               )}
               {threads.map(t => (
-                <ThreadItem
-                  key={t.id}
-                  thread={t}
-                  active={activeThreadId === t.id}
-                  onClick={() => selectThread(t.id)}
-                />
+                <ThreadItem key={t.id} thread={t} active={activeThreadId === t.id} onClick={() => selectThread(t.id)} />
               ))}
             </>
           )}
         </div>
       </div>
 
-      {/* ── Chat area ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Chat area */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
         {/* Disclaimer */}
-        <div className="flex items-center gap-2.5 px-5 py-2.5 bg-amber-50 border-b border-amber-100 shrink-0">
-          <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", background: "rgba(251,191,36,0.06)", borderBottom: "1px solid rgba(251,191,36,0.15)", flexShrink: 0 }}>
+          <svg style={{ width: 16, height: 16, color: "#FBBF24", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
-          <p className="text-xs text-amber-700">
+          <p style={{ fontSize: 12, color: "#FBBF24", margin: 0, opacity: 0.8 }}>
             Dieser Chat ersetzt keine Rechtsberatung. Aussagen des Assistenten sind nicht rechtsverbindlich.
           </p>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="scrollbar-dark" style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
           {messagesLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="w-6 h-6 border-2 border-stone-200 border-t-[#B7926A] rounded-full animate-spin" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+              <div className="animate-spin" style={{ width: 24, height: 24, border: "2px solid rgba(133,166,233,0.15)", borderTopColor: "#B7926A", borderRadius: "50%" }} />
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <div className="w-12 h-12 bg-[#f3ece3] rounded-2xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-[#B7926A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, textAlign: "center" }}>
+              <div style={{ width: 48, height: 48, background: "rgba(183,146,106,0.12)", border: "1px solid rgba(183,146,106,0.2)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg style={{ width: 24, height: 24, color: "#B7926A" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-stone-700">Stell eine Frage</p>
-                <p className="text-xs text-stone-400 mt-0.5">Zum Projekt, zu Normen oder zu Schweizer Baurecht.</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "#ABAEBB", margin: 0 }}>Stell eine Frage</p>
+                <p style={{ fontSize: 12, color: "#7B8299", margin: "4px 0 0" }}>Zum Projekt, zu Normen oder zu Schweizer Baurecht.</p>
               </div>
-              <div className="flex flex-wrap gap-2 justify-center mt-2">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
                 {SUGGESTIONS.map(s => (
                   <button
                     key={s}
                     onClick={() => { setInput(s); textareaRef.current?.focus(); }}
-                    className="text-xs text-stone-500 border border-stone-200 rounded-full px-3 py-1.5 hover:border-[#B7926A] hover:text-[#B7926A] transition-colors"
+                    style={{ fontSize: 12, color: "#7B8299", border: "1px solid rgba(133,166,233,0.15)", borderRadius: 100, padding: "6px 14px", background: "none", cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "#B7926A"; (e.currentTarget as HTMLElement).style.color = "#B7926A"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(133,166,233,0.15)"; (e.currentTarget as HTMLElement).style.color = "#7B8299"; }}
                   >
                     {s}
                   </button>
@@ -521,8 +473,8 @@ export default function ChatPage() {
           )}
 
           {error && (
-            <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-              <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12, color: "#F87171", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 10, padding: "10px 14px" }}>
+              <svg style={{ width: 14, height: 14, flexShrink: 0, marginTop: 1 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
               <span>{error}</span>
@@ -533,38 +485,37 @@ export default function ChatPage() {
         </div>
 
         {/* Input */}
-        <div className="shrink-0 border-t border-stone-100 px-4 py-3 bg-white">
-          <div className="flex items-end gap-2 bg-[#F8F7F4] rounded-2xl px-4 py-2.5 border border-stone-200 focus-within:border-[#B7926A]/60 transition-colors">
+        <div style={{ flexShrink: 0, borderTop: "1px solid rgba(133,166,233,0.1)", padding: "12px 16px", background: "rgba(10,14,23,0.4)" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, background: "rgba(23,37,64,0.6)", borderRadius: 16, padding: "8px 14px", border: "1px solid rgba(133,166,233,0.15)", transition: "border-color .15s" }}>
             <textarea
               ref={textareaRef}
               rows={1}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Frage stellen… (Enter zum Senden, Shift+Enter für neue Zeile)"
+              placeholder="Frage stellen... (Enter zum Senden, Shift+Enter für neue Zeile)"
               disabled={streaming}
-              className="flex-1 resize-none bg-transparent text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none leading-relaxed disabled:opacity-50 min-h-[22px]"
-              style={{ height: "22px" }}
+              style={{ flex: 1, resize: "none", background: "transparent", fontSize: 13, color: "#fff", border: "none", outline: "none", lineHeight: 1.6, opacity: streaming ? 0.5 : 1, minHeight: 22, fontFamily: "inherit" }}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || streaming}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-xl bg-[#B7926A] text-white hover:bg-[#9E7A52] disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all"
+              style={{ flexShrink: 0, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, background: "#B7926A", color: "#fff", border: "none", cursor: !input.trim() || streaming ? "not-allowed" : "pointer", opacity: !input.trim() || streaming ? 0.4 : 1, transition: "all .15s" }}
               title="Senden"
             >
               {streaming ? (
-                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg className="animate-spin" style={{ width: 14, height: 14 }} viewBox="0 0 24 24" fill="none">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                 </svg>
               )}
             </button>
           </div>
-          <p className="text-[10px] text-stone-400 text-center mt-1.5">
+          <p style={{ fontSize: 10, color: "#4B5268", textAlign: "center", margin: "6px 0 0" }}>
             Powered by Claude Haiku · Nicht rechtsverbindlich
           </p>
         </div>

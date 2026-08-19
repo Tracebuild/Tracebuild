@@ -3,8 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 interface Project {
   id: string;
   name: string;
@@ -35,128 +33,80 @@ interface ProjectNorm {
   norms: Norm | null;
 }
 
-// ── Layer config ──────────────────────────────────────────────────────────────
-
 const GROUPS = [
-  {
-    label: "Bund",
-    layers: [1, 2],
-    dot: "bg-sky-400",
-    badge: "bg-sky-50 text-sky-700",
-    border: "border-sky-100",
-    header: "text-sky-600",
-  },
-  {
-    label: "Kanton",
-    layers: [3],
-    dot: "bg-violet-400",
-    badge: "bg-violet-50 text-violet-700",
-    border: "border-violet-100",
-    header: "text-violet-600",
-  },
-  {
-    label: "Gemeinde",
-    layers: [4],
-    dot: "bg-emerald-400",
-    badge: "bg-emerald-50 text-emerald-700",
-    border: "border-emerald-100",
-    header: "text-emerald-600",
-  },
-  {
-    label: "Spezialnormen",
-    layers: [5],
-    dot: "bg-[#B7926A]",
-    badge: "bg-[#f3ece3] text-[#8b6344]",
-    border: "border-[#e8d9c5]",
-    header: "text-[#8b6344]",
-  },
+  { label: "Bund",          layers: [1, 2], dot: "#38BDF8", badgeBg: "rgba(56,189,248,0.12)",  badgeText: "#38BDF8", header: "#38BDF8",  cardBorder: "rgba(56,189,248,0.2)"  },
+  { label: "Kanton",        layers: [3],    dot: "#A78BFA", badgeBg: "rgba(167,139,250,0.12)", badgeText: "#A78BFA", header: "#A78BFA",  cardBorder: "rgba(167,139,250,0.2)" },
+  { label: "Gemeinde",      layers: [4],    dot: "#34D399", badgeBg: "rgba(52,211,153,0.12)",  badgeText: "#34D399", header: "#34D399",  cardBorder: "rgba(52,211,153,0.2)"  },
+  { label: "Spezialnormen", layers: [5],    dot: "#B7926A", badgeBg: "rgba(183,146,106,0.12)", badgeText: "#B7926A", header: "#B7926A",  cardBorder: "rgba(183,146,106,0.2)" },
 ];
 
 function getGroup(layer: number) {
   return GROUPS.find((g) => g.layers.includes(layer)) ?? GROUPS[GROUPS.length - 1];
 }
 
-// ── NormCard ──────────────────────────────────────────────────────────────────
-
-function NormCard({
-  pn,
-  onRemove,
-}: {
-  pn: ProjectNorm;
-  onRemove: (normId: string) => void;
-}) {
+function NormCard({ pn, onRemove }: { pn: ProjectNorm; onRemove: (normId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const norm = pn.norms;
   if (!norm) return null;
-
   const grp = getGroup(norm.layer);
 
   return (
-    <div className={`bg-white border ${grp.border} rounded-xl p-4`}>
-      <div className="flex items-start gap-3">
-        <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${grp.dot}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${grp.badge}`}>
+    <div style={{ background: "rgba(23,37,64,0.55)", border: `1px solid ${grp.cardBorder}`, borderRadius: 12, padding: 16 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <span style={{ marginTop: 6, width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: grp.dot }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: grp.badgeBg, color: grp.badgeText }}>
               {norm.jurisdiction_name ?? grp.label}
             </span>
-            <span className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">
+            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(133,166,233,0.1)", color: "#7B8299" }}>
               {norm.category}
             </span>
             {pn.added_by === "user" && (
-              <span className="text-xs text-stone-300 italic">manuell</span>
+              <span style={{ fontSize: 11, color: "#7B8299", fontStyle: "italic" }}>manuell</span>
             )}
           </div>
-
-          <p className="text-sm font-semibold text-stone-800 leading-snug">{norm.title}</p>
-
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.4, margin: 0 }}>{norm.title}</p>
           {expanded && (
             <>
-              <p className="mt-2 text-sm text-stone-600 leading-relaxed whitespace-pre-line">
+              <p style={{ marginTop: 8, fontSize: 13, color: "#ABAEBB", lineHeight: 1.6, whiteSpace: "pre-line", margin: "8px 0 0" }}>
                 {norm.text}
               </p>
               {(norm.source_url || norm.source_doc) && (
-                <div className="mt-2 flex items-center gap-3">
+                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
                   {norm.source_url && (
-                    <a
-                      href={norm.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-[#B7926A] hover:underline"
-                    >
+                    <a href={norm.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#B7926A", textDecoration: "none" }}>
                       Quelle ansehen →
                     </a>
                   )}
                   {norm.source_doc && (
-                    <span className="text-xs text-stone-400">{norm.source_doc}</span>
+                    <span style={{ fontSize: 12, color: "#7B8299" }}>{norm.source_doc}</span>
                   )}
                 </div>
               )}
             </>
           )}
         </div>
-
-        <div className="flex items-center gap-0.5 shrink-0 ml-1">
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0, marginLeft: 4 }}>
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="p-1.5 rounded-lg text-stone-300 hover:text-stone-500 hover:bg-stone-50 transition-colors"
             title={expanded ? "Einklappen" : "Volltext anzeigen"}
+            style={{ padding: 6, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "#7B8299", transition: "color .15s", lineHeight: 0 }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#ABAEBB"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#7B8299"}
           >
-            <svg
-              className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg style={{ width: 14, height: 14, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           <button
             onClick={() => onRemove(norm.id)}
-            className="p-1.5 rounded-lg text-stone-200 hover:text-red-400 hover:bg-red-50 transition-colors"
             title="Norm entfernen"
+            style={{ padding: 6, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "#7B8299", transition: "color .15s", lineHeight: 0 }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#F87171"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#7B8299"}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -166,17 +116,7 @@ function NormCard({
   );
 }
 
-// ── AddCustomNormModal ────────────────────────────────────────────────────────
-
-function AddCustomNormModal({
-  projectId,
-  onClose,
-  onAdded,
-}: {
-  projectId: string;
-  onClose: () => void;
-  onAdded: (pn: ProjectNorm) => void;
-}) {
+function AddCustomNormModal({ projectId, onClose, onAdded }: { projectId: string; onClose: () => void; onAdded: (pn: ProjectNorm) => void }) {
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [category, setCategory] = useState("");
@@ -188,10 +128,7 @@ function AddCustomNormModal({
     setError(null);
     setLoading(true);
     try {
-      const pn = await api.post<ProjectNorm>(
-        `/projects/${projectId}/norms/custom`,
-        { title, text, category }
-      );
+      const pn = await api.post<ProjectNorm>(`/projects/${projectId}/norms/custom`, { title, text, category });
       onAdded(pn);
       onClose();
     } catch (err: unknown) {
@@ -201,69 +138,50 @@ function AddCustomNormModal({
     }
   }
 
-  const inputCls =
-    "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    border: "1px solid rgba(133,166,233,0.2)",
+    borderRadius: 8,
+    padding: "8px 12px",
+    fontSize: 13,
+    color: "#fff",
+    background: "rgba(10,14,23,0.6)",
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    transition: "border-color .15s",
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-xl border border-[#e7e2d9] w-full max-w-lg p-6">
-        <h3 className="text-base font-semibold text-stone-900 mb-1">Spezialnorm hinzufügen</h3>
-        <p className="text-xs text-stone-400 mb-5">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+      <div style={{ background: "#0E111B", border: "1px solid rgba(133,166,233,0.18)", borderRadius: 16, boxShadow: "0 24px 48px rgba(0,0,0,0.6)", width: "100%", maxWidth: 480, padding: 24 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>Spezialnorm hinzufügen</h3>
+        <p style={{ fontSize: 12, color: "#7B8299", margin: "0 0 20px" }}>
           Wird als organisationsspezifische Norm gespeichert und diesem Projekt zugewiesen.
         </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Titel</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={inputCls}
-              placeholder="z.B. Interne Brandschutzanforderung"
-            />
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Titel</label>
+            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} placeholder="z.B. Interne Brandschutzanforderung" />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Kategorie</label>
-            <input
-              type="text"
-              required
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className={inputCls}
-              placeholder="z.B. Brandschutz"
-            />
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Kategorie</label>
+            <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle} placeholder="z.B. Brandschutz" />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Inhalt</label>
-            <textarea
-              required
-              rows={5}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className={`${inputCls} resize-none`}
-              placeholder="Vollständiger Normtext..."
-            />
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Inhalt</label>
+            <textarea required rows={5} value={text} onChange={(e) => setText(e.target.value)} style={{ ...inputStyle, resize: "none" }} placeholder="Vollständiger Normtext..." />
           </div>
-
           {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            <div style={{ marginBottom: 16, background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, padding: "8px 12px", fontSize: 13, color: "#F87171" }}>
+              {error}
+            </div>
           )}
-
-          <div className="flex gap-3 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 border border-stone-200 text-stone-600 py-2 rounded-lg text-sm font-medium hover:bg-stone-50 transition-colors"
-            >
+          <div style={{ display: "flex", gap: 12 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, border: "1px solid rgba(133,166,233,0.2)", color: "#7B8299", padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 500, background: "none", cursor: "pointer", fontFamily: "inherit" }}>
               Abbrechen
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-[#B7926A] hover:bg-[#a67e5a] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-            >
+            <button type="submit" disabled={loading} style={{ flex: 1, background: "#B7926A", color: "#fff", padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "inherit" }}>
               {loading ? "Wird gespeichert..." : "Speichern"}
             </button>
           </div>
@@ -273,15 +191,7 @@ function AddCustomNormModal({
   );
 }
 
-// ── BauzoneInput ──────────────────────────────────────────────────────────────
-
-function BauzoneInput({
-  projectId,
-  onSaved,
-}: {
-  projectId: string;
-  onSaved: (zone: string) => void;
-}) {
+function BauzoneInput({ projectId, onSaved }: { projectId: string; onSaved: (zone: string) => void }) {
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -291,35 +201,31 @@ function BauzoneInput({
     try {
       await api.patch(`/projects/${projectId}`, { bauzone: value.trim() });
       onSaved(value.trim());
-    } catch {
-      // ignore — user can retry
-    } finally {
+    } catch { /* ignore */ } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="flex gap-2 mt-3">
+    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
       <input
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Bauzone eingeben (z.B. W2)"
-        className="flex-1 border border-amber-200 rounded-lg px-3 py-1.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-300/40 focus:border-amber-400 bg-white"
+        style={{ flex: 1, border: "1px solid rgba(251,191,36,0.3)", borderRadius: 8, padding: "6px 12px", fontSize: 13, color: "#fff", background: "rgba(251,191,36,0.05)", outline: "none", fontFamily: "inherit" }}
         onKeyDown={(e) => e.key === "Enter" && handleSave()}
       />
       <button
         onClick={handleSave}
         disabled={saving || !value.trim()}
-        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm rounded-lg font-medium disabled:opacity-50 transition-colors"
+        style={{ padding: "6px 14px", background: "#F59E0B", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: saving || !value.trim() ? "not-allowed" : "pointer", opacity: saving || !value.trim() ? 0.5 : 1, fontFamily: "inherit" }}
       >
         {saving ? "..." : "Speichern"}
       </button>
     </div>
   );
 }
-
-// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function NormenPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
@@ -330,26 +236,25 @@ export default function NormenPage({ params }: { params: { id: string } }) {
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [proj, norms] = await Promise.all([
-      api.get<Project>(`/projects/${params.id}`),
-      api.get<ProjectNorm[]>(`/projects/${params.id}/norms`),
-    ]);
-    setProject(proj);
-    setProjectNorms(norms ?? []);
-    setLoading(false);
+    try {
+      const [proj, norms] = await Promise.all([
+        api.get<Project>(`/projects/${params.id}`),
+        api.get<ProjectNorm[]>(`/projects/${params.id}/norms`),
+      ]);
+      setProject(proj);
+      setProjectNorms(norms ?? []);
+    } catch { /* show empty state */ } finally {
+      setLoading(false);
+    }
   }, [params.id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleRemove(normId: string) {
     try {
       await api.delete(`/projects/${params.id}/norms`, { norm_id: normId });
       setProjectNorms((prev) => prev.filter((pn) => pn.norms?.id !== normId));
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }
 
   async function handleRefresh() {
@@ -357,8 +262,7 @@ export default function NormenPage({ params }: { params: { id: string } }) {
     setRefreshMsg(null);
     try {
       const res = await api.post<{ zone: string | null; assigned_norms_count: number }>(
-        `/projects/${params.id}/norms/refresh`,
-        {}
+        `/projects/${params.id}/norms/refresh`, {}
       );
       if (res.zone && project) {
         setProject((p) => (p ? { ...p, bauzone: res.zone } : p));
@@ -381,7 +285,6 @@ export default function NormenPage({ params }: { params: { id: string } }) {
     setProjectNorms((prev) => [...prev, pn]);
   }
 
-  // Group norms by layer group
   const validNorms = projectNorms.filter((pn) => pn.norms !== null);
   const grouped = GROUPS.map((grp) => ({
     ...grp,
@@ -393,21 +296,21 @@ export default function NormenPage({ params }: { params: { id: string } }) {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between mb-5">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, gap: 16 }}>
         <div>
-          <h2 className="text-base font-semibold text-stone-800">Normen</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 4px" }}>Normen</h2>
           {project && (
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="text-sm text-stone-500">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: "#ABAEBB" }}>
                 {project.location.municipality}, Kanton {project.location.canton}
               </span>
               {project.parcel_number && (
-                <span className="text-xs bg-stone-100 text-stone-500 px-2 py-0.5 rounded-full">
+                <span style={{ fontSize: 11, background: "rgba(133,166,233,0.1)", color: "#7B8299", padding: "2px 8px", borderRadius: 100 }}>
                   Parzelle {project.parcel_number}
                 </span>
               )}
               {project.bauzone && (
-                <span className="text-xs bg-[#f3ece3] text-[#8b6344] px-2 py-0.5 rounded-full font-medium">
+                <span style={{ fontSize: 11, background: "rgba(183,146,106,0.12)", color: "#B7926A", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>
                   Zone {project.bauzone}
                 </span>
               )}
@@ -415,35 +318,29 @@ export default function NormenPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {refreshMsg && (
-            <span className="text-xs text-stone-500 animate-pulse">{refreshMsg}</span>
+            <span style={{ fontSize: 12, color: "#7B8299" }}>{refreshMsg}</span>
           )}
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-stone-500 border border-stone-200 hover:bg-stone-50 disabled:opacity-40 transition-colors"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 13, color: "#ABAEBB", border: "1px solid rgba(133,166,233,0.2)", background: "none", cursor: refreshing ? "not-allowed" : "pointer", opacity: refreshing ? 0.5 : 1, fontFamily: "inherit", transition: "background .15s", whiteSpace: "nowrap" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(133,166,233,0.08)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "none"; }}
           >
-            <svg
-              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
+            <svg className={refreshing ? "animate-spin" : ""} style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Normen neu laden
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-[#B7926A] hover:bg-[#a67e5a] text-white font-medium transition-colors"
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 13, color: "#fff", background: "#B7926A", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, whiteSpace: "nowrap" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#9E7A52"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#B7926A"; }}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Spezialnorm hinzufügen
@@ -453,32 +350,19 @@ export default function NormenPage({ params }: { params: { id: string } }) {
 
       {/* Bauzone missing banner */}
       {!loading && bauzoneUnknown && (
-        <div className="mb-5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <div className="flex items-start gap-3">
-            <svg
-              className="w-4 h-4 text-amber-500 mt-0.5 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-              />
+        <div style={{ marginBottom: 20, background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 12, padding: "12px 16px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <svg style={{ width: 16, height: 16, color: "#FBBF24", marginTop: 2, flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-800">Bauzone nicht automatisch erkannt</p>
-              <p className="text-xs text-amber-600 mt-0.5">
-                Das Geoportal konnte keine Bauzone für diese Parzelle ermitteln. Bitte trage die Zone
-                manuell ein, damit zonenspezifische Normen geladen werden können.
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#FBBF24", margin: 0 }}>Bauzone nicht automatisch erkannt</p>
+              <p style={{ fontSize: 12, color: "#ABAEBB", margin: "3px 0 0" }}>
+                Das Geoportal konnte keine Bauzone für diese Parzelle ermitteln. Bitte trage die Zone manuell ein, damit zonenspezifische Normen geladen werden können.
               </p>
               <BauzoneInput
                 projectId={params.id}
-                onSaved={(zone) => {
-                  setProject((p) => (p ? { ...p, bauzone: zone } : p));
-                }}
+                onSaved={(zone) => { setProject((p) => (p ? { ...p, bauzone: zone } : p)); }}
               />
             </div>
           </div>
@@ -487,51 +371,38 @@ export default function NormenPage({ params }: { params: { id: string } }) {
 
       {/* Content */}
       {loading ? (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-white border border-[#e7e2d9] rounded-xl p-4 animate-pulse"
-            >
-              <div className="h-3 bg-stone-100 rounded w-1/4 mb-2" />
-              <div className="h-3 bg-stone-100 rounded w-3/4" />
+            <div key={i} className="animate-pulse" style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.1)", borderRadius: 12, padding: 16 }}>
+              <div style={{ height: 10, background: "rgba(133,166,233,0.1)", borderRadius: 4, width: "28%", marginBottom: 8 }} />
+              <div style={{ height: 10, background: "rgba(133,166,233,0.07)", borderRadius: 4, width: "72%" }} />
             </div>
           ))}
         </div>
       ) : grouped.length === 0 ? (
-        <div className="bg-white border border-[#e7e2d9] rounded-xl p-16 text-center">
-          <div className="w-10 h-10 bg-[#f3ece3] rounded-xl flex items-center justify-center mx-auto mb-3">
-            <svg
-              className="w-5 h-5 text-[#B7926A]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
+        <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.1)", borderRadius: 16, padding: "64px 24px", textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, background: "rgba(183,146,106,0.12)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+            <svg style={{ width: 20, height: 20, color: "#B7926A" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <p className="text-stone-500 text-sm font-medium">Noch keine Normen zugewiesen</p>
-          <p className="text-stone-400 text-xs mt-1">
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#ABAEBB", margin: 0 }}>Noch keine Normen zugewiesen</p>
+          <p style={{ fontSize: 12, color: "#7B8299", margin: "4px 0 0" }}>
             Klicke auf «Normen neu laden» oder füge eine Spezialnorm manuell hinzu.
           </p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           {grouped.map((grp) => (
             <div key={grp.label}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`w-2 h-2 rounded-full ${grp.dot}`} />
-                <h3 className={`text-xs font-semibold uppercase tracking-wide ${grp.header}`}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: grp.dot }} />
+                <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: grp.header, margin: 0 }}>
                   {grp.label}
                 </h3>
-                <span className="text-xs text-stone-300">{grp.norms.length}</span>
+                <span style={{ fontSize: 12, color: "#7B8299" }}>{grp.norms.length}</span>
               </div>
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {grp.norms.map((pn) => (
                   <NormCard key={pn.id} pn={pn} onRemove={handleRemove} />
                 ))}

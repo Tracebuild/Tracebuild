@@ -109,7 +109,7 @@ export default function DatabasePage() {
     <div className="flex gap-6">
       {/* Upload-Panel */}
       <div className="w-72 shrink-0">
-        <h2 className="text-base font-semibold text-stone-800 mb-4">Norm hochladen</h2>
+        <h2 className="text-base font-semibold text-white mb-4">Norm hochladen</h2>
         <form onSubmit={handleUpload} className="space-y-3">
           <div
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -189,7 +189,7 @@ export default function DatabasePage() {
       {/* Standards-Liste */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-stone-800">
+          <h2 className="text-base font-semibold text-white">
             Normen-Datenbank
             {standards.length > 0 && (
               <span className="ml-2 text-sm font-normal text-stone-400">

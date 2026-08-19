@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Organization, OrgCost, PlanTier, OrgStatus } from "./types";
 import { fmtMonth } from "./mockCosts";
 
@@ -23,25 +23,12 @@ const TAB_LABELS: { id: Tab; label: string }[] = [
   { id: "einstellungen", label: "Einstellungen"  },
 ];
 
-const MOCK_MEMBERS: Record<string, { name: string; email: string; role: string; joined: string }[]> = {
-  "tracebuild-default": [
-    { name: "Jonas Jud",   email: "jonas@tracebuild.ch",     role: "Admin",    joined: "2024-01-15" },
-    { name: "Maria Weber", email: "m.weber@tracebuild.ch",   role: "Mitglied", joined: "2024-02-01" },
-    { name: "Tom Baumann", email: "t.baumann@tracebuild.ch", role: "Mitglied", joined: "2024-03-10" },
-    { name: "Lisa Keller", email: "l.keller@tracebuild.ch",  role: "Mitglied", joined: "2024-06-01" },
-  ],
-  "org-mueller": [
-    { name: "Stefan Müller", email: "s.mueller@mueller-arch.ch", role: "Admin",    joined: "2024-03-10" },
-    { name: "Petra Brunner", email: "p.brunner@mueller-arch.ch", role: "Mitglied", joined: "2024-04-01" },
-    { name: "Klaus Steiner", email: "k.steiner@mueller-arch.ch", role: "Mitglied", joined: "2024-05-15" },
-    { name: "Anna Huber",    email: "a.huber@mueller-arch.ch",   role: "Mitglied", joined: "2024-07-01" },
-  ],
-  "org-hochbau-zh": [
-    { name: "Dr. Sandra Brunner", email: "s.brunner@hochbau.zh.ch", role: "Admin",    joined: "2024-05-22" },
-    { name: "Michael Hofmann",    email: "m.hofmann@hochbau.zh.ch", role: "Mitglied", joined: "2024-06-01" },
-    { name: "Claudia Meier",      email: "c.meier@hochbau.zh.ch",   role: "Mitglied", joined: "2024-06-15" },
-  ],
-};
+interface OrgMember {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
 
 const MOCK_PROJECTS: Record<string, { name: string; status: string; created: string; analyses: number }[]> = {
   "tracebuild-default": [
@@ -65,10 +52,6 @@ const MOCK_PROJECTS: Record<string, { name: string; status: string; created: str
     { name: "Hallenbad Oetwil",                  status: "active",   created: "2025-02-01", analyses: 61 },
   ],
 };
-
-function getMembers(orgId: string) {
-  return MOCK_MEMBERS[orgId] ?? [{ name: "Admin", email: "admin@beispiel.ch", role: "Admin", joined: "2024-01-01" }];
-}
 
 function getProjects(orgId: string) {
   return MOCK_PROJECTS[orgId] ?? [{ name: "Beispielprojekt", status: "active", created: "2024-01-01", analyses: 0 }];
@@ -161,28 +144,142 @@ function UebersichtTab({ org, costs }: { org: Organization; costs: OrgCost[] }) 
   );
 }
 
-function MitgliederTab({ org }: { org: Organization }) {
-  const members = getMembers(org.id);
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: "Super Admin", org_admin: "Admin",
+  project_manager: "Manager", member: "Mitglied",
+};
+
+function MitgliederTab({
+  org,
+  onToast,
+}: {
+  org: Organization;
+  onToast: (msg: string, type: "success" | "error" | "warning" | "info") => void;
+}) {
+  const [members, setMembers] = useState<OrgMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addEmail, setAddEmail] = useState("");
+  const [addRole, setAddRole] = useState("member");
+  const [adding, setAdding] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`);
+    const json = await res.json();
+    setMembers(json.data ?? []);
+    setLoading(false);
+  }, [org.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!addEmail.trim()) return;
+    setAdding(true);
+    const res = await fetch("/api/v1/admin/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: addEmail.trim(), role: addRole, org_id: org.id }),
+    });
+    const json = await res.json();
+    if (res.ok) {
+      onToast("Einladung gesendet.", "success");
+      setAddEmail("");
+      await load();
+    } else {
+      onToast(json.error ?? "Fehler.", "error");
+    }
+    setAdding(false);
+  }
+
+  async function handleRemove(m: OrgMember) {
+    setRemovingId(m.id);
+    const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: m.id }),
+    });
+    const json = await res.json();
+    if (res.ok) {
+      onToast(`${m.email} entfernt.`, "info");
+      await load();
+    } else {
+      onToast(json.error ?? "Fehler.", "error");
+    }
+    setRemovingId(null);
+  }
+
+  const iCls = [
+    "rounded-xl px-3 py-2 text-sm text-white",
+    "bg-[rgba(23,37,64,0.6)] border border-[rgba(133,166,233,0.25)]",
+    "placeholder:text-[#7B8299] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7]",
+    "transition-colors",
+  ].join(" ");
+
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-[#7B8299] mb-3">{members.length} Mitglieder</p>
-      {members.map(m => (
-        <div key={m.email} className="flex items-center gap-3 py-2.5 border-b border-[rgba(60,63,68,0.3)] last:border-0">
-          <Initials name={m.name} size="md" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white">{m.name}</p>
-            <p className="text-xs text-[#7B8299] truncate">{m.email}</p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-              m.role === "Admin" ? "bg-[#2862D7]/10 text-[#85A6E9]" : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
-            }`}>
-              {m.role}
-            </span>
-            <p className="text-[10px] text-[#7B8299] mt-0.5">{new Date(m.joined).toLocaleDateString("de-CH")}</p>
-          </div>
+    <div className="space-y-4">
+      <form onSubmit={handleAdd} className="flex gap-2 flex-wrap">
+        <input
+          type="email" required placeholder="E-Mail des Benutzers"
+          value={addEmail} onChange={e => setAddEmail(e.target.value)}
+          className={`${iCls} flex-1 min-w-[180px]`}
+        />
+        <select
+          value={addRole} onChange={e => setAddRole(e.target.value)}
+          className={`${iCls} flex-shrink-0`}
+        >
+          <option value="member">Mitglied</option>
+          <option value="project_manager">Manager</option>
+          <option value="org_admin">Admin</option>
+        </select>
+        <button
+          type="submit" disabled={adding}
+          className="flex-shrink-0 bg-[#2862D7] hover:bg-[#3470E8] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+        >
+          {adding ? "..." : "Hinzufügen"}
+        </button>
+      </form>
+
+      {loading ? (
+        <div className="py-8 text-center text-[#7B8299] text-sm">Lade Mitglieder…</div>
+      ) : members.length === 0 ? (
+        <div className="py-8 text-center text-[#7B8299] text-sm">Noch keine Mitglieder.</div>
+      ) : (
+        <div>
+          <p className="text-xs text-[#7B8299] mb-3">{members.length} Mitglieder</p>
+          {members.map(m => (
+            <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-[rgba(60,63,68,0.3)] last:border-0">
+              <Initials name={m.email} size="md" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{m.email}</p>
+                <p className="text-xs text-[#7B8299]">
+                  {new Date(m.created_at).toLocaleDateString("de-CH")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  m.role === "org_admin" || m.role === "super_admin"
+                    ? "bg-[#2862D7]/10 text-[#85A6E9]"
+                    : "bg-[rgba(60,63,68,0.5)] text-[#ABAEBB]"
+                }`}>
+                  {ROLE_LABELS[m.role] ?? m.role}
+                </span>
+                <button
+                  onClick={() => handleRemove(m)}
+                  disabled={removingId === m.id}
+                  className="w-6 h-6 flex items-center justify-center text-[#7B8299] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-40"
+                  title="Entfernen"
+                >
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                    <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -498,7 +595,7 @@ export default function OrgDetailPanel({ org, costs, onClose, onEdit, onToast }:
 
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {activeTab === "uebersicht"     && <UebersichtTab    org={org} costs={costs} />}
-              {activeTab === "mitglieder"     && <MitgliederTab    org={org} />}
+              {activeTab === "mitglieder"     && <MitgliederTab    org={org} onToast={onToast} />}
               {activeTab === "projekte"       && <ProjekteTab      org={org} />}
               {activeTab === "nutzung"        && <NutzungTab       org={org} costs={costs} />}
               {activeTab === "kosten"         && <KostenTab        org={org} costs={costs} />}

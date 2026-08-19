@@ -15,34 +15,54 @@ export default function ProjectLayout({
 
   const tabs = [
     { href: `/projects/${params.id}/analysis`,  label: "Plan-Analyse" },
-    { href: `/projects/${params.id}/norms`, label: "Normen" },
-    { href: `/projects/${params.id}/chat`,      label: "KI Chat" },
-    { href: `/projects/${params.id}/database`,  label: "Datenbank" },
-    { href: `/projects/${params.id}/settings`,  label: "Einstellungen" },
+    { href: `/projects/${params.id}/norms`,      label: "Normen" },
+    { href: `/projects/${params.id}/chat`,       label: "KI Chat" },
+    { href: `/projects/${params.id}/database`,   label: "Datenbank" },
+    { href: `/projects/${params.id}/settings`,   label: "Einstellungen" },
   ];
 
   return (
-    <div className="min-h-screen bg-[#ede9e0]">
-      <header className="bg-white border-b border-[#e7e2d9] px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 py-3.5">
-            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-75 transition-opacity">
+    <div style={{ minHeight: "100vh", background: "radial-gradient(120% 90% at 50% -10%,#182541 0%,#0A0E17 55%)", fontFamily: "inherit" }}>
+      <header style={{
+        background: "rgba(10,14,23,0.85)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(133,166,233,0.12)",
+        position: "sticky",
+        top: 0,
+        zIndex: 40,
+      }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 14, paddingBottom: 6 }}>
+            <Link
+              href="/dashboard"
+              style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", opacity: 1, transition: "opacity .15s" }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = "0.7"}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = "1"}
+            >
               <TraceBuildLogo size="sm" />
-              <span className="text-sm text-stone-400">← Dashboard</span>
+              <span style={{ fontSize: 13, color: "#7B8299" }}>← Dashboard</span>
             </Link>
           </div>
-          <div className="flex gap-0">
+          <div style={{ display: "flex", gap: 0 }}>
             {tabs.map((tab) => {
               const active = pathname.startsWith(tab.href);
               return (
                 <Link
                   key={tab.href}
                   href={tab.href}
-                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                    active
-                      ? "border-[#B7926A] text-[#8b6344]"
-                      : "border-transparent text-stone-500 hover:text-stone-900 hover:border-stone-300"
-                  }`}
+                  style={{
+                    padding: "10px 16px",
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? "#85A6E9" : "#7B8299",
+                    borderBottom: `2px solid ${active ? "#2862D7" : "transparent"}`,
+                    transition: "color .15s, border-color .15s",
+                    textDecoration: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "#ABAEBB"; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "#7B8299"; }}
                 >
                   {tab.label}
                 </Link>
@@ -51,7 +71,9 @@ export default function ProjectLayout({
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-6 py-6">{children}</main>
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "28px 24px" }}>
+        {children}
+      </main>
     </div>
   );
 }
