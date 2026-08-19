@@ -58,7 +58,7 @@ export const organizationService = {
     return mapOrg(data);
   },
 
-  async create(form: OrgFormData): Promise<Organization> {
+  async create(form: OrgFormData, isDefault = false): Promise<Organization> {
     const res = await fetch("/api/organizations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,6 +73,7 @@ export const organizationService = {
         projectLimit:   form.projectLimit,
         storageLimitGb: form.storageLimit,
         monthlyBudget:  form.monthlyBudget,
+        isDefault,
       }),
     });
     const data = await handleResponse<ApiOrg>(res);
