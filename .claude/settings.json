@@ -10,7 +10,8 @@
       "Bash(powershell.exe -Command \"Get-Process python | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Output 'done'\")",
       "Bash(gh run *)",
       "PowerShell(gh run list --limit 5)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git fetch *)"
     ]
   }
 }
