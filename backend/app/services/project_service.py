@@ -2,7 +2,7 @@ from uuid import UUID
 from supabase import Client
 from app.models.schemas import ProjectCreate, ProjectOut
 from app.services.geoportal_service import lookup_parcel
-from app.services.norm_assignment_service import assign_norms_to_project
+from app.services.norm_assignment_service import assign_norms_to_project, assign_geoportal_norms_to_project
 
 
 class ProjectService:
@@ -33,9 +33,12 @@ class ProjectService:
 
         # Try geoportal lookup when a parcel number is provided
         bauzone = data.bauzone
-        if data.parcel_number and not bauzone:
-            geo = await lookup_parcel(data.parcel_number, loc.municipality)
-            bauzone = geo.get("bauzone")
+        documents: list[dict] = []
+        if data.parcel_number:
+            geo = await lookup_parcel(data.parcel_number, loc.municipality, loc.canton)
+            if not bauzone:
+                bauzone = geo.get("bauzone")
+            documents = geo.get("documents", [])
 
         payload = {
             "org_id": str(org_id),
@@ -57,6 +60,16 @@ class ProjectService:
             canton=loc.canton,
             municipality=loc.municipality,
             domain=data.domain,
+        )
+
+        assign_geoportal_norms_to_project(
+            self.db,
+            project_id=str(project.id),
+            domain=data.domain,
+            canton=loc.canton,
+            municipality=loc.municipality,
+            zone_label=bauzone,
+            documents=documents,
         )
 
         return project

@@ -6,9 +6,9 @@ export async function POST(request: Request) {
   if (!user) return unauthorized();
 
   const body = await request.json();
-  const { parcel_number, municipality } = body;
+  const { parcel_number, municipality, canton } = body;
   if (!parcel_number || !municipality) return err("parcel_number und municipality erforderlich");
 
-  const result = await lookupParcel(parcel_number, municipality);
+  const result = await lookupParcel(parcel_number, municipality, canton);
   return ok(result);
 }
