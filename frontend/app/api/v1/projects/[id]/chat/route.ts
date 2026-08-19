@@ -87,12 +87,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   let query: any = admin
     .from("chat_messages")
-    .select("id, role, content, created_at")
+    .select("id, role, content, created_at, thread_id")
     .eq("project_id", params.id)
     .order("created_at", { ascending: true })
     .limit(100);
 
-  // Apply thread filter only when thread_id is specified
   if (threadId === "legacy") {
     query = query.is("thread_id", null);
   } else if (threadId) {
@@ -100,19 +99,6 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 
   const { data, error } = await query;
-
-  // thread_id column not migrated yet — fall back to all messages for this project
-  if (error?.message?.includes("thread_id")) {
-    const { data: fallback, error: fbErr } = await admin
-      .from("chat_messages")
-      .select("id, role, content, created_at")
-      .eq("project_id", params.id)
-      .order("created_at", { ascending: true })
-      .limit(100);
-    if (fbErr) return err(fbErr.message, 500);
-    return ok(fallback);
-  }
-
   if (error) return err(error.message, 500);
   return ok(data);
 }
@@ -175,37 +161,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (insertError || !insertedMsg) return err(`Nachricht konnte nicht gespeichert werden (${insertError?.message ?? "unbekannt"})`, 500);
 
   // Load history for this thread (last 20 messages)
-  let historyRows: { role: string; content: string }[] | null = null;
+  let histQuery: any = admin
+    .from("chat_messages")
+    .select("role, content")
+    .eq("project_id", params.id)
+    .order("created_at", { ascending: true })
+    .limit(20);
 
-  if (!threadIdMissing) {
-    let histQuery: any = admin
-      .from("chat_messages")
-      .select("role, content")
-      .eq("project_id", params.id)
-      .order("created_at", { ascending: true })
-      .limit(20);
-    histQuery = threadId === null
-      ? histQuery.is("thread_id", null)
-      : histQuery.eq("thread_id", threadId);
-    const { data } = await histQuery;
-    historyRows = data;
+  if (threadId === null) {
+    histQuery = histQuery.is("thread_id", null);
+  } else {
+    histQuery = histQuery.eq("thread_id", threadId);
   }
-
-  // Fallback: load without thread filter (migration not run, or query error)
-  if (!historyRows || historyRows.length === 0) {
-    const { data } = await admin
-      .from("chat_messages")
-      .select("role, content")
-      .eq("project_id", params.id)
-      .order("created_at", { ascending: true })
-      .limit(20);
-    historyRows = data;
-  }
-
-  // Absolute safety net: if still empty, inject the current user message
-  if (!historyRows || historyRows.length === 0) {
-    historyRows = [{ role: "user", content }];
-  }
+  const { data: historyRows } = await histQuery;
 
   // Load project norms
   const { data: normRows } = await admin
@@ -280,16 +248,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
         const final  = await claudeStream.finalMessage();
         const costUsd = final.usage.input_tokens * PRICE_IN + final.usage.output_tokens * PRICE_OUT;
 
-        const assistantInsert = await admin.from("chat_messages").insert({
-          project_id: params.id, role: "assistant",
-          content: fullResponse, cost_usd: costUsd, thread_id: threadId,
+        await admin.from("chat_messages").insert({
+          project_id: params.id,
+          role: "assistant",
+          content: fullResponse,
+          cost_usd: costUsd,
+          thread_id: threadId,
         });
-        if (assistantInsert.error?.message?.includes("thread_id")) {
-          await admin.from("chat_messages").insert({
-            project_id: params.id, role: "assistant",
-            content: fullResponse, cost_usd: costUsd,
-          });
-        }
 
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
