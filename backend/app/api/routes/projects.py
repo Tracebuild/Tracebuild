@@ -6,7 +6,8 @@ from app.core.supabase import get_supabase
 from app.models.schemas import APIResponse, ProjectCreate
 from app.models.norm import ProjectNormCreate
 from app.services.project_service import ProjectService
-from app.services.norm_assignment_service import assign_norms_to_project
+from app.services.norm_assignment_service import assign_norms_to_project, assign_geoportal_norms_to_project
+from app.services.geoportal_service import lookup_parcel
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -78,19 +79,42 @@ async def add_project_norm(project_id: UUID, body: ProjectNormCreate, user: Curr
 
 @router.post("/{project_id}/norms/refresh", response_model=APIResponse)
 async def refresh_project_norms(project_id: UUID, user: CurrentUser = AuthDep):
-    """Re-run automatic norm assignment for a project."""
+    """Re-run automatic norm assignment (catalog + geoportal) for a project."""
     db = get_supabase()
-    proj = db.table("projects").select("location, domain, org_id").eq("id", str(project_id)).eq("org_id", str(user.org_id)).single().execute()
+    proj = db.table("projects").select("location, domain, org_id, parcel_number, bauzone").eq("id", str(project_id)).eq("org_id", str(user.org_id)).single().execute()
     if not proj.data:
         raise HTTPException(status_code=404, detail="Projekt nicht gefunden")
 
     loc = proj.data.get("location", {})
+    domain = proj.data.get("domain", "bau")
+    canton = loc.get("canton", "")
+    municipality = loc.get("municipality", "")
+
+    zone = proj.data.get("bauzone")
+    documents: list[dict] = []
+    parcel_number = proj.data.get("parcel_number")
+    if parcel_number and municipality:
+        geo = await lookup_parcel(parcel_number, municipality, canton)
+        documents = geo.get("documents", [])
+        if geo.get("bauzone"):
+            zone = geo["bauzone"]
+            db.table("projects").update({"bauzone": zone}).eq("id", str(project_id)).execute()
+
     count = assign_norms_to_project(
         db,
         project_id=str(project_id),
         org_id=str(user.org_id),
-        canton=loc.get("canton", ""),
-        municipality=loc.get("municipality", ""),
-        domain=proj.data.get("domain", "bau"),
+        canton=canton,
+        municipality=municipality,
+        domain=domain,
     )
-    return APIResponse(data={"assigned": count})
+    geoportal_count = assign_geoportal_norms_to_project(
+        db,
+        project_id=str(project_id),
+        domain=domain,
+        canton=canton,
+        municipality=municipality,
+        zone_label=zone,
+        documents=documents,
+    )
+    return APIResponse(data={"assigned": count, "geoportal_assigned": geoportal_count, "zone": zone})

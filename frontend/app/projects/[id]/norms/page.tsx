@@ -65,6 +65,11 @@ function NormCard({ pn, onRemove }: { pn: ProjectNorm; onRemove: (normId: string
             {pn.added_by === "user" && (
               <span style={{ fontSize: 11, color: "#7B8299", fontStyle: "italic" }}>manuell</span>
             )}
+            {pn.added_by === "geoportal" && (
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(52,211,153,0.12)", color: "#34D399" }}>
+                📍 Geoportal
+              </span>
+            )}
           </div>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.4, margin: 0 }}>{norm.title}</p>
           {expanded && (

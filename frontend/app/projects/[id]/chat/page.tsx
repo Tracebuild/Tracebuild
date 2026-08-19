@@ -19,7 +19,7 @@ interface ChatMessage {
 
 function parseInline(text: string): ReactNode {
   const parts: ReactNode[] = [];
-  const regex = /(\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*)/g;
+  const regex = /(\*\*(.+?)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*(.+?)\*)/g;
   let last = 0;
   let idx  = 0;
   let m: RegExpExecArray | null;
@@ -27,20 +27,33 @@ function parseInline(text: string): ReactNode {
   while ((m = regex.exec(text)) !== null) {
     if (m.index > last) parts.push(text.slice(last, m.index));
     if (m[0].startsWith("**")) {
-      parts.push(<strong key={idx++} style={{ fontWeight: 600 }}>{m[2]}</strong>);
+      parts.push(<strong key={idx++} style={{ fontWeight: 700, color: "#fff" }}>{m[2]}</strong>);
     } else if (m[0].startsWith("`")) {
       parts.push(
-        <code key={idx++} style={{ background: "rgba(133,166,233,0.12)", color: "#85A6E9", padding: "1px 5px", borderRadius: 4, fontSize: "0.82em", fontFamily: "monospace" }}>
+        <code key={idx++} style={{ background: "rgba(133,166,233,0.14)", color: "#85A6E9", padding: "1px 6px", borderRadius: 4, fontSize: "0.85em", fontFamily: "monospace" }}>
           {m[3]}
         </code>
       );
+    } else if (m[0].startsWith("[")) {
+      parts.push(
+        <a key={idx++} href={m[5]} target="_blank" rel="noopener noreferrer"
+          style={{ color: "#85A6E9", textDecoration: "underline", textUnderlineOffset: 2 }}>
+          {m[4]}
+        </a>
+      );
     } else {
-      parts.push(<em key={idx++}>{m[4]}</em>);
+      parts.push(<em key={idx++} style={{ color: "#C7CBDA" }}>{m[6]}</em>);
     }
     last = m.index + m[0].length;
   }
   if (last < text.length) parts.push(text.slice(last));
   return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+const TABLE_SEP = /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/;
+
+function splitTableRow(line: string): string[] {
+  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim());
 }
 
 function MarkdownContent({ text }: { text: string }) {
@@ -59,7 +72,7 @@ function MarkdownContent({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <pre key={`code-${i}`} style={{ background: "rgba(10,14,23,0.6)", borderRadius: 8, padding: 12, fontSize: 12, fontFamily: "monospace", overflow: "auto", margin: "8px 0", color: "#ABAEBB", whiteSpace: "pre" }}>
+        <pre key={`code-${i}`} style={{ background: "rgba(10,14,23,0.65)", border: "1px solid rgba(133,166,233,0.12)", borderRadius: 10, padding: "12px 14px", fontSize: 12, fontFamily: "monospace", overflow: "auto", margin: "10px 0", color: "#C7CBDA", whiteSpace: "pre", lineHeight: 1.5 }}>
           {codeLines.join("\n")}
         </pre>
       );
@@ -68,11 +81,11 @@ function MarkdownContent({ text }: { text: string }) {
     }
 
     if (line.startsWith("### ")) {
-      elements.push(<h3 key={i} style={{ fontWeight: 600, color: "#ABAEBB", fontSize: 13, margin: "12px 0 2px" }}>{parseInline(line.slice(4))}</h3>);
+      elements.push(<h3 key={i} style={{ fontWeight: 700, color: "#85A6E9", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", margin: "14px 0 3px" }}>{parseInline(line.slice(4))}</h3>);
     } else if (line.startsWith("## ")) {
-      elements.push(<h2 key={i} style={{ fontWeight: 700, color: "#fff", fontSize: 13, margin: "16px 0 4px" }}>{parseInline(line.slice(3))}</h2>);
+      elements.push(<h2 key={i} style={{ fontWeight: 700, color: "#fff", fontSize: 14.5, margin: "18px 0 6px" }}>{parseInline(line.slice(3))}</h2>);
     } else if (line.startsWith("# ")) {
-      elements.push(<h1 key={i} style={{ fontWeight: 700, color: "#fff", fontSize: 14, margin: "16px 0 4px" }}>{parseInline(line.slice(2))}</h1>);
+      elements.push(<h1 key={i} style={{ fontWeight: 800, color: "#fff", fontSize: 16, margin: "18px 0 8px" }}>{parseInline(line.slice(2))}</h1>);
     } else if (/^[-*] /.test(line)) {
       const items: string[] = [];
       while (i < lines.length && /^[-*] /.test(lines[i])) {
@@ -80,7 +93,7 @@ function MarkdownContent({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <ul key={`ul-${i}`} style={{ paddingLeft: 20, margin: "6px 0" }}>
+        <ul key={`ul-${i}`} style={{ paddingLeft: 18, margin: "8px 0", display: "flex", flexDirection: "column", gap: 4 }}>
           {items.map((item, j) => (
             <li key={j} style={{ fontSize: 13, lineHeight: 1.6, color: "#ABAEBB" }}>{parseInline(item)}</li>
           ))}
@@ -94,15 +107,60 @@ function MarkdownContent({ text }: { text: string }) {
         i++;
       }
       elements.push(
-        <ol key={`ol-${i}`} style={{ paddingLeft: 20, margin: "6px 0" }}>
+        <ol key={`ol-${i}`} style={{ paddingLeft: 18, margin: "8px 0", display: "flex", flexDirection: "column", gap: 4 }}>
           {items.map((item, j) => (
             <li key={j} style={{ fontSize: 13, lineHeight: 1.6, color: "#ABAEBB" }}>{parseInline(item)}</li>
           ))}
         </ol>
       );
       continue;
+    } else if (/^> /.test(line)) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && /^> ?/.test(lines[i])) {
+        quoteLines.push(lines[i].replace(/^> ?/, ""));
+        i++;
+      }
+      elements.push(
+        <blockquote key={`bq-${i}`} style={{ borderLeft: "3px solid rgba(133,166,233,0.4)", paddingLeft: 12, margin: "8px 0", color: "#8B92A8", fontStyle: "italic", fontSize: 13, lineHeight: 1.6 }}>
+          {quoteLines.map((q, j) => <div key={j}>{parseInline(q)}</div>)}
+        </blockquote>
+      );
+      continue;
+    } else if (line.trim().startsWith("|") && i + 1 < lines.length && TABLE_SEP.test(lines[i + 1].trim())) {
+      const header = splitTableRow(line);
+      i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        rows.push(splitTableRow(lines[i]));
+        i++;
+      }
+      elements.push(
+        <div key={`table-${i}`} style={{ overflowX: "auto", margin: "10px 0", border: "1px solid rgba(133,166,233,0.15)", borderRadius: 10 }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12.5 }}>
+            <thead>
+              <tr>
+                {header.map((h, j) => (
+                  <th key={j} style={{ textAlign: "left", padding: "8px 12px", color: "#85A6E9", fontWeight: 700, background: "rgba(133,166,233,0.08)", borderBottom: "1px solid rgba(133,166,233,0.15)", whiteSpace: "nowrap" }}>
+                    {parseInline(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, j) => (
+                <tr key={j} style={{ borderTop: j > 0 ? "1px solid rgba(133,166,233,0.08)" : undefined }}>
+                  {row.map((cell, k) => (
+                    <td key={k} style={{ padding: "8px 12px", color: "#ABAEBB" }}>{parseInline(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
     } else if (/^---+$/.test(line.trim())) {
-      elements.push(<hr key={i} style={{ border: "none", borderTop: "1px solid rgba(133,166,233,0.15)", margin: "8px 0" }} />);
+      elements.push(<hr key={i} style={{ border: "none", borderTop: "1px solid rgba(133,166,233,0.15)", margin: "10px 0" }} />);
     } else if (line.trim() === "") {
       elements.push(<div key={`sp-${i}`} style={{ height: 6 }} />);
     } else {
@@ -130,10 +188,10 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       </div>
 
       <div style={{
-        maxWidth: "80%", borderRadius: 16, padding: "10px 14px",
+        maxWidth: "80%", borderRadius: 16, padding: "11px 15px",
         ...(isUser
-          ? { background: "#B7926A", color: "#fff", borderTopRightRadius: 4 }
-          : { background: "rgba(23,37,64,0.7)", border: "1px solid rgba(133,166,233,0.15)", borderTopLeftRadius: 4 }
+          ? { background: "#B7926A", color: "#fff", borderTopRightRadius: 4, boxShadow: "0 2px 10px rgba(183,146,106,0.25)" }
+          : { background: "rgba(23,37,64,0.7)", border: "1px solid rgba(133,166,233,0.15)", borderTopLeftRadius: 4, boxShadow: "0 2px 10px rgba(0,0,0,0.2)" }
         ),
       }}>
         {msg.streaming && msg.content === "" && (
