@@ -90,6 +90,11 @@ const CANTON_FALLBACKS: Record<string, (east: number, north: number) => Promise<
 const GR_MAPSERV_PROXY = "https://map.geo.gr.ch/mapserv_proxy";
 const GR_OGCSERVER = "Kanton Graubünden, Bauzonen Graubuenden";
 
+// Same rationale as NEAREST_ZONE_THRESHOLD_M below: GR's own WFS has also been observed
+// to return a feature that doesn't actually contain the query point, so every candidate
+// is verified by distance-to-vertex before being trusted.
+const GR_NEAREST_ZONE_THRESHOLD_M = 60;
+
 async function getGrZoneDetails(east: number, north: number): Promise<ZoneDetails | null> {
   const d = 50;
   const url = new URL(GR_MAPSERV_PROXY);
@@ -100,16 +105,94 @@ async function getGrZoneDetails(east: number, north: number): Promise<ZoneDetail
   url.searchParams.set("TYPENAME", "Bauzonen_Hauptnutzungen");
   url.searchParams.set("BBOX", `${east - d},${north - d},${east + d},${north + d},urn:ogc:def:crs:EPSG::2056`);
   url.searchParams.set("SRSNAME", "urn:ogc:def:crs:EPSG::2056");
-  url.searchParams.set("maxfeatures", "1");
+  url.searchParams.set("maxfeatures", "10");
 
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
   if (!res.ok) return null;
   const xml = await res.text();
-  const match = /<ms:CH_Hauptnutzung_Name>([^<]*)<\/ms:CH_Hauptnutzung_Name>/.exec(xml);
-  if (!match || !match[1]) return null;
-  const name = match[1];
-  return { bauzone: name, zoneBezeichnung: name, hauptnutzung: name, kanton: "GR", documents: [] };
+
+  let best: { name: string; dist: number } | null = null;
+  for (const featureBlock of xml.split("<gml:featureMember>").slice(1)) {
+    const nameMatch = /<ms:CH_Hauptnutzung_Name>([^<]*)<\/ms:CH_Hauptnutzung_Name>/.exec(featureBlock);
+    if (!nameMatch || !nameMatch[1]) continue;
+    let minDist = Infinity;
+    for (const posListMatch of Array.from(featureBlock.matchAll(/<gml:posList[^>]*>([^<]+)<\/gml:posList>/g))) {
+      const nums = posListMatch[1].trim().split(/\s+/).map(Number);
+      for (let i = 0; i < nums.length - 1; i += 2) {
+        const dist = Math.hypot(nums[i] - east, nums[i + 1] - north);
+        if (dist < minDist) minDist = dist;
+      }
+    }
+    if (minDist <= GR_NEAREST_ZONE_THRESHOLD_M && (!best || minDist < best.dist)) {
+      best = { name: nameMatch[1], dist: minDist };
+    }
+  }
+  if (!best) return null;
+  return { bauzone: best.name, zoneBezeichnung: best.name, hauptnutzung: best.name, kanton: "GR", documents: [] };
 }
+
+type GeoJsonPolygon = { type: "Polygon"; coordinates: number[][][] } | { type: "MultiPolygon"; coordinates: number[][][][] };
+
+// Standard ray-casting point-in-polygon test (ignores holes — irrelevant for zone parcels).
+function ringContains(x: number, y: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > y !== yj > y) {
+      const xIntersect = xi + ((y - yi) * (xj - xi)) / (yj - yi);
+      if (x < xIntersect) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function geometryContains(x: number, y: number, geom: GeoJsonPolygon): boolean {
+  const polys = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
+  return polys.some((poly) => ringContains(x, y, poly[0]));
+}
+
+// Shortest distance from a point to a ring's boundary (point-to-segment, minimised over all edges).
+function distanceToRing(x: number, y: number, ring: number[][]): number {
+  let min = Infinity;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[i + 1];
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    const t = lenSq === 0 ? 0 : Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / lenSq));
+    const dist = Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
+    if (dist < min) min = dist;
+  }
+  return min;
+}
+
+function distanceToGeometry(x: number, y: number, geom: GeoJsonPolygon): number {
+  const polys = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
+  let min = Infinity;
+  for (const poly of polys) {
+    for (const ring of poly) {
+      const d = distanceToRing(x, y, ring);
+      if (d < min) min = d;
+    }
+  }
+  return min;
+}
+
+// A small local abbreviation like "W2" is more useful to show than a canton-internal
+// numeric code (e.g. St. Gallen publishes "1402" instead of a readable short code).
+function displayZone(code: string | null, label: string | null): string | null {
+  if (code && !/^\d+$/.test(code)) return code;
+  return label ? label.replace(/_/g, " ") : code;
+}
+
+// geo.admin.ch's parcel locator point is a search/label point, not always precisely
+// inside the parcel — and the upstream OGC service itself has been observed to return
+// bbox-filtered results that do not actually intersect the requested box. Accepting a
+// "nearest" polygon within this radius absorbs normal locator imprecision without
+// papering over the server's occasional multi-hundred-metre misses.
+const NEAREST_ZONE_THRESHOLD_M = 60;
 
 async function getZoneDetails(east: number, north: number): Promise<Omit<ParcelLookupResult, "egrid"> | null> {
   const d = 50;
@@ -118,15 +201,33 @@ async function getZoneDetails(east: number, north: number): Promise<Omit<ParcelL
   url.searchParams.set("bbox-crs", LV95_CRS);
   url.searchParams.set("crs", LV95_CRS);
   url.searchParams.set("f", "json");
-  url.searchParams.set("limit", "1");
+  url.searchParams.set("limit", "10");
 
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
   if (!res.ok) return null;
   const json = await res.json();
-  const props = json.features?.[0]?.properties;
-  if (!props) return null;
+  const features: { geometry: GeoJsonPolygon; properties: any }[] = json.features ?? [];
+
+  // Multiple zone/notice polygons can overlap a small bbox near zone boundaries (village
+  // edges, forest lines, etc.) — picking "the first hit" there is a coin flip and has
+  // returned wrong zones in the wild. Only trust a polygon that actually contains the
+  // parcel's point (or, failing that, one close enough to plausibly be it); prefer a real
+  // building-law zone ("BauG_...") over a "Hinweis." (informational overlay) on ties.
+  let candidates = features.filter((f) => geometryContains(east, north, f.geometry));
+  if (!candidates.length) {
+    candidates = features
+      .map((f) => ({ f, dist: distanceToGeometry(east, north, f.geometry) }))
+      .filter(({ dist }) => dist <= NEAREST_ZONE_THRESHOLD_M)
+      .sort((a, b) => a.dist - b.dist)
+      .map(({ f }) => f);
+  }
+  if (!candidates.length) return null;
+  const props =
+    candidates.find((f) => !String(f.properties?.typ_kantonal_bezeichnung ?? "").startsWith("Hinweis."))
+      ?.properties ?? candidates[0].properties;
+
   return {
-    bauzone: props.typ_kantonal_code ?? null,
+    bauzone: displayZone(props.typ_kantonal_code ?? null, props.typ_kantonal_bezeichnung ?? null),
     zoneBezeichnung: props.typ_kantonal_bezeichnung ?? null,
     hauptnutzung: props.hauptnutzung_bezeichnung ?? null,
     kanton: props.kanton ?? null,

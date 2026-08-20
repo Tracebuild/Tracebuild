@@ -9,6 +9,7 @@ creation. Any failure returns None/empty; callers fall back to manual input.
 """
 from __future__ import annotations
 import json
+import math
 import re
 import httpx
 
@@ -84,12 +85,70 @@ def _parse_documents(raw: str | None) -> list[dict]:
     return out
 
 
+# --- Point-in-polygon / nearest-polygon verification -------------------------------
+#
+# The upstream OGC services (both the national geodienste.ch federation and Kanton
+# Graubünden's own WFS) have been observed, via direct testing, to sometimes return a
+# "bbox-filtered" feature that does not actually intersect the requested box — in one
+# reproduced case the returned zone polygon was over 1km from the query point. Blindly
+# trusting the first result previously surfaced wrong zones (e.g. a forest/notice area
+# instead of the parcel's real residential zone) with false confidence. Every candidate
+# is now geometrically verified before being trusted; if none is close enough, we
+# honestly report "not found" rather than show a wrong zone.
+NEAREST_ZONE_THRESHOLD_M = 60
+
+
+def _point_in_ring(x: float, y: float, ring: list[list[float]]) -> bool:
+    inside = False
+    n = len(ring)
+    for i in range(n):
+        x1, y1 = ring[i][0], ring[i][1]
+        x2, y2 = ring[(i + 1) % n][0], ring[(i + 1) % n][1]
+        if (y1 > y) != (y2 > y):
+            x_intersect = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+            if x < x_intersect:
+                inside = not inside
+    return inside
+
+
+def _geometry_contains(x: float, y: float, geom: dict) -> bool:
+    coords = geom.get("coordinates", [])
+    polys = coords if geom.get("type") == "MultiPolygon" else [coords]
+    return any(_point_in_ring(x, y, poly[0]) for poly in polys if poly)
+
+
+def _distance_to_ring(x: float, y: float, ring: list[list[float]]) -> float:
+    best = float("inf")
+    for i in range(len(ring) - 1):
+        x1, y1 = ring[i][0], ring[i][1]
+        x2, y2 = ring[i + 1][0], ring[i + 1][1]
+        dx, dy = x2 - x1, y2 - y1
+        len_sq = dx * dx + dy * dy
+        t = 0.0 if len_sq == 0 else max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / len_sq))
+        px, py = x1 + t * dx, y1 + t * dy
+        dist = math.hypot(x - px, y - py)
+        best = min(best, dist)
+    return best
+
+
+def _distance_to_geometry(x: float, y: float, geom: dict) -> float:
+    coords = geom.get("coordinates", [])
+    polys = coords if geom.get("type") == "MultiPolygon" else [coords]
+    best = float("inf")
+    for poly in polys:
+        for ring in poly:
+            best = min(best, _distance_to_ring(x, y, ring))
+    return best
+
+
 # Per-canton fallbacks for municipalities not yet covered by the national
 # geodienste.ch "grundnutzung" layer (data is rolled out commune-by-commune;
 # coverage is genuinely patchy, not a bug). Add more cantons here as gaps are found.
 _GR_MAPSERV_PROXY = "https://map.geo.gr.ch/mapserv_proxy"
 _GR_OGCSERVER = "Kanton Graubünden, Bauzonen Graubuenden"
-_GR_ZONE_RE = re.compile(r"<ms:CH_Hauptnutzung_Name>([^<]*)</ms:CH_Hauptnutzung_Name>")
+_GR_FEATURE_RE = re.compile(r"<gml:featureMember>(.*?)</gml:featureMember>", re.DOTALL)
+_GR_NAME_RE = re.compile(r"<ms:CH_Hauptnutzung_Name>([^<]*)</ms:CH_Hauptnutzung_Name>")
+_GR_POSLIST_RE = re.compile(r"<gml:posList[^>]*>([^<]+)</gml:posList>")
 
 
 async def _get_gr_zone_details(east: float, north: float) -> dict | None:
@@ -108,23 +167,43 @@ async def _get_gr_zone_details(east: float, north: float) -> dict | None:
         "TYPENAME": "Bauzonen_Hauptnutzungen",
         "BBOX": f"{east - delta},{north - delta},{east + delta},{north + delta},urn:ogc:def:crs:EPSG::2056",
         "SRSNAME": "urn:ogc:def:crs:EPSG::2056",
-        "maxfeatures": 1,
+        "maxfeatures": 10,
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.get(_GR_MAPSERV_PROXY, params=params)
         resp.raise_for_status()
 
-    match = _GR_ZONE_RE.search(resp.text)
-    if not match or not match.group(1):
+    best_name: str | None = None
+    best_dist = float("inf")
+    for block in _GR_FEATURE_RE.findall(resp.text):
+        name_match = _GR_NAME_RE.search(block)
+        if not name_match or not name_match.group(1):
+            continue
+        min_dist = float("inf")
+        for pos_list in _GR_POSLIST_RE.findall(block):
+            nums = [float(n) for n in pos_list.split()]
+            for i in range(0, len(nums) - 1, 2):
+                min_dist = min(min_dist, math.hypot(nums[i] - east, nums[i + 1] - north))
+        if min_dist <= NEAREST_ZONE_THRESHOLD_M and min_dist < best_dist:
+            best_name, best_dist = name_match.group(1), min_dist
+
+    if best_name is None:
         return None
-    name = match.group(1)
     return {
-        "bauzone": name, "zone_bezeichnung": name, "hauptnutzung": name,
+        "bauzone": best_name, "zone_bezeichnung": best_name, "hauptnutzung": best_name,
         "kanton": "GR", "documents": [],
     }
 
 
 _CANTON_FALLBACKS = {"GR": _get_gr_zone_details}
+
+
+# A small local abbreviation like "W2" is more useful to show than a canton-internal
+# numeric code (e.g. St. Gallen publishes "1402" instead of a readable short code).
+def _display_zone(code: str | None, label: str | None) -> str | None:
+    if code and not code.isdigit():
+        return code
+    return label.replace("_", " ") if label else code
 
 
 async def get_zone_details(east: float, north: float, canton: str | None = None) -> dict | None:
@@ -135,21 +214,38 @@ async def get_zone_details(east: float, north: float, canton: str | None = None)
         "bbox-crs": _LV95_CRS,
         "crs": _LV95_CRS,
         "f": "json",
-        "limit": 1,
+        "limit": 10,
     }
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         resp = await client.get(_GEODIENSTE, params=params)
         resp.raise_for_status()
 
     features = resp.json().get("features", [])
-    if not features:
+
+    # Multiple zone/notice polygons can overlap a small bbox near zone boundaries — only
+    # trust a polygon that actually contains the point, or failing that, the nearest one
+    # within threshold; prefer a real building-law zone ("BauG_...") over a "Hinweis."
+    # (informational overlay) on ties.
+    candidates = [f for f in features if _geometry_contains(east, north, f.get("geometry", {}))]
+    if not candidates:
+        scored = sorted(
+            (f for f in features if _distance_to_geometry(east, north, f.get("geometry", {})) <= NEAREST_ZONE_THRESHOLD_M),
+            key=lambda f: _distance_to_geometry(east, north, f.get("geometry", {})),
+        )
+        candidates = scored
+
+    if not candidates:
         fallback = _CANTON_FALLBACKS.get(canton or "")
         if fallback:
             return await fallback(east, north)
         return None
-    props = features[0].get("properties", {})
+
+    props = next(
+        (f["properties"] for f in candidates if not str(f["properties"].get("typ_kantonal_bezeichnung", "")).startswith("Hinweis.")),
+        candidates[0]["properties"],
+    )
     return {
-        "bauzone": props.get("typ_kantonal_code"),
+        "bauzone": _display_zone(props.get("typ_kantonal_code"), props.get("typ_kantonal_bezeichnung")),
         "zone_bezeichnung": props.get("typ_kantonal_bezeichnung"),
         "hauptnutzung": props.get("hauptnutzung_bezeichnung"),
         "kanton": props.get("kanton"),
