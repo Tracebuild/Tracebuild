@@ -188,11 +188,17 @@ function displayZone(code: string | null, label: string | null): string | null {
 }
 
 // geo.admin.ch's parcel locator point is a search/label point, not always precisely
-// inside the parcel — and the upstream OGC service itself has been observed to return
-// bbox-filtered results that do not actually intersect the requested box. Accepting a
-// "nearest" polygon within this radius absorbs normal locator imprecision without
-// papering over the server's occasional multi-hundred-metre misses.
+// inside the parcel — accepting a "nearest" polygon within this radius absorbs that
+// normal imprecision.
 const NEAREST_ZONE_THRESHOLD_M = 60;
+
+// The API's `bbox` filter only narrows results to the internal spatial-index tile the
+// box falls in (observed tiles hold up to ~1100 features) rather than doing an exact
+// intersection — and results within a tile are NOT sorted by distance. A small `limit`
+// was silently truncating the response before the true nearest zone (sometimes just
+// 1-2m away) was ever reached, which is why this returned wrong or no zones in testing.
+// Fetching the whole tile (~1-2s, a few MB) and ranking client-side is what actually works.
+const GRUNDNUTZUNG_FETCH_LIMIT = 1500;
 
 async function getZoneDetails(east: number, north: number): Promise<Omit<ParcelLookupResult, "egrid"> | null> {
   const d = 50;
@@ -201,9 +207,9 @@ async function getZoneDetails(east: number, north: number): Promise<Omit<ParcelL
   url.searchParams.set("bbox-crs", LV95_CRS);
   url.searchParams.set("crs", LV95_CRS);
   url.searchParams.set("f", "json");
-  url.searchParams.set("limit", "10");
+  url.searchParams.set("limit", String(GRUNDNUTZUNG_FETCH_LIMIT));
 
-  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(8000) });
+  const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15000) });
   if (!res.ok) return null;
   const json = await res.json();
   const features: { geometry: GeoJsonPolygon; properties: any }[] = json.features ?? [];
