@@ -139,7 +139,7 @@ function computeStageProgress(refs: React.RefObject<HTMLElement | HTMLDivElement
   if (n === 0) return 0;
   if (y <= centers[0]) return 0;
   if (y >= centers[n - 1]) return n - 1;
-  const hold = 0.48;
+  const hold = 0.4;
   for (let i = 0; i < n - 1; i++) {
     if (y >= centers[i] && y <= centers[i + 1]) {
       const span = centers[i + 1] - centers[i];
@@ -650,7 +650,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh" }} />
+        <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* PROBLEM */}
         <section style={{ position:"relative", padding:"60px 24px 180px", zIndex:1, overflow:"hidden" }}>
@@ -662,7 +662,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh", position:"relative", overflow:"hidden" }}>
+        <div className="lp-spacer" style={{ height:"80vh", position:"relative", overflow:"hidden" }}>
           <canvas ref={gapNetRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:0, pointerEvents:"none", display:"block", maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)", WebkitMaskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)" }} />
         </div>
 
@@ -765,7 +765,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh" }} />
+        <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* TRUST STRIP */}
         <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)", overflow:"hidden" }}>
@@ -777,7 +777,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh" }} />
+        <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* PRICING */}
         <section id="preise" ref={pricingRef} style={{ position:"relative", padding:"60px 24px 220px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
@@ -824,7 +824,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh" }} />
+        <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* KONTAKT */}
         <section id="kontakt" ref={teamRef} style={{ position:"relative", padding:"60px 24px 200px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
@@ -855,7 +855,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"120vh" }} />
+        <div className="lp-spacer" style={{ height:"80vh" }} />
 
         {/* FINAL CTA */}
         <section ref={ctaRef} style={{ position:"relative", padding:"20px 24px 220px", textAlign:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
