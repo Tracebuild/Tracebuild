@@ -139,7 +139,7 @@ function computeStageProgress(refs: React.RefObject<HTMLElement | HTMLDivElement
   if (n === 0) return 0;
   if (y <= centers[0]) return 0;
   if (y >= centers[n - 1]) return n - 1;
-  const hold = 0.4;
+  const hold = 0.45;
   for (let i = 0; i < n - 1; i++) {
     if (y >= centers[i] && y <= centers[i + 1]) {
       const span = centers[i + 1] - centers[i];
@@ -404,6 +404,90 @@ export default function LandingPage() {
     };
   }, [mobileMenuOpen]);
 
+  // Eased, weighty scroll response (desktop/mouse-wheel only — touch keeps native scroll).
+  // Real page scroll stays the source of truth (URL, back button, scrollbar all still work);
+  // each input just eases the actual position toward a target instead of snapping to it.
+  useEffect(() => {
+    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (isCoarsePointer || window.innerWidth <= 768) return;
+
+    const SPEED   = 0.75; // fraction of raw wheel delta applied per tick — lower = slower
+    const DAMPING = 0.09; // how fast real scroll catches up to target — lower = heavier/smoother
+
+    let target  = window.scrollY;
+    let current = window.scrollY;
+    let raf = 0;
+
+    const maxScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const clamp = (v: number) => Math.max(0, Math.min(v, maxScroll()));
+    const normalizeDelta = (e: WheelEvent) => {
+      if (e.deltaMode === 1) return e.deltaY * 18;          // line mode
+      if (e.deltaMode === 2) return e.deltaY * window.innerHeight; // page mode
+      return e.deltaY;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      target = clamp(target + normalizeDelta(e) * SPEED);
+    };
+
+    const onKeydown = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      const vh = window.innerHeight;
+      if (e.key === "PageDown" || (e.key === " " && !e.shiftKey)) { e.preventDefault(); target = clamp(target + vh * 0.9); }
+      else if (e.key === "PageUp" || (e.key === " " && e.shiftKey)) { e.preventDefault(); target = clamp(target - vh * 0.9); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); target = clamp(target + 80); }
+      else if (e.key === "ArrowUp")   { e.preventDefault(); target = clamp(target - 80); }
+      else if (e.key === "Home")      { e.preventDefault(); target = 0; }
+      else if (e.key === "End")       { e.preventDefault(); target = maxScroll(); }
+    };
+
+    const onAnchorClick = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement)?.closest?.("a[href^='#']") as HTMLAnchorElement | null;
+      if (!link) return;
+      const id = link.getAttribute("href")?.slice(1);
+      const el = id ? document.getElementById(id) : null;
+      if (!el) return;
+      e.preventDefault();
+      target = clamp(el.getBoundingClientRect().top + window.scrollY);
+      setMobileMenuOpen(false);
+    };
+
+    // Anything that moves scrollY without going through `target` (scrollbar drag, etc.)
+    // — resync instead of fighting it.
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - current) > 2) {
+        target = window.scrollY;
+        current = window.scrollY;
+      }
+    };
+
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      const diff = target - current;
+      if (Math.abs(diff) > 0.05) {
+        current += diff * DAMPING;
+        if (Math.abs(target - current) < 0.4) current = target;
+        window.scrollTo(0, current);
+      }
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("keydown", onKeydown);
+    document.addEventListener("click", onAnchorClick);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("keydown", onKeydown);
+      document.removeEventListener("click", onAnchorClick);
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -650,7 +734,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh" }} />
+        <div className="lp-spacer" style={{ height:"100vh" }} />
 
         {/* PROBLEM */}
         <section style={{ position:"relative", padding:"60px 24px 180px", zIndex:1, overflow:"hidden" }}>
@@ -662,7 +746,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh", position:"relative", overflow:"hidden" }}>
+        <div className="lp-spacer" style={{ height:"100vh", position:"relative", overflow:"hidden" }}>
           <canvas ref={gapNetRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:0, pointerEvents:"none", display:"block", maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)", WebkitMaskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)" }} />
         </div>
 
@@ -765,7 +849,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh" }} />
+        <div className="lp-spacer" style={{ height:"100vh" }} />
 
         {/* TRUST STRIP */}
         <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)", overflow:"hidden" }}>
@@ -777,7 +861,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh" }} />
+        <div className="lp-spacer" style={{ height:"100vh" }} />
 
         {/* PRICING */}
         <section id="preise" ref={pricingRef} style={{ position:"relative", padding:"60px 24px 220px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
@@ -824,7 +908,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh" }} />
+        <div className="lp-spacer" style={{ height:"100vh" }} />
 
         {/* KONTAKT */}
         <section id="kontakt" ref={teamRef} style={{ position:"relative", padding:"60px 24px 200px", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
@@ -855,7 +939,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="lp-spacer" style={{ height:"80vh" }} />
+        <div className="lp-spacer" style={{ height:"100vh" }} />
 
         {/* FINAL CTA */}
         <section ref={ctaRef} style={{ position:"relative", padding:"20px 24px 220px", textAlign:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)" }}>
