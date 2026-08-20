@@ -99,7 +99,23 @@
       "Bash(curl -sS --max-time 15 'https://geodienste.ch/db/npl_nutzungsplanung_v1_2_0/deu/ogcapi/collections/grundnutzung/items?bbox=2599850,1202018,2599950,1202118&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/2056&crs=http://www.opengis.net/def/crs/EPSG/0/2056&f=json&limit=1&_=__TRACKED_VAR__' -D - -o /dev/null)",
       "Bash(curl -sS --max-time 15 -D - \"https://geodienste.ch/db/npl_nutzungsplanung_v1_2_0/deu/ogcapi/collections/grundnutzung/items?bbox=2599850,1202018,2599950,1202118&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/2056&crs=http://www.opengis.net/def/crs/EPSG/0/2056&f=json&limit=1\" -o /dev/null)",
       "Bash(curl -sS --max-time 20 'https://geodienste.ch/db/npl_nutzungsplanung_v1_2_0/deu/ogcapi/collections/grundnutzung/items?bbox=2599850,1202018,2599950,1202118&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/2056&crs=http://www.opengis.net/def/crs/EPSG/0/2056&f=json&limit=50' -o 'C:\\\\Users\\\\jonas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-jonas-Documents-Projekte-Projects-Tracebuild-Tracebuild\\\\75f9cbf1-a670-49df-9eb3-d76e8e7ef260\\\\scratchpad/bern580_limit50.json')",
-      "Bash(python -m py_compile app/services/geoportal_service.py)"
+      "Bash(python -m py_compile app/services/geoportal_service.py)",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 2704011.0-50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 2704011.0+50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 1231552.25-50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 1231552.25+50}')",
+      "Bash(curl -sS --max-time 20 'https://geodienste.ch/db/npl_nutzungsplanung_v1_2_0/deu/ogcapi/collections/grundnutzung/items?bbox=__CMDSUB_OUTPUT__,__TRACKED_VAR__,__TRACKED_VAR__,__TRACKED_VAR__&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/2056&crs=http://www.opengis.net/def/crs/EPSG/0/2056&f=json&limit=800' -o 'C:\\\\Users\\\\jonas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-jonas-Documents-Projekte-Projects-Tracebuild-Tracebuild\\\\75f9cbf1-a670-49df-9eb3-d76e8e7ef260\\\\scratchpad/rj_big.json')",
+      "Bash(time curl -sS --max-time 20 'https://geodienste.ch/db/npl_nutzungsplanung_v1_2_0/deu/ogcapi/collections/grundnutzung/items?bbox=__CMDSUB_OUTPUT__,__TRACKED_VAR__,__TRACKED_VAR__,__TRACKED_VAR__&bbox-crs=http://www.opengis.net/def/crs/EPSG/0/2056&crs=http://www.opengis.net/def/crs/EPSG/0/2056&f=json&limit=800' -o /dev/null -w 'size=%{size_download} bytes, time=%{time_total}s\\\\n')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 2781941.25-50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 2781941.25+50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 1181899.0-50}')",
+      "Bash(awk 'BEGIN{printf \"%.2f\", 1181899.0+50}')",
+      "Bash(curl -sS --max-time 20 'https://map.geo.gr.ch/mapserv_proxy?ogcserver=Kanton+Graub%C3%BCnden%2C+Bauzonen+Graubuenden&SERVICE=WFS&VERSION=1.1.0&REQUEST=GetFeature&TYPENAME=Bauzonen_Hauptnutzungen&BBOX=__CMDSUB_OUTPUT__,__TRACKED_VAR__,__TRACKED_VAR__,__TRACKED_VAR__,urn:ogc:def:crs:EPSG::2056&SRSNAME=urn:ogc:def:crs:EPSG::2056&maxfeatures=200' -o 'C:\\\\Users\\\\jonas\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-jonas-Documents-Projekte-Projects-Tracebuild-Tracebuild\\\\75f9cbf1-a670-49df-9eb3-d76e8e7ef260\\\\scratchpad/davos_wide.xml')",
+      "Bash(pip install *)",
+      "Bash(python -c ' *)",
+      "Bash(git check-ignore *)",
+      "Bash(python -c \"import supabase; print\\('supabase-py:', supabase.__version__\\)\")",
+      "Bash(python -c \"import dotenv; print\\('python-dotenv ok'\\)\")"
     ]
   }
 }

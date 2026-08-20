@@ -20,6 +20,14 @@ _GEODIENSTE = (
 )
 _LV95_CRS = "http://www.opengis.net/def/crs/EPSG/0/2056"
 _TIMEOUT = 8.0
+# The grundnutzung API's `bbox` filter only narrows results to the internal spatial-index
+# tile the box falls in (observed tiles hold up to ~1100 features) rather than doing an
+# exact intersection — and results within a tile are NOT sorted by distance. A small
+# `limit` was silently truncating the response before the true nearest zone (sometimes
+# just 1-2m away) was ever reached, causing wrong or missing zones. Fetching the whole
+# tile (~1-2s, a few MB) and ranking client-side is what actually works.
+_GRUNDNUTZUNG_FETCH_LIMIT = 1500
+_GRUNDNUTZUNG_TIMEOUT = 15.0
 _EGRID_RE = re.compile(r"ch\d{12}", re.IGNORECASE)
 
 # Only these two document types from the federal "MGDM Nutzungsplanung" schema are
@@ -214,9 +222,9 @@ async def get_zone_details(east: float, north: float, canton: str | None = None)
         "bbox-crs": _LV95_CRS,
         "crs": _LV95_CRS,
         "f": "json",
-        "limit": 10,
+        "limit": _GRUNDNUTZUNG_FETCH_LIMIT,
     }
-    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+    async with httpx.AsyncClient(timeout=_GRUNDNUTZUNG_TIMEOUT) as client:
         resp = await client.get(_GEODIENSTE, params=params)
         resp.raise_for_status()
 
