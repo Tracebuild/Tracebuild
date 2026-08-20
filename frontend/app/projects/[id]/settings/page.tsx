@@ -71,15 +71,15 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
     }
   }
 
-  const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
+  const inputCls = "w-full rounded-lg px-3 py-2 text-sm text-white bg-[rgba(23,37,64,0.6)] border border-[rgba(133,166,233,0.25)] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors";
 
   if (loading) {
     return (
       <div className="max-w-xl space-y-4 animate-pulse">
-        <div className="h-5 bg-stone-200 rounded w-1/3" />
-        <div className="bg-white border border-[#e7e2d9] rounded-xl p-5 space-y-4">
-          <div className="h-4 bg-stone-100 rounded w-1/4" />
-          <div className="h-9 bg-stone-100 rounded" />
+        <div className="h-5 bg-[rgba(60,63,68,0.5)] rounded w-1/3" />
+        <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-5 space-y-4">
+          <div className="h-4 bg-[rgba(60,63,68,0.5)] rounded w-1/4" />
+          <div className="h-9 bg-[rgba(60,63,68,0.5)] rounded" />
         </div>
       </div>
     );
@@ -89,9 +89,9 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
     <div className="max-w-xl">
       <h2 className="text-base font-semibold text-white mb-6">Projekteinstellungen</h2>
 
-      <form onSubmit={handleSave} className="bg-white border border-[#e7e2d9] rounded-xl p-5 space-y-4">
+      <form onSubmit={handleSave} className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-5 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">Projektname</label>
+          <label className="block text-xs font-medium text-[#7B8299] mb-1">Projektname</label>
           <input
             type="text"
             required
@@ -103,13 +103,13 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
-            <select value={canton} onChange={(e) => setCanton(e.target.value)} className={inputCls}>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
+            <select value={canton} onChange={(e) => setCanton(e.target.value)} className={`${inputCls} appearance-none`}>
               {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Gemeinde</label>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Gemeinde</label>
             <input
               type="text"
               required
@@ -121,17 +121,17 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-stone-600 mb-1">Domain</label>
-          <div className="border border-stone-200 rounded-lg px-3 py-2 text-sm bg-stone-50 text-stone-400">
+          <label className="block text-xs font-medium text-[#7B8299] mb-1">Domain</label>
+          <div className="border border-[rgba(60,63,68,0.5)] rounded-lg px-3 py-2 text-sm bg-[rgba(60,63,68,0.3)] text-[#7B8299]">
             Bau / Architektur
           </div>
         </div>
 
         {error && (
-          <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
         )}
         {success && (
-          <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
+          <p className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
             Einstellungen gespeichert.
           </p>
         )}
@@ -139,21 +139,21 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-[#B7926A] hover:bg-[#a67e5a] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+          className="w-full bg-[#2862D7] hover:bg-[#3470E8] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
         >
           {saving ? "Wird gespeichert…" : "Speichern"}
         </button>
       </form>
 
-      <div className="bg-white border border-red-100 rounded-xl p-5 mt-4">
-        <h3 className="text-sm font-medium text-stone-800 mb-1">Gefahrenzone</h3>
-        <p className="text-xs text-stone-500 mb-4">
+      <div className="bg-[#172540] border border-red-500/20 rounded-xl p-5 mt-4">
+        <h3 className="text-sm font-medium text-white mb-1">Gefahrenzone</h3>
+        <p className="text-xs text-[#7B8299] mb-4">
           Das Löschen eines Projekts entfernt alle zugehörigen Dokumente und Analysen unwiderruflich.
         </p>
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+          className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 py-2 px-4 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
         >
           {deleting ? "Wird gelöscht…" : "Projekt löschen"}
         </button>
