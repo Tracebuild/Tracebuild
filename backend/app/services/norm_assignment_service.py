@@ -13,6 +13,7 @@ Returns the number of norms assigned.
 from __future__ import annotations
 import re
 from supabase import Client
+from app.services.norm_extraction_service import extract_norms_from_document
 
 _SR_RE = re.compile(r'^"?SR\s', re.IGNORECASE)
 _BUNDESRECHT_RE = re.compile(r"bundesgesetz|bundesverordnung", re.IGNORECASE)
@@ -80,6 +81,7 @@ def assign_geoportal_norms_to_project(
                 ),
                 "source_url": link,
                 "source_doc": doc.get("abkuerzung") or doc.get("offizielle_nr"),
+                "extracted": False,
             }).execute()
             if not inserted.data:
                 continue
@@ -93,6 +95,93 @@ def assign_geoportal_norms_to_project(
         count += 1
 
     return count
+
+
+async def enrich_geoportal_norms(
+    db: Client,
+    project_id: str,
+    canton: str,
+    municipality: str,
+    zone_label: str | None,
+) -> dict:
+    """
+    Upgrades a project's geoportal-sourced reference norms (title + generic boilerplate
+    text pointing at a source link) into the concrete rules extracted from those source
+    documents (Grenzabstand, Gebäudehöhe, etc.) — norm by norm, each still carrying its
+    own source_url. Runs one Claude call per not-yet-extracted document, so this is meant
+    to be triggered on demand (e.g. when the Normen tab is opened), not at project creation.
+    Falls back to leaving the reference norm in place — untouched, still visible — for any
+    document where extraction finds nothing (failed fetch, no rules found).
+    """
+    rows = (
+        db.table("project_norms")
+        .select("norm_id, norms!inner(id, title, domain, layer, jurisdiction_type, jurisdiction_name, source_url, source_doc, extracted)")
+        .eq("project_id", project_id)
+        .eq("added_by", "geoportal")
+        .eq("norms.extracted", False)
+        .execute()
+    )
+    pending = [r["norms"] for r in (rows.data or []) if r.get("norms") and r["norms"].get("source_url")]
+    if not pending:
+        return {"extracted": 0, "remaining": 0}
+
+    extracted_count = 0
+    remaining = 0
+
+    for norm in pending:
+        doc = {"typ": "", "titel": norm["title"], "link": norm["source_url"]}
+        zone = {"code": zone_label, "label": zone_label, "kanton": canton, "gemeinde": municipality}
+        rules = await extract_norms_from_document(doc, zone)
+
+        if not rules:
+            remaining += 1
+            continue
+
+        for rule in rules:
+            # .is_() is a PostgREST null/true/false check — only valid for the null case
+            # here, a real jurisdiction_name (e.g. "Mels") needs .eq() instead.
+            dedup_query = (
+                db.table("norms")
+                .select("id")
+                .eq("title", rule["title"])
+                .eq("jurisdiction_type", norm["jurisdiction_type"])
+                .is_("org_id", None)
+            )
+            if norm["jurisdiction_name"]:
+                dedup_query = dedup_query.eq("jurisdiction_name", norm["jurisdiction_name"])
+            else:
+                dedup_query = dedup_query.is_("jurisdiction_name", None)
+            existing = dedup_query.limit(1).execute()
+            rule_norm_id = existing.data[0]["id"] if existing.data else None
+
+            if not rule_norm_id:
+                inserted = db.table("norms").insert({
+                    "title": rule["title"],
+                    "domain": norm["domain"],
+                    "layer": norm["layer"],
+                    "jurisdiction_type": norm["jurisdiction_type"],
+                    "jurisdiction_name": norm["jurisdiction_name"],
+                    "category": rule["category"],
+                    "text": rule["text"],
+                    "source_url": norm["source_url"],
+                    "source_doc": norm["source_doc"],
+                    "extracted": True,
+                }).execute()
+                if not inserted.data:
+                    continue
+                rule_norm_id = inserted.data[0]["id"]
+
+            db.table("project_norms").upsert(
+                {"project_id": project_id, "norm_id": rule_norm_id, "added_by": "geoportal"},
+                on_conflict="project_id,norm_id",
+                ignore_duplicates=True,
+            ).execute()
+
+        # Replace the generic placeholder with the now-extracted specific rules.
+        db.table("project_norms").delete().eq("project_id", project_id).eq("norm_id", norm["id"]).execute()
+        extracted_count += len(rules)
+
+    return {"extracted": extracted_count, "remaining": remaining}
 
 
 def assign_norms_to_project(
