@@ -115,7 +115,16 @@
       "Bash(python -c ' *)",
       "Bash(git check-ignore *)",
       "Bash(python -c \"import supabase; print\\('supabase-py:', supabase.__version__\\)\")",
-      "Bash(python -c \"import dotenv; print\\('python-dotenv ok'\\)\")"
+      "Bash(python -c \"import dotenv; print\\('python-dotenv ok'\\)\")",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const sdk = require\\('@anthropic-ai/sdk'\\); console.log\\(typeof sdk.default\\)\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\jonas\\\\Documents\\\\Projekte\\\\Projects\\\\Tracebuild\\\\Tracebuild\\\\frontend\\\\app\\\\api\\\\v1\\\\projects\\\\[id]\\\\norms\\\\enrich\")",
+      "Bash(ant auth *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\jonas\\Documents\\Projekte\\Projects\\Tracebuild\\Tracebuild\\frontend\\app\\api\\v1\\projects\\[id]\\norms"
     ]
   }
 }

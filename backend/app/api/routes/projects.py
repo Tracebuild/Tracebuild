@@ -6,7 +6,7 @@ from app.core.supabase import get_supabase
 from app.models.schemas import APIResponse, ProjectCreate
 from app.models.norm import ProjectNormCreate
 from app.services.project_service import ProjectService
-from app.services.norm_assignment_service import assign_norms_to_project, assign_geoportal_norms_to_project
+from app.services.norm_assignment_service import assign_norms_to_project, assign_geoportal_norms_to_project, enrich_geoportal_norms
 from app.services.geoportal_service import lookup_parcel
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -118,3 +118,22 @@ async def refresh_project_norms(project_id: UUID, user: CurrentUser = AuthDep):
         documents=documents,
     )
     return APIResponse(data={"assigned": count, "geoportal_assigned": geoportal_count, "zone": zone})
+
+
+@router.post("/{project_id}/norms/enrich", response_model=APIResponse)
+async def enrich_project_norms(project_id: UUID, user: CurrentUser = AuthDep):
+    """Extracts concrete rules from any not-yet-extracted geoportal reference norms."""
+    db = get_supabase()
+    proj = db.table("projects").select("id, location, bauzone").eq("id", str(project_id)).eq("org_id", str(user.org_id)).single().execute()
+    if not proj.data:
+        raise HTTPException(status_code=404, detail="Projekt nicht gefunden")
+
+    loc = proj.data.get("location", {})
+    result = await enrich_geoportal_norms(
+        db,
+        project_id=str(project_id),
+        canton=loc.get("canton", ""),
+        municipality=loc.get("municipality", ""),
+        zone_label=proj.data.get("bauzone"),
+    )
+    return APIResponse(data=result)

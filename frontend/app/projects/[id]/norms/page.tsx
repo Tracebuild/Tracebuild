@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 
 interface Project {
@@ -23,6 +23,7 @@ interface Norm {
   source_url: string | null;
   source_doc: string | null;
   org_id: string | null;
+  extracted: boolean;
 }
 
 interface ProjectNorm {
@@ -245,6 +246,8 @@ export default function NormenPage({ params }: { params: { id: string } }) {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+  const [enriching, setEnriching] = useState(false);
+  const enrichAttempted = useRef(false);
 
   const load = useCallback(async () => {
     try {
@@ -254,12 +257,32 @@ export default function NormenPage({ params }: { params: { id: string } }) {
       ]);
       setProject(proj);
       setProjectNorms(norms ?? []);
-    } catch { /* show empty state */ } finally {
+      return norms ?? [];
+    } catch {
+      return null; // show empty state
+    } finally {
       setLoading(false);
     }
   }, [params.id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    (async () => {
+      const norms = await load();
+      // One-shot: extract concrete rules from any geoportal-imported reference norms
+      // (title + link only) into their actual content the first time this tab is opened.
+      const hasPending = norms?.some((pn) => pn.added_by === "geoportal" && pn.norms && !pn.norms.extracted);
+      if (hasPending && !enrichAttempted.current) {
+        enrichAttempted.current = true;
+        setEnriching(true);
+        try {
+          await api.post(`/projects/${params.id}/norms/enrich`, {});
+          await load();
+        } catch { /* leave reference norms as-is */ } finally {
+          setEnriching(false);
+        }
+      }
+    })();
+  }, [load, params.id]);
 
   async function handleRemove(normId: string) {
     try {
@@ -323,6 +346,12 @@ export default function NormenPage({ params }: { params: { id: string } }) {
               {project.bauzone && (
                 <span style={{ fontSize: 11, background: "rgba(40,98,215,0.12)", color: "#85A6E9", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>
                   Zone {project.bauzone}
+                </span>
+              )}
+              {enriching && (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "#34D399" }}>
+                  <span style={{ width: 10, height: 10, border: "2px solid #34D399", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                  Konkrete Normen werden aus den Quellen extrahiert…
                 </span>
               )}
             </div>
@@ -430,6 +459,8 @@ export default function NormenPage({ params }: { params: { id: string } }) {
           onAdded={handleCustomAdded}
         />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

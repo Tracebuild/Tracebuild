@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { GeoportalDocument } from "@/lib/geoportal";
+import { extractNormsFromDocument } from "@/lib/norm-extraction";
 
 /**
  * Classify a geoportal legal-basis document into the same layer/jurisdiction
@@ -62,6 +63,7 @@ export async function assignGeoportalNorms(
           text: `Gesetzliche Grundlage zur Nutzungsplanung${zoneLabel ? ` (Zone: ${zoneLabel})` : ""}, automatisch aus dem Geoportal übernommen. Volltext unter der Quelle einsehbar.`,
           source_url: doc.link,
           source_doc: doc.abkuerzung ?? doc.offizielleNr ?? null,
+          extracted: false,
         })
         .select("id")
         .single();
@@ -79,6 +81,115 @@ export async function assignGeoportalNorms(
   }
 
   return count;
+}
+
+interface UnextractedNorm {
+  id: string;
+  title: string;
+  domain: string;
+  layer: number;
+  jurisdiction_type: string;
+  jurisdiction_name: string | null;
+  source_url: string | null;
+  source_doc: string | null;
+}
+
+/**
+ * Upgrades a project's geoportal-sourced reference norms (title + generic boilerplate
+ * text pointing at a source link) into the concrete rules extracted from those source
+ * documents (Grenzabstand, Gebäudehöhe, etc.) — norm by norm, each still carrying its
+ * own source_url. Runs one Claude call per not-yet-extracted document, so this is meant
+ * to be triggered on demand (e.g. when the Normen tab is opened), not at project creation.
+ * Falls back to leaving the reference norm in place — untouched, still visible — for any
+ * document where extraction finds nothing (failed fetch, no rules found).
+ */
+export async function enrichGeoportalNorms(
+  projectId: string,
+  canton: string,
+  municipality: string,
+  zoneLabel: string | null
+): Promise<{ extracted: number; remaining: number }> {
+  const admin = createAdminClient();
+
+  const { data: rows } = await admin
+    .from("project_norms")
+    .select("norm_id, norms!inner(id, title, domain, layer, jurisdiction_type, jurisdiction_name, source_url, source_doc, extracted)")
+    .eq("project_id", projectId)
+    .eq("added_by", "geoportal")
+    .eq("norms.extracted", false);
+
+  const pending = (rows ?? [])
+    .map((r) => r.norms as unknown as UnextractedNorm)
+    .filter((n): n is UnextractedNorm => !!n?.source_url);
+
+  if (!pending.length) return { extracted: 0, remaining: 0 };
+
+  let extractedCount = 0;
+  let remaining = 0;
+
+  for (const norm of pending) {
+    const doc: GeoportalDocument = {
+      typ: "", titel: norm.title, abkuerzung: norm.source_doc, link: norm.source_url, offizielleNr: null,
+    };
+    const rules = await extractNormsFromDocument(doc, {
+      code: zoneLabel, label: zoneLabel, kanton: canton, gemeinde: municipality,
+    }).catch(() => []);
+
+    if (!rules.length) {
+      remaining++;
+      continue;
+    }
+
+    for (const rule of rules) {
+      // .is() is a PostgREST null/true/false check — only valid for the null case here,
+      // a real jurisdiction_name (e.g. "Mels") needs .eq() instead.
+      let dedupQuery = admin
+        .from("norms")
+        .select("id")
+        .eq("title", rule.title)
+        .eq("jurisdiction_type", norm.jurisdiction_type)
+        .is("org_id", null);
+      dedupQuery = norm.jurisdiction_name
+        ? dedupQuery.eq("jurisdiction_name", norm.jurisdiction_name)
+        : dedupQuery.is("jurisdiction_name", null);
+      const { data: existing } = await dedupQuery.maybeSingle();
+
+      let ruleNormId: string | undefined = existing?.id;
+      if (!ruleNormId) {
+        const { data: inserted, error } = await admin
+          .from("norms")
+          .insert({
+            title: rule.title,
+            domain: norm.domain,
+            layer: norm.layer,
+            jurisdiction_type: norm.jurisdiction_type,
+            jurisdiction_name: norm.jurisdiction_name,
+            category: rule.category,
+            text: rule.text,
+            source_url: norm.source_url,
+            source_doc: norm.source_doc,
+            extracted: true,
+          })
+          .select("id")
+          .single();
+        if (error || !inserted) continue;
+        ruleNormId = inserted.id;
+      }
+
+      await admin
+        .from("project_norms")
+        .upsert(
+          { project_id: projectId, norm_id: ruleNormId, added_by: "geoportal" },
+          { onConflict: "project_id,norm_id", ignoreDuplicates: true }
+        );
+    }
+
+    // Replace the generic placeholder with the now-extracted specific rules.
+    await admin.from("project_norms").delete().eq("project_id", projectId).eq("norm_id", norm.id);
+    extractedCount += rules.length;
+  }
+
+  return { extracted: extractedCount, remaining };
 }
 
 export async function assignNorms(
