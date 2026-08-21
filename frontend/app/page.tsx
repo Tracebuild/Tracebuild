@@ -771,9 +771,9 @@ export default function LandingPage() {
         {/* TRUST STRIP */}
         <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)", overflow:"hidden" }}>
           <canvas ref={trustNetRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:0, pointerEvents:"none", display:"block", maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)", WebkitMaskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)" }} />
-          <div style={{ maxWidth:880, margin:"0 auto", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"14px 40px", background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, padding:"26px 32px", position:"relative", zIndex:1 }}>
+          <div style={{ maxWidth:880, margin:"0 auto", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"14px 40px", background:"rgba(255,255,255,.03)", backdropFilter:"blur(1.5px)", WebkitBackdropFilter:"blur(1.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, padding:"26px 32px", position:"relative", zIndex:1 }}>
             {["Daten bleiben in der Schweiz","Revisionssicher dokumentiert","Laufend aktualisierte Normdatenbank","Feste Ansprechperson"].map(t => (
-              <span key={t} style={{ fontSize:13, color:"#c7c8d1" }}>{t}</span>
+              <span key={t} style={{ fontSize:15, color:"#c7c8d1" }}>{t}</span>
             ))}
           </div>
         </section>
@@ -791,7 +791,7 @@ export default function LandingPage() {
               {/* Starter */}
               <div style={{ background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:18, padding:"36px 30px" }}>
                 <p style={{ fontSize:12.5, color:"#9a9ba3", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Starter</p>
-                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>CHF 149<span style={{ fontSize:13, color:"rgba(117,118,128,.5)", fontWeight:400 }}> /Monat</span></p>
+                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>####<span style={{ fontSize:13, color:"rgba(117,118,128,.5)", fontWeight:400 }}> /Monat</span></p>
                 <p style={{ fontSize:13, color:"rgba(117,118,128,.5)", margin:"0 0 28px" }}>Für einzelne Büros</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:11, margin:"0 0 32px" }}>
                   {["Bis 30 Pläne / Monat","SIA-Normabgleich","PDF-Prüfberichte"].map(f => <span key={f} style={{ fontSize:13.5, color:"#c7c8d1" }}>{f}</span>)}
@@ -803,7 +803,7 @@ export default function LandingPage() {
               <div style={{ position:"relative", background:"rgba(40,98,215,.08)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(91,139,247,.35)", borderRadius:18, padding:"36px 30px" }}>
                 <span style={{ position:"absolute", top:0, left:24, right:24, height:2, background:"linear-gradient(90deg,#4fd1ff,#2862D7)", borderRadius:2 }} />
                 <p style={{ fontSize:12.5, color:"#8fb3f5", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Team · Beliebt</p>
-                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>CHF 349<span style={{ fontSize:13, color:"#9a9ba3", fontWeight:400 }}> /Monat</span></p>
+                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>####<span style={{ fontSize:13, color:"#9a9ba3", fontWeight:400 }}> /Monat</span></p>
                 <p style={{ fontSize:13, color:"#9a9ba3", margin:"0 0 28px" }}>Für wachsende Büros</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:11, margin:"0 0 32px" }}>
                   {["Bis 150 Pläne / Monat","SIA + kantonale Normen","Bis 10 Teammitglieder","Feste Ansprechperson"].map(f => <span key={f} style={{ fontSize:13.5, color:"#eef1fb" }}>{f}</span>)}
