@@ -18,7 +18,7 @@ import CostOverview from "@/components/admin/CostOverview";
 import SystemStatus from "@/components/admin/SystemStatus";
 import Toast from "@/components/admin/Toast";
 import InvoicesSection from "@/components/admin/InvoicesSection";
-import { MOCK_COSTS, currentMonth, fmtMonth, availableMonths, monthlyTotals } from "@/components/admin/mockCosts";
+import { currentMonth, fmtMonth, availableMonths, monthlyTotals, prevMonth } from "@/components/admin/mockCosts";
 import { MOCK_ACTIVITIES } from "@/components/admin/mockOrgData";
 import { organizationService } from "@/lib/services/organizationService";
 import type {
@@ -28,6 +28,7 @@ import type {
   LastOpenedOrg,
   ToastMessage,
   SystemService,
+  OrgCost,
 } from "@/components/admin/types";
 
 const ACTIVITY_KEY    = "tb_admin_activities";
@@ -244,6 +245,8 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading]       = useState(false);
   const [userSearch, setUserSearch]           = useState("");
   const [resendingId, setResendingId]         = useState<string | null>(null);
+  const [costs, setCosts]                     = useState<OrgCost[]>([]);
+  const [costsLoading, setCostsLoading]       = useState(false);
 
   function addToast(message: string, type: ToastMessage["type"] = "success") {
     const id = crypto.randomUUID();
@@ -295,6 +298,22 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => { loadAllUsers(); }, [loadAllUsers]);
+
+  /* Load real Claude analysis costs, aggregated per org per month */
+  const loadCosts = useCallback(async () => {
+    setCostsLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/costs");
+      const json = await res.json() as { data: OrgCost[] | null; error: string | null };
+      if (json.data) setCosts(json.data);
+    } catch {
+      /* keep previous state */
+    } finally {
+      setCostsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadCosts(); }, [loadCosts]);
 
   async function resendInvite(orgId: string, email: string, role: string) {
     setResendingId(`${orgId}:${email}`);
@@ -478,20 +497,20 @@ export default function AdminPage() {
     return map;
   }, [activities]);
 
-  const costMonths = useMemo(() => availableMonths(MOCK_COSTS), []);
+  const costMonths = useMemo(() => availableMonths(costs), [costs]);
 
   const filteredCosts = useMemo(() => {
     const q = costSearch.toLowerCase();
-    return MOCK_COSTS
+    return costs
       .filter(c => c.month === costMonth)
       .filter(c => !q || c.orgName.toLowerCase().includes(q));
-  }, [costMonth, costSearch]);
+  }, [costs, costMonth, costSearch]);
 
   const orgCostMap = useMemo<Record<string, number | undefined>>(() => {
     const map: Record<string, number> = {};
-    MOCK_COSTS.filter(c => c.month === currentMonth()).forEach(c => { map[c.orgId] = c.totalCost; });
+    costs.filter(c => c.month === currentMonth()).forEach(c => { map[c.orgId] = c.totalCost; });
     return map;
-  }, []);
+  }, [costs]);
 
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
@@ -502,7 +521,7 @@ export default function AdminPage() {
 
   const kpiData = useMemo(() => {
     const cm = currentMonth();
-    const currentCosts = MOCK_COSTS.filter(c => c.month === cm);
+    const currentCosts = costs.filter(c => c.month === cm);
     const totalCost      = currentCosts.reduce((s, c) => s + c.totalCost, 0);
     const totalAnalyses  = currentCosts.reduce((s, c) => s + c.analyseCount, 0);
     const totalStorageGB = currentCosts.reduce((s, c) => s + c.storageGB, 0);
@@ -514,10 +533,13 @@ export default function AdminPage() {
       activeOrgs, totalProjects, totalUsers, totalAnalyses,
       totalCost, totalStorageGB,
       avgCostPerAnalyse: totalAnalyses > 0 ? totalCost / totalAnalyses : 0,
-      monthlyTotalsData: monthlyTotals(),
+      monthlyTotalsData: monthlyTotals(costs),
       monthlyBudget: orgs.reduce((s, o) => s + (o.monthlyBudget ?? 0), 0),
+      prevMonthTotal: costs
+        .filter(c => c.month === prevMonth(cm))
+        .reduce((s, c) => s + c.totalCost, 0),
     };
-  }, [orgs, hydrated]);
+  }, [orgs, hydrated, costs]);
 
   const isDetailOrgInFiltered = detailOrg ? orgs.find(o => o.id === detailOrg.id) ?? null : null;
 
@@ -603,10 +625,10 @@ export default function AdminPage() {
         <div className="space-y-4">
           <SectionHeader title="Kostenübersicht" />
           <CostOverview
-            costs={MOCK_COSTS.filter(c => c.month === currentMonth())}
+            costs={costs.filter(c => c.month === currentMonth())}
             monthlyTotals={kpiData.monthlyTotalsData}
             currentMonth={currentMonth()}
-            prevMonthTotal={0}
+            prevMonthTotal={kpiData.prevMonthTotal}
             monthlyBudget={kpiData.monthlyBudget}
             fmtMonth={fmtMonth}
           />
@@ -793,7 +815,11 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
-            <CostTable costs={filteredCosts} />
+            {costsLoading && costs.length === 0 ? (
+              <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl h-48 animate-pulse" />
+            ) : (
+              <CostTable costs={filteredCosts} />
+            )}
           </div>
 
           <div className="space-y-4 lg:sticky lg:top-20">
@@ -884,7 +910,7 @@ export default function AdminPage() {
 
       <OrgDetailPanel
         org={isDetailOrgInFiltered}
-        costs={MOCK_COSTS}
+        costs={costs}
         onClose={() => setDetailOrg(null)}
         onEdit={() => {
           if (isDetailOrgInFiltered) { setEditTarget(isDetailOrgInFiltered); setModalOpen(true); }
