@@ -658,7 +658,7 @@ export default function LandingPage() {
           <div ref={problemRef} className="lp-glass-card" style={glassCardStyle}>
             <p style={{ fontSize:12, color:"#c69bf0", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 20px" }}>Wir kennen das Problem</p>
             <h2 style={{ fontSize:"clamp(26px,3.6vw,38px)", fontWeight:600, color:"#fff", lineHeight:1.3, letterSpacing:"-0.015em", margin:"0 0 22px", textWrap:"pretty" } as React.CSSProperties}>Planprüfung von Hand kostet Zeit, die im Projekt niemand übrig hat.</h2>
-            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Jede Zeichnung gegen SIA-Normen, kantonale Vorschriften und interne Richtlinien abzugleichen, ist mühsam und fehleranfällig. Ein übersehener Normverstoss wird oft erst auf der Baustelle sichtbar — wenn eine Korrektur am teuersten ist.</p>
+            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Jede Zeichnung gegen SIA-Normen, kantonale Vorschriften und interne Richtlinien abzugleichen, ist mühsam und fehleranfällig. Ein übersehener Normverstoss wird oft erst auf der Baustelle sichtbar — wenn eine Korrektur am teuersten ist. Genauso zeitraubend: die passenden Normen, Richtlinien und Vorschriften erst mühsam aus verschiedenen Quellen im Web zusammensuchen zu müssen, bevor überhaupt geprüft werden kann.</p>
           </div>
         </section>
 
@@ -673,6 +673,7 @@ export default function LandingPage() {
             <p style={{ fontSize:12, color:"#8fb3f5", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 20px" }}>Unsere Lösung</p>
             <h2 style={{ fontSize:"clamp(26px,3.6vw,38px)", fontWeight:600, color:"#fff", lineHeight:1.3, letterSpacing:"-0.015em", margin:"0 0 22px", textWrap:"pretty" } as React.CSSProperties}>TraceBuild übernimmt den Abgleich — du prüfst nur noch das Ergebnis.</h2>
             <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Zeichnung hochladen, TraceBuild liest Masse, Bauteile und Beschriftungen automatisch aus und gleicht sie in Minuten mit SIA-Normen und kantonalen Vorschriften ab. Jeder Fund ist auf den Millimeter genau im Plan verortet und mit Norm-Referenz belegt — bereit für den Prüfbericht, nicht für eine weitere Nachkontrolle.</p>
+            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:"18px 0 0", textWrap:"pretty" } as React.CSSProperties}>Zusätzlich hast du direkten Zugriff auf alle relevanten Normen, Richtlinien und kantonalen Vorschriften in einer zentralen Wissensbasis — ohne dich durch verstreute Quellen im Web zu suchen.</p>
           </div>
         </section>
 
