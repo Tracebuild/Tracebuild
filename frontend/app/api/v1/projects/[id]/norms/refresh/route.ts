@@ -1,7 +1,7 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { lookupParcel, type GeoportalDocument } from "@/lib/geoportal";
-import { assignNorms, assignGeoportalNorms } from "@/lib/norm-assignment";
+import { lookupParcel } from "@/lib/geoportal";
+import { assignNorms } from "@/lib/norm-assignment";
 
 export async function POST(
   _req: Request,
@@ -21,13 +21,11 @@ export async function POST(
 
   const loc = project.location ?? {};
 
-  // Re-run geoportal if a parcel number is stored
+  // Geoportal is only consulted for the Bauzone — norms come from the catalog.
   let zone: string | null = project.bauzone ?? null;
-  let documents: GeoportalDocument[] = [];
   if (project.parcel_number && loc.municipality) {
-    const geo = await lookupParcel(project.parcel_number, loc.municipality, loc.canton);
-    documents = geo.documents;
-    if (geo.bauzone) {
+    const geo = await lookupParcel(project.parcel_number, loc.municipality, loc.canton).catch(() => null);
+    if (geo?.bauzone) {
       zone = geo.bauzone;
       await admin.from("projects").update({ bauzone: zone }).eq("id", params.id);
     }
@@ -41,14 +39,5 @@ export async function POST(
     project.domain ?? "bau"
   ).catch(() => 0);
 
-  const geoportal_norms_count = await assignGeoportalNorms(
-    params.id,
-    project.domain ?? "bau",
-    loc.canton ?? "",
-    loc.municipality ?? "",
-    zone,
-    documents
-  ).catch(() => 0);
-
-  return ok({ zone, assigned_norms_count, geoportal_norms_count });
+  return ok({ zone, assigned_norms_count });
 }

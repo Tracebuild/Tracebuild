@@ -5,6 +5,12 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
 
+const LAYER_BY_JURISDICTION: Record<string, number> = {
+  national: 1,
+  cantonal: 3,
+  municipal: 4,
+};
+
 export async function POST(request: Request) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
@@ -12,14 +18,15 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
   const domain = (formData.get("domain") as string) ?? "bau";
-  const layer = parseInt((formData.get("layer") as string) ?? "2");
-  const jurisdictionType = (formData.get("jurisdiction_type") as string) ?? "cantonal";
+  const jurisdictionType = (formData.get("jurisdiction_type") as string) || "cantonal";
   const jurisdictionName = (formData.get("jurisdiction_name") as string) || null;
   const category = formData.get("category") as string;
   const sourceName = (formData.get("source_name") as string) || null;
+  const zone = (formData.get("zone") as string) || null;
 
   if (!file) return err("Keine Datei hochgeladen");
   if (!category) return err("Kategorie fehlt");
+  if (jurisdictionType !== "national" && !jurisdictionName) return err("Kanton/Gemeinde fehlt");
 
   const fileBytes = Buffer.from(await file.arrayBuffer());
   let text = "";
@@ -37,22 +44,25 @@ export async function POST(request: Request) {
 
   // Max 100K Zeichen
   text = text.slice(0, 100_000);
+  const title = sourceName || file.name;
 
   const admin = createAdminClient();
   const { data, error } = await admin
-    .from("standards")
+    .from("norms")
     .insert({
+      title,
       domain,
-      layer,
+      layer: LAYER_BY_JURISDICTION[jurisdictionType] ?? 3,
       jurisdiction_type: jurisdictionType,
-      jurisdiction_name: jurisdictionName,
+      jurisdiction_name: jurisdictionType === "national" ? null : jurisdictionName,
       category: category.trim(),
       text,
       source_url: sourceName || file.name,
+      zone: zone?.trim() || null,
     })
     .select()
     .single();
 
   if (error) return err(error.message, 500);
-  return ok({ count: 1, jurisdiction_name: jurisdictionName, category }, 201);
+  return ok({ count: 1, jurisdiction_name: jurisdictionName, category, id: data.id }, 201);
 }

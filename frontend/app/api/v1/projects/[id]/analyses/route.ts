@@ -1,6 +1,7 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { anthropic } from "@/lib/anthropic";
+import { normMatchesZone } from "@/lib/zone-match";
 
 export const maxDuration = 300;
 
@@ -88,16 +89,20 @@ interface ProjectNormRow {
     category: string;
     text: string;
     layer: number;
+    zone: string | null;
   } | null;
 }
 
-function buildNormContext(pnRows: ProjectNormRow[]): string {
-  const norms = pnRows.map((r) => r.norms).filter(Boolean) as NonNullable<ProjectNormRow["norms"]>[];
-  if (norms.length === 0) {
+function buildNormContext(pnRows: ProjectNormRow[], projectZone: string | null): string {
+  const norms = pnRows
+    .map((r) => r.norms)
+    .filter(Boolean) as NonNullable<ProjectNormRow["norms"]>[];
+  const applicable = norms.filter((n) => normMatchesZone(n.zone, projectZone));
+  if (applicable.length === 0) {
     return "Keine projektspezifischen Normen hinterlegt. Nutze dein Fachwissen über Schweizer Bauvorschriften.";
   }
-  const lines = [`NORMEN (${norms.length} projektspezifische Normen):\n`];
-  norms.forEach((n, i) => {
+  const lines = [`NORMEN (${applicable.length} projektspezifische Normen):\n`];
+  applicable.forEach((n, i) => {
     lines.push(
       `[${i + 1}] Norm-ID: ${n.id}\n` +
       `    Titel: ${n.title}\n` +
@@ -198,10 +203,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // 1. Load project norms
     const { data: pnRows } = await admin
       .from("project_norms")
-      .select("norms(id, title, category, text, layer)")
+      .select("norms(id, title, category, text, layer, zone)")
       .eq("project_id", params.id);
 
-    const normContext = buildNormContext((pnRows ?? []) as unknown as ProjectNormRow[]);
+    const normContext = buildNormContext((pnRows ?? []) as unknown as ProjectNormRow[], project.bauzone ?? null);
 
     // 2. Build file block
     const fileBlock = isPdf

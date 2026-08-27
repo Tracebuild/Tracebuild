@@ -55,6 +55,7 @@ class DocumentOut(BaseModel):
 
 class StandardOut(BaseModel):
     id: UUID
+    title: str | None = None
     domain: str
     layer: int
     jurisdiction_type: str
@@ -64,6 +65,7 @@ class StandardOut(BaseModel):
     text: str
     source_url: str | None
     source_doc: str | None = None
+    zone: str | None = None
     valid_from: str | None = None
 
 

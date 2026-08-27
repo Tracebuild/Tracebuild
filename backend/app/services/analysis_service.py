@@ -29,6 +29,7 @@ from app.models.schemas import (
     VALID_STATUSES,
     VALID_CONFIDENCES,
 )
+from app.services.zone_match import norm_matches_zone
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +66,16 @@ Schema für jeden Eintrag:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_norm_context(norms: list[dict]) -> str:
-    if not norms:
+def _build_norm_context(norms: list[dict], project_zone: str | None) -> str:
+    applicable = [
+        n for n in norms
+        if norm_matches_zone((n.get("norms") or n).get("zone"), project_zone)
+    ]
+    if not applicable:
         return "Keine projektspezifischen Normen hinterlegt. Nutze dein Fachwissen über Schweizer Bauvorschriften."
 
-    lines = [f"NORMEN ({len(norms)} projektspezifische Normen):\n"]
-    for i, n in enumerate(norms, 1):
+    lines = [f"NORMEN ({len(applicable)} projektspezifische Normen):\n"]
+    for i, n in enumerate(applicable, 1):
         norm = n.get("norms") or n
         lines.append(
             f"[{i}] Norm-ID: {norm.get('id', '')}\n"
@@ -124,6 +129,7 @@ class AnalysisService:
         file_bytes: bytes = b"",
         content_type: str = "application/pdf",
         location: dict = {},
+        bauzone: str | None = None,
     ) -> AnalysisOut:
         # Create analysis record
         res = (
@@ -142,7 +148,7 @@ class AnalysisService:
                 .execute()
             )
             norms = norms_res.data or []
-            norm_context = _build_norm_context(norms)
+            norm_context = _build_norm_context(norms, bauzone)
 
             # 2. Encode file
             encoded = base64.standard_b64encode(file_bytes).decode("utf-8")
@@ -161,7 +167,6 @@ class AnalysisService:
 
             canton = location.get("canton", "")
             municipality = location.get("municipality", "")
-            bauzone = location.get("bauzone", "")
 
             user_text = (
                 f"PROJEKTKONTEXT:\n"

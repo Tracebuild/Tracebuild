@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import { normMatchesZone } from "@/lib/zone-match";
 
 interface Project {
   id: string;
@@ -23,7 +24,7 @@ interface Norm {
   source_url: string | null;
   source_doc: string | null;
   org_id: string | null;
-  extracted: boolean;
+  zone: string | null;
 }
 
 interface ProjectNorm {
@@ -63,13 +64,13 @@ function NormCard({ pn, onRemove }: { pn: ProjectNorm; onRemove: (normId: string
             <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(133,166,233,0.1)", color: "#7B8299" }}>
               {norm.category}
             </span>
+            {norm.zone && (
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
+                Zone {norm.zone}
+              </span>
+            )}
             {pn.added_by === "user" && (
               <span style={{ fontSize: 11, color: "#7B8299", fontStyle: "italic" }}>manuell</span>
-            )}
-            {pn.added_by === "geoportal" && (
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(52,211,153,0.12)", color: "#34D399" }}>
-                📍 Geoportal
-              </span>
             )}
           </div>
           <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.4, margin: 0 }}>{norm.title}</p>
@@ -126,6 +127,7 @@ function AddCustomNormModal({ projectId, onClose, onAdded }: { projectId: string
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [category, setCategory] = useState("");
+  const [zone, setZone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -134,7 +136,7 @@ function AddCustomNormModal({ projectId, onClose, onAdded }: { projectId: string
     setError(null);
     setLoading(true);
     try {
-      const pn = await api.post<ProjectNorm>(`/projects/${projectId}/norms/custom`, { title, text, category });
+      const pn = await api.post<ProjectNorm>(`/projects/${projectId}/norms/custom`, { title, text, category, zone });
       onAdded(pn);
       onClose();
     } catch (err: unknown) {
@@ -173,6 +175,10 @@ function AddCustomNormModal({ projectId, onClose, onAdded }: { projectId: string
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Kategorie</label>
             <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle} placeholder="z.B. Brandschutz" />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Zone (optional)</label>
+            <input type="text" value={zone} onChange={(e) => setZone(e.target.value)} style={inputStyle} placeholder="z.B. W2 — leer = gilt für alle Zonen" />
           </div>
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#85A6E9", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Inhalt</label>
@@ -240,8 +246,7 @@ export default function NormenPage({ params }: { params: { id: string } }) {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
-  const [enriching, setEnriching] = useState(false);
-  const enrichAttempted = useRef(false);
+  const [showOtherZones, setShowOtherZones] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -259,24 +264,7 @@ export default function NormenPage({ params }: { params: { id: string } }) {
     }
   }, [params.id]);
 
-  useEffect(() => {
-    (async () => {
-      const norms = await load();
-      // One-shot: extract concrete rules from any geoportal-imported reference norms
-      // (title + link only) into their actual content the first time this tab is opened.
-      const hasPending = norms?.some((pn) => pn.added_by === "geoportal" && pn.norms && !pn.norms.extracted);
-      if (hasPending && !enrichAttempted.current) {
-        enrichAttempted.current = true;
-        setEnriching(true);
-        try {
-          await api.post(`/projects/${params.id}/norms/enrich`, {});
-          await load();
-        } catch { /* leave reference norms as-is */ } finally {
-          setEnriching(false);
-        }
-      }
-    })();
-  }, [load, params.id]);
+  useEffect(() => { load(); }, [load]);
 
   async function handleRemove(normId: string) {
     try {
@@ -314,9 +302,12 @@ export default function NormenPage({ params }: { params: { id: string } }) {
   }
 
   const validNorms = projectNorms.filter((pn) => pn.norms !== null);
+  const matchingNorms = validNorms.filter((pn) => normMatchesZone(pn.norms!.zone, project?.bauzone));
+  const otherZoneNorms = validNorms.filter((pn) => !normMatchesZone(pn.norms!.zone, project?.bauzone));
+
   const grouped = GROUPS.map((grp) => ({
     ...grp,
-    norms: validNorms.filter((pn) => grp.layers.includes(pn.norms!.layer)),
+    norms: matchingNorms.filter((pn) => grp.layers.includes(pn.norms!.layer)),
   })).filter((grp) => grp.norms.length > 0);
 
   const bauzoneUnknown = project && !project.bauzone;
@@ -340,12 +331,6 @@ export default function NormenPage({ params }: { params: { id: string } }) {
               {project.bauzone && (
                 <span style={{ fontSize: 11, background: "rgba(183,146,106,0.12)", color: "#B7926A", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>
                   Zone {project.bauzone}
-                </span>
-              )}
-              {enriching && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "#34D399" }}>
-                  <span style={{ width: 10, height: 10, border: "2px solid #34D399", borderTopColor: "transparent", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
-                  Konkrete Normen werden aus den Quellen extrahiert…
                 </span>
               )}
             </div>
@@ -413,7 +398,7 @@ export default function NormenPage({ params }: { params: { id: string } }) {
             </div>
           ))}
         </div>
-      ) : grouped.length === 0 ? (
+      ) : grouped.length === 0 && otherZoneNorms.length === 0 ? (
         <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.1)", borderRadius: 16, padding: "64px 24px", textAlign: "center" }}>
           <div style={{ width: 40, height: 40, background: "rgba(183,146,106,0.12)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
             <svg style={{ width: 20, height: 20, color: "#B7926A" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,6 +412,13 @@ export default function NormenPage({ params }: { params: { id: string } }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {grouped.length === 0 && (
+            <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.1)", borderRadius: 16, padding: "32px 24px", textAlign: "center" }}>
+              <p style={{ fontSize: 13, color: "#ABAEBB", margin: 0 }}>
+                Keine Normen für die aktuelle Bauzone{project?.bauzone ? ` (${project.bauzone})` : ""}.
+              </p>
+            </div>
+          )}
           {grouped.map((grp) => (
             <div key={grp.label}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -443,6 +435,30 @@ export default function NormenPage({ params }: { params: { id: string } }) {
               </div>
             </div>
           ))}
+
+          {otherZoneNorms.length > 0 && (
+            <div>
+              <button
+                onClick={() => setShowOtherZones((v) => !v)}
+                style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit" }}
+              >
+                <svg style={{ width: 12, height: 12, color: "#7B8299", transform: showOtherZones ? "rotate(90deg)" : "none", transition: "transform .15s" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#7B8299", margin: 0 }}>
+                  Andere Zonen — nicht zutreffend{project?.bauzone ? ` für ${project.bauzone}` : ""}
+                </h3>
+                <span style={{ fontSize: 12, color: "#7B8299" }}>{otherZoneNorms.length}</span>
+              </button>
+              {showOtherZones && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: 0.6 }}>
+                  {otherZoneNorms.map((pn) => (
+                    <NormCard key={pn.id} pn={pn} onRemove={handleRemove} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

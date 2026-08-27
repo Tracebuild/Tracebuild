@@ -18,7 +18,7 @@ export async function POST(
   if (!project) return err("Projekt nicht gefunden", 404);
 
   const body = await request.json();
-  const { title, text, category } = body;
+  const { title, text, category, zone } = body;
   if (!title?.trim()) return err("Titel fehlt");
   if (!text?.trim()) return err("Inhalt fehlt");
   if (!category?.trim()) return err("Kategorie fehlt");
@@ -34,6 +34,7 @@ export async function POST(
       layer: 5,
       jurisdiction_type: "org",
       org_id: user.org_id,
+      zone: typeof zone === "string" && zone.trim() ? zone.trim() : null,
     })
     .select()
     .single();

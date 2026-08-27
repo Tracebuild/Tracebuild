@@ -6,7 +6,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!user) return unauthorized();
 
   const admin = createAdminClient();
-  const { error } = await admin.from("standards").delete().eq("id", params.id);
+  const { error } = await admin.from("norms").delete().eq("id", params.id);
   if (error) return err(error.message, 500);
   return ok({ id: params.id });
 }

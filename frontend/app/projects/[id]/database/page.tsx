@@ -11,6 +11,7 @@ const CANTONS = [
 
 interface Standard {
   id: string;
+  title?: string;
   domain: string;
   layer: number;
   jurisdiction_type: string;
@@ -18,8 +19,15 @@ interface Standard {
   category: string;
   text: string;
   source_url: string | null;
+  zone?: string | null;
   created_at?: string;
 }
+
+const JURISDICTIONS = [
+  { value: "national",  label: "Bund" },
+  { value: "cantonal",  label: "Kanton" },
+  { value: "municipal", label: "Gemeinde" },
+] as const;
 
 export default function DatabasePage() {
   const [standards, setStandards] = useState<Standard[]>([]);
@@ -29,7 +37,10 @@ export default function DatabasePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [jurisdictionType, setJurisdictionType] = useState<"national" | "cantonal" | "municipal">("cantonal");
   const [canton, setCanton] = useState("ZH");
+  const [municipality, setMunicipality] = useState("");
+  const [zone, setZone] = useState("");
   const [category, setCategory] = useState("");
   const [sourceName, setSourceName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -65,29 +76,32 @@ export default function DatabasePage() {
     e.preventDefault();
     if (!file) { setError("Bitte eine Datei auswählen."); return; }
     if (!category.trim()) { setError("Bitte eine Kategorie eingeben."); return; }
+    if (jurisdictionType === "municipal" && !municipality.trim()) { setError("Bitte eine Gemeinde eingeben."); return; }
 
     setError(null);
     setSuccess(null);
     setUploading(true);
 
     try {
+      const jurisdictionName = jurisdictionType === "national" ? "" : jurisdictionType === "municipal" ? municipality.trim() : canton;
       const form = new FormData();
       form.append("file", file);
       form.append("domain", "bau");
-      form.append("layer", "2");
-      form.append("jurisdiction_type", "cantonal");
-      form.append("jurisdiction_name", canton);
+      form.append("jurisdiction_type", jurisdictionType);
+      form.append("jurisdiction_name", jurisdictionName);
       form.append("category", category.trim());
       form.append("source_name", sourceName.trim());
+      form.append("zone", zone.trim());
 
       const result = await api.postForm<{ count: number; jurisdiction_name: string; category: string }>(
         "/standards/upload",
         form
       );
-      setSuccess(`${result.count} Einträge gespeichert für ${result.jurisdiction_name} · ${result.category}`);
+      setSuccess(`${result.count} Einträge gespeichert für ${result.jurisdiction_name || "Bund"} · ${result.category}`);
       setFile(null);
       setCategory("");
       setSourceName("");
+      setZone("");
       if (fileRef.current) fileRef.current.value = "";
       loadStandards();
     } catch (err: unknown) {
@@ -138,11 +152,36 @@ export default function DatabasePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
-            <select value={canton} onChange={(e) => setCanton(e.target.value)} className={inputCls}>
-              {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
+            <label className="block text-xs font-medium text-stone-600 mb-1">Ebene</label>
+            <select value={jurisdictionType} onChange={(e) => setJurisdictionType(e.target.value as typeof jurisdictionType)} className={inputCls}>
+              {JURISDICTIONS.map((j) => <option key={j.value} value={j.value}>{j.label}</option>)}
             </select>
           </div>
+
+          {jurisdictionType === "cantonal" && (
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
+              <select value={canton} onChange={(e) => setCanton(e.target.value)} className={inputCls}>
+                {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+
+          {jurisdictionType === "municipal" && (
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">
+                Gemeinde <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={municipality}
+                onChange={(e) => setMunicipality(e.target.value)}
+                placeholder="z.B. Mels"
+                className={inputCls}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-medium text-stone-600 mb-1">
@@ -154,6 +193,17 @@ export default function DatabasePage() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="z.B. Grenzabstand, Gebäudehöhe"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-stone-600 mb-1">Zone (optional)</label>
+            <input
+              type="text"
+              value={zone}
+              onChange={(e) => setZone(e.target.value)}
+              placeholder="z.B. W2 — leer = gilt für alle Zonen"
               className={inputCls}
             />
           </div>
@@ -231,15 +281,21 @@ export default function DatabasePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs bg-[#f3ece3] text-[#8b6344] px-2 py-0.5 rounded-full font-medium">
-                      {s.jurisdiction_name ?? "—"}
+                      {s.jurisdiction_name ?? "Bund"}
                     </span>
                     <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
                       {s.category}
                     </span>
+                    {s.zone && (
+                      <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                        Zone {s.zone}
+                      </span>
+                    )}
                     {s.source_url && (
                       <span className="text-xs text-stone-400 truncate">{s.source_url}</span>
                     )}
                   </div>
+                  {s.title && <p className="text-sm font-medium text-stone-800">{s.title}</p>}
                   <p className="text-sm text-stone-700 line-clamp-2">{s.text}</p>
                 </div>
                 <button
