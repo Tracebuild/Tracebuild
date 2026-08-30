@@ -69,6 +69,11 @@ function NormCard({ pn, onRemove }: { pn: ProjectNorm; onRemove: (normId: string
                 Zone {norm.zone}
               </span>
             )}
+            {norm.org_id === null && (
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, fontWeight: 500, background: "rgba(56,189,248,0.12)", color: "#38BDF8" }}>
+                Plattformweit
+              </span>
+            )}
             {pn.added_by === "user" && (
               <span style={{ fontSize: 11, color: "#7B8299", fontStyle: "italic" }}>manuell</span>
             )}

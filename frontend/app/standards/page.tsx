@@ -16,6 +16,7 @@ interface FileEntry {
   zone: string | null;
   text: string;
   charCount: number;
+  pdf_url: string | null;
 }
 
 function FileCard({ entry, onDelete }: { entry: FileEntry; onDelete: (ids: string[]) => void }) {
@@ -45,9 +46,29 @@ function FileCard({ entry, onDelete }: { entry: FileEntry; onDelete: (ids: strin
         </div>
       </div>
       {expanded && (
-        <p className="mt-3 text-sm text-[#ABAEBB] leading-relaxed whitespace-pre-wrap border-t border-[rgba(60,63,68,0.4)] pt-3">
-          {entry.text}
-        </p>
+        <>
+          <p className="mt-3 text-sm text-[#ABAEBB] leading-relaxed whitespace-pre-wrap border-t border-[rgba(60,63,68,0.4)] pt-3">
+            {entry.text}
+          </p>
+          {entry.pdf_url && (
+            <div className="mt-3 border-t border-[rgba(60,63,68,0.4)] pt-3">
+              <iframe
+                src={entry.pdf_url}
+                className="w-full rounded-lg border border-[rgba(133,166,233,0.18)]"
+                style={{ height: 560 }}
+                title={`PDF-Vorschau ${entry.source_url ?? entry.category}`}
+              />
+              <a
+                href={entry.pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-xs text-[#85A6E9] hover:text-white transition-colors"
+              >
+                Original-PDF öffnen ↗
+              </a>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -70,6 +91,7 @@ interface Standard {
   text: string;
   source_url: string | null;
   zone?: string | null;
+  pdf_url?: string | null;
 }
 
 const JURISDICTIONS = [
@@ -177,6 +199,7 @@ export default function StandardsPage() {
       entry.ids.push(s.id);
       entry.text += "\n\n" + s.text;
       entry.charCount += s.text.length;
+      if (!entry.pdf_url && s.pdf_url) entry.pdf_url = s.pdf_url;
     } else {
       const entry: FileEntry = {
         ids: [s.id],
@@ -187,6 +210,7 @@ export default function StandardsPage() {
         zone: s.zone ?? null,
         text: s.text,
         charCount: s.text.length,
+        pdf_url: s.pdf_url ?? null,
       };
       seen.set(key, entry);
       fileEntries.push(entry);
@@ -239,17 +263,18 @@ export default function StandardsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
-              <select value={canton} onChange={(e) => setCanton(e.target.value)} className={`${inputCls} appearance-none`}>
-                {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">Ebene</label>
+              <select value={jurisdictionType} onChange={(e) => setJurisdictionType(e.target.value as "national" | "cantonal" | "municipal")}
+                className={`${inputCls} appearance-none`}>
+                {JURISDICTIONS.map((j) => <option key={j.value} value={j.value}>{j.label}</option>)}
               </select>
             </div>
 
             {jurisdictionType === "cantonal" && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Kanton</label>
+                <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
                 <select value={canton} onChange={(e) => setCanton(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className={`${inputCls} appearance-none`}>
                   {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -257,12 +282,12 @@ export default function StandardsPage() {
 
             {jurisdictionType === "municipal" && (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Gemeinde <span className="text-red-500">*</span>
+                <label className="block text-xs font-medium text-[#7B8299] mb-1">
+                  Gemeinde <span className="text-red-400">*</span>
                 </label>
                 <input type="text" required value={municipality} onChange={(e) => setMunicipality(e.target.value)}
                   placeholder="z.B. Mels"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  className={inputCls} />
               </div>
             )}
 
@@ -272,6 +297,13 @@ export default function StandardsPage() {
               </label>
               <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)}
                 placeholder="z.B. Grenzabstand, Gebäudehöhe"
+                className={inputCls} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">Zone (optional)</label>
+              <input type="text" value={zone} onChange={(e) => setZone(e.target.value)}
+                placeholder="z.B. W2 — leer = gilt für alle Zonen"
                 className={inputCls} />
             </div>
 

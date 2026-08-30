@@ -619,6 +619,11 @@ export default function AdminPage() {
             onClick={() => document.getElementById("systemstatus-section")?.scrollIntoView({ behavior: "smooth" })}
             icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2L10.9 6.26L15.5 6.9L12.25 10.07L13.08 14.65L9 12.4L4.92 14.65L5.75 10.07L2.5 6.9L7.1 6.26L9 2Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>}
           />
+          <QuickActionBtn
+            label="Normen-Datenbank"
+            onClick={() => router.push("/admin/norms")}
+            icon={<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 3.5C4 2.67 4.67 2 5.5 2H12.5C13.33 2 14 2.67 14 3.5V15.5L9 13L4 15.5V3.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>}
+          />
         </div>
 
         {/* Cost overview */}

@@ -58,7 +58,7 @@ function TextInput({ value, onChange, placeholder, required }: {
 export default function NewProjectModal({ onClose, onCreated }: Props) {
   const router = useRouter();
   const [name, setName]                 = useState("");
-  const [canton, setCanton]             = useState("ZH");
+  const [canton, setCanton]             = useState(CANTONS[0]);
   const [municipality, setMunicipality] = useState("");
   const [parcelNumber, setParcelNumber] = useState("");
   const [bauzone, setBauzone]           = useState("");
@@ -95,7 +95,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !municipality.trim()) return;
+    if (!name.trim() || !municipality.trim() || !parcelNumber.trim()) return;
     setError(null);
     setLoading(true);
     try {
@@ -103,7 +103,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
         name: name.trim(),
         domain: "bau",
         location: { canton, municipality: municipality.trim(), country: "CH" },
-        parcel_number: parcelNumber.trim() || null,
+        parcel_number: parcelNumber.trim(),
         bauzone: bauzone.trim() || null,
       });
       onCreated();
@@ -143,18 +143,19 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
               </select>
             </Field>
             <Field label="Gemeinde">
-              <TextInput value={municipality} onChange={setMunicipality} placeholder="z.B. Winterthur" required />
+              <TextInput value={municipality} onChange={setMunicipality} required />
             </Field>
           </div>
 
           {/* Divider */}
           <div style={{ borderTop: "1px solid rgba(133,166,233,0.1)", margin: "2px 0" }} />
 
-          <Field label="Parzellennummer" hint="(optional — für automatische Bauzonen-Erkennung)">
+          <Field label="Parzellennummer">
             <TextInput
               value={parcelNumber}
               onChange={v => { setParcelNumber(v); setBauzone(""); setLookupState("idle"); }}
               placeholder="z.B. 1234"
+              required
             />
           </Field>
 
@@ -164,7 +165,6 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
                 type="text"
                 value={bauzone}
                 onChange={e => { setBauzone(e.target.value); setLookupState("idle"); }}
-                placeholder="z.B. W2, G, I — oder leer lassen"
                 style={inputStyle}
                 onFocus={e => { e.currentTarget.style.borderColor = "#2862D7"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(40,98,215,0.2)"; }}
                 onBlur={e =>  { e.currentTarget.style.borderColor = "rgba(133,166,233,0.25)"; e.currentTarget.style.boxShadow = "none"; }}
@@ -197,13 +197,13 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
             >
               Abbrechen
             </button>
-            <button type="submit" disabled={loading || !name.trim() || !municipality.trim()}
+            <button type="submit" disabled={loading || !name.trim() || !municipality.trim() || !parcelNumber.trim()}
               style={{
                 flex: 1, background: "linear-gradient(90deg,#4fd1ff,#38bdf8 55%,#2862D7)",
                 color: "#fff", padding: 10, borderRadius: 10, fontSize: 14, fontWeight: 600,
                 border: "none", fontFamily: "inherit",
-                cursor: (loading || !name.trim() || !municipality.trim()) ? "not-allowed" : "pointer",
-                opacity: (loading || !name.trim() || !municipality.trim()) ? 0.5 : 1,
+                cursor: (loading || !name.trim() || !municipality.trim() || !parcelNumber.trim()) ? "not-allowed" : "pointer",
+                opacity: (loading || !name.trim() || !municipality.trim() || !parcelNumber.trim()) ? 0.5 : 1,
                 boxShadow: "0 4px 16px rgba(40,98,215,0.35)", transition: "filter .15s, opacity .15s",
               }}
               onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.filter = "brightness(1.1)"; }}

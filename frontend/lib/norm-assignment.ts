@@ -7,14 +7,14 @@ export async function assignNorms(
   municipality: string,
   domain: string
 ): Promise<number> {
-  // Norms are org-scoped for now (no platform-wide catalog yet) — only this org's
-  // own uploads are ever candidates, regardless of layer.
+  // Candidates are norms owned by this project's org, plus platform-wide norms
+  // (org_id IS NULL, e.g. promoted by a super_admin via the admin norms catalog).
   const admin = createAdminClient();
   const { data: norms } = await admin
     .from("norms")
     .select("id, layer, jurisdiction_type, jurisdiction_name, org_id")
     .eq("domain", domain)
-    .eq("org_id", orgId);
+    .or(`org_id.eq.${orgId},org_id.is.null`);
 
   if (!norms?.length) return 0;
 

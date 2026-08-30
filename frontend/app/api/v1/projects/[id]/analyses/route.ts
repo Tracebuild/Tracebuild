@@ -140,7 +140,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const { data, error } = await admin
     .from("analyses")
-    .select("*, documents(doc_type), analysis_items(*)")
+    .select("*, documents(doc_type, file_url), analysis_items(*)")
     .in("document_id", docIds)
     .order("created_at", { ascending: false });
 
@@ -175,13 +175,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   // Upload to Supabase Storage
   const storagePath = `${params.id}/${crypto.randomUUID()}_${file.name}`;
-  const { data: uploadData } = await admin.storage
+  const { data: uploadData, error: uploadError } = await admin.storage
     .from("documents")
     .upload(storagePath, fileBytes, { contentType: file.type || "application/pdf" });
 
-  const fileUrl = uploadData
+  if (uploadError) {
+    console.error(`Storage upload failed for ${storagePath}:`, uploadError);
+  }
+
+  // documents.file_url is NOT NULL — fall back to "" (never a bare storage
+  // path) so the frontend's `fileUrl || null` check reliably shows the
+  // "Keine Vorschau verfügbar" state instead of trying to load a non-URL string.
+  const fileUrl = uploadData && !uploadError
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`
-    : storagePath;
+    : "";
 
   // Create document record
   const { data: doc, error: docError } = await admin
@@ -298,7 +305,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .from("analyses")
       .update({ status: "done", result_json: { raw: rawText }, cost_usd: costUsd })
       .eq("id", analysis.id)
-      .select()
+      .select("*, documents(doc_type, file_url)")
       .single();
 
     return ok({ ...finalAnalysis, items }, 201);

@@ -21,6 +21,7 @@ interface Standard {
   source_url: string | null;
   zone?: string | null;
   created_at?: string;
+  pdf_url?: string | null;
 }
 
 const JURISDICTIONS = [
@@ -28,6 +29,70 @@ const JURISDICTIONS = [
   { value: "cantonal",  label: "Kanton" },
   { value: "municipal", label: "Gemeinde" },
 ] as const;
+
+function StandardRow({ s, onDelete }: { s: Standard; onDelete: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 group">
+      <div className="flex gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-xs bg-[#2862D7]/10 text-[#85A6E9] px-2 py-0.5 rounded-full font-medium">
+              {s.jurisdiction_name ?? "—"}
+            </span>
+            <span className="text-xs bg-[rgba(60,63,68,0.5)] text-[#ABAEBB] px-2 py-0.5 rounded-full">
+              {s.category}
+            </span>
+            {s.zone && (
+              <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                Zone {s.zone}
+              </span>
+            )}
+            {s.source_url && (
+              <span className="text-xs text-[#7B8299] truncate">{s.source_url}</span>
+            )}
+          </div>
+          {expanded ? (
+            <p className="text-sm text-[#ABAEBB] leading-relaxed whitespace-pre-wrap">{s.text}</p>
+          ) : (
+            <p className="text-sm text-[#ABAEBB] line-clamp-2">{s.text}</p>
+          )}
+          {expanded && s.pdf_url && (
+            <div className="mt-3 border-t border-[rgba(60,63,68,0.4)] pt-3">
+              <iframe
+                src={s.pdf_url}
+                className="w-full rounded-lg border border-[rgba(133,166,233,0.18)]"
+                style={{ height: 560 }}
+                title={`PDF-Vorschau ${s.source_url ?? s.category}`}
+              />
+              <a
+                href={s.pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-xs text-[#85A6E9] hover:text-white transition-colors"
+              >
+                Original-PDF öffnen ↗
+              </a>
+            </div>
+          )}
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-1 text-xs text-[#85A6E9] hover:text-white whitespace-nowrap transition-colors"
+          >
+            {expanded ? "Inhalt verbergen ▲" : "Inhalt anzeigen ▼"}
+          </button>
+        </div>
+        <button
+          onClick={() => onDelete(s.id)}
+          className="text-[#7B8299] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
+          title="Löschen"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function DatabasePage() {
   const [standards, setStandards] = useState<Standard[]>([]);
@@ -152,15 +217,15 @@ export default function DatabasePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
-            <select value={canton} onChange={(e) => setCanton(e.target.value)} className={`${inputCls} appearance-none`}>
-              {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Ebene</label>
+            <select value={jurisdictionType} onChange={(e) => setJurisdictionType(e.target.value as "national" | "cantonal" | "municipal")} className={inputCls}>
+              {JURISDICTIONS.map((j) => <option key={j.value} value={j.value}>{j.label}</option>)}
             </select>
           </div>
 
           {jurisdictionType === "cantonal" && (
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">Kanton</label>
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
               <select value={canton} onChange={(e) => setCanton(e.target.value)} className={inputCls}>
                 {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -169,8 +234,8 @@ export default function DatabasePage() {
 
           {jurisdictionType === "municipal" && (
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">
-                Gemeinde <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">
+                Gemeinde <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -193,6 +258,17 @@ export default function DatabasePage() {
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="z.B. Grenzabstand, Gebäudehöhe"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Zone (optional)</label>
+            <input
+              type="text"
+              value={zone}
+              onChange={(e) => setZone(e.target.value)}
+              placeholder="z.B. W2 — leer = gilt für alle Zonen"
               className={inputCls}
             />
           </div>
@@ -263,37 +339,7 @@ export default function DatabasePage() {
         ) : (
           <div className="space-y-2">
             {standards.map((s) => (
-              <div
-                key={s.id}
-                className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 flex gap-3 group"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-[#2862D7]/10 text-[#85A6E9] px-2 py-0.5 rounded-full font-medium">
-                      {s.jurisdiction_name ?? "—"}
-                    </span>
-                    <span className="text-xs bg-[rgba(60,63,68,0.5)] text-[#ABAEBB] px-2 py-0.5 rounded-full">
-                      {s.category}
-                    </span>
-                    {s.zone && (
-                      <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                        Zone {s.zone}
-                      </span>
-                    )}
-                    {s.source_url && (
-                      <span className="text-xs text-[#7B8299] truncate">{s.source_url}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-[#ABAEBB] line-clamp-2">{s.text}</p>
-                </div>
-                <button
-                  onClick={() => handleDelete(s.id)}
-                  className="text-[#7B8299] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
-                  title="Löschen"
-                >
-                  ×
-                </button>
-              </div>
+              <StandardRow key={s.id} s={s} onDelete={handleDelete} />
             ))}
           </div>
         )}
