@@ -119,7 +119,7 @@ export default function DashboardProjectsPage() {
       {!projectsLoading && filteredProjects.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 18 }}>
           {filteredProjects.map(p => (
-            <ProjectCard key={p.id} project={p} onDeleted={reloadProjects} />
+            <ProjectCard key={p.id} project={p} />
           ))}
         </div>
       )}

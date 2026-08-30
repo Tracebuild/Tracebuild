@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { api } from "@/lib/api";
 
 interface Project {
   id: string;
@@ -15,24 +14,10 @@ interface Project {
 
 interface Props {
   project: Project;
-  onDeleted: () => void;
 }
 
-export default function ProjectCard({ project, onDeleted }: Props) {
-  const [deleting, setDeleting] = useState(false);
-  const [hovered, setHovered]   = useState(false);
-
-  async function handleDelete(e: React.MouseEvent) {
-    e.preventDefault();
-    if (!confirm(`Projekt "${project.name}" wirklich löschen?`)) return;
-    setDeleting(true);
-    try {
-      await api.delete(`/projects/${project.id}`);
-      onDeleted();
-    } catch {
-      setDeleting(false);
-    }
-  }
+export default function ProjectCard({ project }: Props) {
+  const [hovered, setHovered] = useState(false);
 
   const date = new Date(project.created_at).toLocaleDateString("de-CH", {
     day: "2-digit", month: "2-digit", year: "numeric",
@@ -54,25 +39,13 @@ export default function ProjectCard({ project, onDeleted }: Props) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {project.name}
-          </h3>
-          <p style={{ fontSize: 12.5, color: "#7B8299", margin: "3px 0 0" }}>
-            {project.location?.municipality}, {project.location?.canton}
-          </p>
-        </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          title="Projekt löschen"
-          style={{ color: "#4B5563", background: "none", border: "none", cursor: "pointer", fontSize: 20, lineHeight: 1, flexShrink: 0, transition: "color .15s", opacity: deleting ? 0.4 : 1 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = "#4B5563"; }}
-        >
-          ×
-        </button>
+      <div style={{ minWidth: 0 }}>
+        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {project.name}
+        </h3>
+        <p style={{ fontSize: 12.5, color: "#7B8299", margin: "3px 0 0" }}>
+          {project.location?.municipality}, {project.location?.canton}
+        </p>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, flexWrap: "wrap" }}>

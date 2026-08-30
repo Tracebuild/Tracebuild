@@ -1,4 +1,4 @@
-import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
+import { getAuthUser, ok, unauthorized, forbidden, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 // pdf-parse hat keinen default-Export in ESM — über require laden
 import { createRequire } from "module";
@@ -11,9 +11,12 @@ const LAYER_BY_JURISDICTION: Record<string, number> = {
   municipal: 4,
 };
 
+// POST /api/v1/admin/norms/upload — super_admin only. Uploads a norm directly as
+// platform-wide (org_id: null), visible to every organization from creation.
 export async function POST(request: Request) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
+  if (user.role !== "super_admin") return forbidden();
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -47,8 +50,6 @@ export async function POST(request: Request) {
   text = text.slice(0, 100_000);
   const title = sourceName || file.name;
 
-  // Org-scoped for now — visible to every project in this organization,
-  // not across organizations (no platform-wide catalog yet).
   const admin = createAdminClient();
 
   // Original PDF bytes in Supabase Storage hochladen, damit die Quelle später
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   let pdfUrl: string | null = null;
   if (isPdf) {
     try {
-      const storagePath = `norms/${user.org_id}/${crypto.randomUUID()}_${file.name}`;
+      const storagePath = `norms/platform/${crypto.randomUUID()}_${file.name}`;
       const { data: uploadData } = await admin.storage
         .from("documents")
         .upload(storagePath, fileBytes, { contentType: file.type || "application/pdf" });
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
       layer: LAYER_BY_JURISDICTION[jurisdictionType] ?? 3,
       jurisdiction_type: jurisdictionType,
       jurisdiction_name: jurisdictionType === "national" ? null : jurisdictionName,
-      org_id: user.org_id,
+      org_id: null,
       category: category.trim(),
       text,
       source_url: sourceName || file.name,

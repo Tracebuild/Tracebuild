@@ -67,6 +67,7 @@ class StandardOut(BaseModel):
     source_doc: str | None = None
     zone: str | None = None
     valid_from: str | None = None
+    pdf_url: str | None = None
 
 
 class StandardsResearchRequest(BaseModel):

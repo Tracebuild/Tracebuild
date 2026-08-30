@@ -1,8 +1,8 @@
 """
 Assign norms from the `norms` table to a project based on location and org.
 
-Norms are org-scoped for now (no platform-wide catalog yet) — only the project's
-own organization's uploads are ever candidates.
+Candidates are norms owned by the project's own organization, plus platform-wide
+norms (org_id IS NULL — e.g. promoted by a super_admin via the admin norms catalog).
 
 Matching rules (applied after domain + org filter):
   Layer 1  national / international  — always included
@@ -33,7 +33,7 @@ def assign_norms_to_project(
         db.table("norms")
         .select("id, layer, jurisdiction_type, jurisdiction_name, org_id")
         .eq("domain", domain)
-        .eq("org_id", org_id)
+        .or_(f"org_id.eq.{org_id},org_id.is.null")
         .execute()
     )
     norms = res.data or []

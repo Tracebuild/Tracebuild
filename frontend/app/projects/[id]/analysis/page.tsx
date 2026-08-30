@@ -50,6 +50,8 @@ interface RawGetAnalysis {
 
 function CheckCard({ item }: { item: AnalysisItem }) {
   const cfg = S[item.status as keyof typeof S] ?? S.warn;
+  const [expanded, setExpanded] = useState(false);
+  const title = item.norm_title || CATEGORY_LABELS[item.category as Category] || item.category || "Prüfpunkt";
 
   return (
     <div style={{
@@ -58,23 +60,33 @@ function CheckCard({ item }: { item: AnalysisItem }) {
       borderRadius: 12,
       padding: "14px 16px",
     }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", gap: 12,
+          background: "none", border: "none", padding: 0, margin: 0,
+          cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+        }}
+      >
         <span style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: cfg.bg, border: `1px solid ${cfg.border}`,
           color: cfg.color, fontSize: 11, fontWeight: 600,
-          padding: "3px 8px", borderRadius: 50, flexShrink: 0, marginTop: 2,
+          padding: "3px 8px", borderRadius: 50, flexShrink: 0,
         }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.color, flexShrink: 0 }} />
           {cfg.label}
         </span>
+        <p style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: "#fff", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {title}
+        </p>
+        <svg style={{ width: 13, height: 13, color: "#7B8299", flexShrink: 0, transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {item.norm_title && (
-            <p style={{ fontSize: 11, fontWeight: 700, color: "#7B8299", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
-              {item.norm_title}
-            </p>
-          )}
+      {expanded && (
+        <div style={{ marginTop: 10, paddingLeft: 0 }}>
           <p style={{ fontSize: 13.5, fontWeight: 500, color: cfg.color, lineHeight: 1.45 }}>{item.note}</p>
 
           {item.suggestion && (
@@ -102,7 +114,7 @@ function CheckCard({ item }: { item: AnalysisItem }) {
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

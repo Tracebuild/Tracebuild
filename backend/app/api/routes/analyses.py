@@ -1,9 +1,12 @@
+import logging
 from uuid import UUID, uuid4
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from app.core.auth import AuthDep, CurrentUser
 from app.core.supabase import get_supabase
 from app.models.schemas import APIResponse
 from app.services.analysis_service import AnalysisService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{project_id}/analyses", tags=["analyses"])
 
@@ -33,7 +36,8 @@ async def create_analysis(
     db = get_supabase()
     proj = _get_project(project_id, user)
 
-    # PDF in Supabase Storage hochladen (optional — Fehler werden ignoriert)
+    # PDF in Supabase Storage hochladen — bei Fehler bleibt file_url "" statt
+    # eines kaputten Pfads (documents.file_url ist NOT NULL, daher "" statt None)
     file_bytes = await file.read()
     storage_path = f"{project_id}/{uuid4()}_{file.filename}"
     file_url = ""
@@ -43,7 +47,7 @@ async def create_analysis(
         )
         file_url = db.storage.from_("documents").get_public_url(storage_path)
     except Exception:
-        pass
+        logger.warning("Storage upload failed for %s", storage_path, exc_info=True)
 
     # Dokument-Eintrag anlegen
     doc_res = db.table("documents").insert(
