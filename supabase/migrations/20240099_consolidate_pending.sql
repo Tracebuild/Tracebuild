@@ -19,8 +19,18 @@ CREATE TABLE IF NOT EXISTS norms (
   source_doc        text,
   embedding         vector(1536),
   valid_from        date,
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (title, jurisdiction_type, COALESCE(jurisdiction_name,''), COALESCE(org_id::text,''))
+  created_at        timestamptz NOT NULL DEFAULT now()
+);
+
+-- Uniqueness across (title, jurisdiction_type, jurisdiction_name, org_id) where the
+-- latter two are nullable. A table-level UNIQUE constraint cannot hold expressions
+-- (COALESCE), and plain UNIQUE would treat every NULL as distinct — so a unique
+-- INDEX over the COALESCE'd values is the only way to express this in Postgres.
+CREATE UNIQUE INDEX IF NOT EXISTS norms_identity_uniq ON norms (
+  title,
+  jurisdiction_type,
+  COALESCE(jurisdiction_name, ''),
+  COALESCE(org_id::text, '')
 );
 
 CREATE TABLE IF NOT EXISTS project_norms (

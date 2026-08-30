@@ -1,5 +1,30 @@
 const BASE = "/api/v1";
 
+/**
+ * Reads the API envelope `{ data, error }`.
+ *
+ * A crashed route, a 413 or an auth redirect answers with an HTML page, not JSON —
+ * parsing that blindly used to surface as `Unexpected token '<'`, which tells the
+ * user nothing. So decode the body as text first and only then try JSON.
+ */
+async function unwrap<T>(res: Response): Promise<T> {
+  const body = await res.text();
+
+  let json: { data?: unknown; error?: string; detail?: string };
+  try {
+    json = JSON.parse(body);
+  } catch {
+    const hint = body.trim().startsWith("<")
+      ? "Der Server hat eine Fehlerseite statt einer Antwort geliefert."
+      : body.slice(0, 200);
+    throw new Error(`Serverfehler (HTTP ${res.status}). ${hint}`);
+  }
+
+  if (!res.ok) throw new Error(json.detail ?? json.error ?? `Fehler (HTTP ${res.status})`);
+  if (json.error) throw new Error(json.error);
+  return json.data as T;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
@@ -8,11 +33,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options.headers,
     },
   });
-
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.detail ?? json.error ?? "Fehler");
-  if (json.error) throw new Error(json.error);
-  return json.data as T;
+  return unwrap<T>(res);
 }
 
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
@@ -20,10 +41,7 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
     method: "POST",
     body: formData,
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.detail ?? json.error ?? "Fehler");
-  if (json.error) throw new Error(json.error);
-  return json.data as T;
+  return unwrap<T>(res);
 }
 
 export const api = {
