@@ -1,11 +1,14 @@
 """
 Assign norms from the `norms` table to a project based on location and org.
 
-Matching rules (applied after domain filter):
+Norms are org-scoped for now (no platform-wide catalog yet) — only the project's
+own organization's uploads are ever candidates.
+
+Matching rules (applied after domain + org filter):
   Layer 1  national / international  — always included
   Layer 2+ cantonal                  — WHERE jurisdiction_name = canton
   Layer 3+ municipal                 — WHERE jurisdiction_name = municipality
-  org-private                        — WHERE org_id = project.org_id
+  org-private (jurisdiction_type='org') — always included (project-specific Spezialnorm)
 
 Zone-specificity (e.g. a norm that only applies to "W2") is a separate concern,
 applied at read/analysis time via `zone_match.norm_matches_zone` — not here, since
@@ -30,6 +33,7 @@ def assign_norms_to_project(
         db.table("norms")
         .select("id, layer, jurisdiction_type, jurisdiction_name, org_id")
         .eq("domain", domain)
+        .eq("org_id", org_id)
         .execute()
     )
     norms = res.data or []
@@ -39,7 +43,6 @@ def assign_norms_to_project(
         layer = norm.get("layer", 2)
         jtype = norm.get("jurisdiction_type", "")
         jname = norm.get("jurisdiction_name")
-        norm_org = norm.get("org_id")
 
         if layer == 1:
             matching_ids.append(norm["id"])
@@ -47,7 +50,7 @@ def assign_norms_to_project(
             matching_ids.append(norm["id"])
         elif jtype == "municipal" and jname == municipality:
             matching_ids.append(norm["id"])
-        elif norm_org and norm_org == org_id:
+        elif jtype == "org":
             matching_ids.append(norm["id"])
 
     if not matching_ids:

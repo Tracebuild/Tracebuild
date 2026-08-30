@@ -46,6 +46,8 @@ export async function POST(request: Request) {
   text = text.slice(0, 100_000);
   const title = sourceName || file.name;
 
+  // Org-scoped for now — visible to every project in this organization,
+  // not across organizations (no platform-wide catalog yet).
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("norms")
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
       layer: LAYER_BY_JURISDICTION[jurisdictionType] ?? 3,
       jurisdiction_type: jurisdictionType,
       jurisdiction_name: jurisdictionType === "national" ? null : jurisdictionName,
+      org_id: user.org_id,
       category: category.trim(),
       text,
       source_url: sourceName || file.name,
