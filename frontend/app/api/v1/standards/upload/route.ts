@@ -1,9 +1,6 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-// pdf-parse hat keinen default-Export in ESM — über require laden
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
+import { extractPdfText } from "@/lib/pdf-text";
 
 const LAYER_BY_JURISDICTION: Record<string, number> = {
   national: 1,
@@ -34,10 +31,13 @@ export async function POST(request: Request) {
 
   if (isPdf) {
     try {
-      const result = await pdfParse(fileBytes);
-      text = result.text;
-    } catch {
+      text = await extractPdfText(fileBytes);
+    } catch (e) {
+      console.error("PDF-Textextraktion fehlgeschlagen:", e);
       return err("PDF konnte nicht gelesen werden");
+    }
+    if (!text.trim()) {
+      return err("Aus diesem PDF liess sich kein Text lesen — vermutlich ein Scan ohne Texterkennung (OCR).");
     }
   } else {
     text = fileBytes.toString("utf-8");
