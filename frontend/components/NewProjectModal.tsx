@@ -128,7 +128,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           <Field label="Projektname">
-            <TextInput value={name} onChange={setName} placeholder="z.B. Einfamilienhaus Zürich" required />
+            <TextInput value={name} onChange={setName} required />
           </Field>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
