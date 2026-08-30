@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const jurisdictionName = searchParams.get("jurisdiction_name");
 
   const admin = createAdminClient();
-  let query = admin.from("norms").select("*").eq("domain", domain).is("org_id", null);
+  let query = admin.from("norms").select("*").eq("domain", domain).eq("org_id", user.org_id);
 
   if (jurisdictionType) query = query.eq("jurisdiction_type", jurisdictionType);
   if (jurisdictionName) query = query.eq("jurisdiction_name", jurisdictionName);

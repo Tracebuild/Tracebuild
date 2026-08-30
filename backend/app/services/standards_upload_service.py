@@ -27,12 +27,15 @@ class StandardsUploadService:
         domain: str,
         jurisdiction_type: str,
         jurisdiction_name: str | None,
+        org_id: str,
         category: str,
         source_name: str = "",
         zone: str | None = None,
     ) -> list[StandardOut]:
         """One file = one DB row (no chunking). Writes into the `norms` catalog
-        that project norm-matching and plan analysis actually read from."""
+        that project norm-matching and plan analysis actually read from.
+        Org-scoped for now — visible to every project in this organization,
+        not across organizations (no platform-wide catalog yet)."""
         lower = filename.lower()
 
         if lower.endswith(".pdf"):
@@ -50,6 +53,7 @@ class StandardsUploadService:
             "layer": _LAYER_BY_JURISDICTION.get(jurisdiction_type, 3),
             "jurisdiction_type": jurisdiction_type,
             "jurisdiction_name": None if jurisdiction_type == "national" else (jurisdiction_name or None),
+            "org_id": org_id,
             "category": category,
             "text": text[:100_000],
             "source_url": source_name or filename,
@@ -61,11 +65,12 @@ class StandardsUploadService:
 
     async def list_all(
         self,
+        org_id: str,
         domain: str | None = None,
         jurisdiction_type: str | None = None,
         jurisdiction_name: str | None = None,
     ) -> list[StandardOut]:
-        query = self.db.table("norms").select("*").is_("org_id", None).order("created_at", desc=True)
+        query = self.db.table("norms").select("*").eq("org_id", org_id).order("created_at", desc=True)
         if domain:
             query = query.eq("domain", domain)
         if jurisdiction_type:
@@ -75,5 +80,5 @@ class StandardsUploadService:
         res = query.execute()
         return [StandardOut(**row) for row in (res.data or [])]
 
-    async def delete(self, standard_id: str) -> None:
-        self.db.table("norms").delete().eq("id", standard_id).execute()
+    async def delete(self, standard_id: str, org_id: str) -> None:
+        self.db.table("norms").delete().eq("id", standard_id).eq("org_id", org_id).execute()

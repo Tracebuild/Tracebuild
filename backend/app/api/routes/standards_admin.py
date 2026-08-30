@@ -16,6 +16,7 @@ async def list_standards(
 ):
     service = StandardsUploadService(get_supabase())
     standards = await service.list_all(
+        org_id=str(user.org_id),
         domain=domain,
         jurisdiction_type=jurisdiction_type,
         jurisdiction_name=jurisdiction_name,
@@ -55,6 +56,7 @@ async def upload_standards(
         domain=domain,
         jurisdiction_type=jurisdiction_type,
         jurisdiction_name=jurisdiction_name or None,
+        org_id=str(user.org_id),
         category=category,
         source_name=source_name,
         zone=zone or None,
@@ -70,5 +72,5 @@ async def upload_standards(
 @router.delete("/{standard_id}", response_model=APIResponse)
 async def delete_standard(standard_id: str, user: CurrentUser = AuthDep):
     service = StandardsUploadService(get_supabase())
-    await service.delete(standard_id)
+    await service.delete(standard_id, org_id=str(user.org_id))
     return APIResponse(data={"deleted": True})
