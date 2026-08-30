@@ -9,9 +9,11 @@ import { useRouter } from "next/navigation";
 
 interface FileEntry {
   ids: string[];
+  title?: string;
   jurisdiction_name: string | null;
   category: string;
   source_url: string | null;
+  zone: string | null;
   text: string;
   charCount: number;
 }
@@ -59,6 +61,7 @@ const CANTONS = [
 
 interface Standard {
   id: string;
+  title?: string;
   domain: string;
   layer: number;
   jurisdiction_type: string;
@@ -66,7 +69,14 @@ interface Standard {
   category: string;
   text: string;
   source_url: string | null;
+  zone?: string | null;
 }
+
+const JURISDICTIONS = [
+  { value: "national",  label: "Bund" },
+  { value: "cantonal",  label: "Kanton" },
+  { value: "municipal", label: "Gemeinde" },
+] as const;
 
 export default function StandardsPage() {
   const router = useRouter();
@@ -78,7 +88,10 @@ export default function StandardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [jurisdictionType, setJurisdictionType] = useState<"national" | "cantonal" | "municipal">("cantonal");
   const [canton, setCanton] = useState("ZH");
+  const [municipality, setMunicipality] = useState("");
+  const [zone, setZone] = useState("");
   const [category, setCategory] = useState("");
   const [sourceName, setSourceName] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -120,21 +133,23 @@ export default function StandardsPage() {
     e.preventDefault();
     if (!file) { setError("Bitte eine Datei auswählen."); return; }
     if (!category.trim()) { setError("Bitte eine Kategorie eingeben."); return; }
+    if (jurisdictionType === "municipal" && !municipality.trim()) { setError("Bitte eine Gemeinde eingeben."); return; }
     setError(null); setSuccess(null); setUploading(true);
     try {
+      const jurisdictionName = jurisdictionType === "national" ? "" : jurisdictionType === "municipal" ? municipality.trim() : canton;
       const form = new FormData();
       form.append("file", file);
       form.append("domain", "bau");
-      form.append("layer", "2");
-      form.append("jurisdiction_type", "cantonal");
-      form.append("jurisdiction_name", canton);
+      form.append("jurisdiction_type", jurisdictionType);
+      form.append("jurisdiction_name", jurisdictionName);
       form.append("category", category.trim());
       form.append("source_name", sourceName.trim());
+      form.append("zone", zone.trim());
       const result = await api.postForm<{ count: number; jurisdiction_name: string; category: string }>(
         "/standards/upload", form
       );
-      setSuccess(`${result.count} Einträge gespeichert · ${result.jurisdiction_name} · ${result.category}`);
-      setFile(null); setCategory(""); setSourceName("");
+      setSuccess(`${result.count} Einträge gespeichert · ${result.jurisdiction_name || "Bund"} · ${result.category}`);
+      setFile(null); setCategory(""); setSourceName(""); setZone("");
       if (fileRef.current) fileRef.current.value = "";
       loadStandards();
     } catch (err: unknown) {
@@ -165,9 +180,11 @@ export default function StandardsPage() {
     } else {
       const entry: FileEntry = {
         ids: [s.id],
+        title: s.title,
         jurisdiction_name: s.jurisdiction_name,
         category: s.category,
         source_url: s.source_url,
+        zone: s.zone ?? null,
         text: s.text,
         charCount: s.text.length,
       };
@@ -227,6 +244,27 @@ export default function StandardsPage() {
                 {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+
+            {jurisdictionType === "cantonal" && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Kanton</label>
+                <select value={canton} onChange={(e) => setCanton(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            )}
+
+            {jurisdictionType === "municipal" && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Gemeinde <span className="text-red-500">*</span>
+                </label>
+                <input type="text" required value={municipality} onChange={(e) => setMunicipality(e.target.value)}
+                  placeholder="z.B. Mels"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-medium text-[#7B8299] mb-1">

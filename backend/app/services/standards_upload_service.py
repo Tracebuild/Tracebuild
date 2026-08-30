@@ -2,6 +2,8 @@ import io
 from supabase import Client
 from app.models.schemas import StandardOut
 
+_LAYER_BY_JURISDICTION = {"national": 1, "cantonal": 3, "municipal": 4}
+
 
 class StandardsUploadService:
     def __init__(self, db: Client) -> None:
@@ -23,13 +25,14 @@ class StandardsUploadService:
         file_bytes: bytes,
         filename: str,
         domain: str,
-        layer: int,
         jurisdiction_type: str,
         jurisdiction_name: str | None,
         category: str,
         source_name: str = "",
+        zone: str | None = None,
     ) -> list[StandardOut]:
-        """One file = one DB row (no chunking)."""
+        """One file = one DB row (no chunking). Writes into the `norms` catalog
+        that project norm-matching and plan analysis actually read from."""
         lower = filename.lower()
 
         if lower.endswith(".pdf"):
@@ -40,17 +43,20 @@ class StandardsUploadService:
         if not text.strip():
             return []
 
+        title = source_name or filename
         row = {
+            "title": title,
             "domain": domain,
-            "layer": layer,
+            "layer": _LAYER_BY_JURISDICTION.get(jurisdiction_type, 3),
             "jurisdiction_type": jurisdiction_type,
-            "jurisdiction_name": jurisdiction_name or None,
+            "jurisdiction_name": None if jurisdiction_type == "national" else (jurisdiction_name or None),
             "category": category,
             "text": text[:100_000],
             "source_url": source_name or filename,
+            "zone": zone or None,
         }
 
-        res = self.db.table("standards").insert(row).execute()
+        res = self.db.table("norms").insert(row).execute()
         return [StandardOut(**r) for r in (res.data or [])]
 
     async def list_all(
@@ -59,7 +65,7 @@ class StandardsUploadService:
         jurisdiction_type: str | None = None,
         jurisdiction_name: str | None = None,
     ) -> list[StandardOut]:
-        query = self.db.table("standards").select("*").order("created_at", desc=True)
+        query = self.db.table("norms").select("*").is_("org_id", None).order("created_at", desc=True)
         if domain:
             query = query.eq("domain", domain)
         if jurisdiction_type:
@@ -70,4 +76,4 @@ class StandardsUploadService:
         return [StandardOut(**row) for row in (res.data or [])]
 
     async def delete(self, standard_id: str) -> None:
-        self.db.table("standards").delete().eq("id", standard_id).execute()
+        self.db.table("norms").delete().eq("id", standard_id).execute()

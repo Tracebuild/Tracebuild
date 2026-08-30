@@ -12,7 +12,7 @@ def _get_project(project_id: UUID, user: CurrentUser) -> dict:
     db = get_supabase()
     proj = (
         db.table("projects")
-        .select("domain, org_id, location")
+        .select("domain, org_id, location, bauzone")
         .eq("id", str(project_id))
         .single()
         .execute()
@@ -61,6 +61,7 @@ async def create_analysis(
         file_bytes=file_bytes,
         content_type=file.content_type or "application/pdf",
         location=proj.get("location") or {},
+        bauzone=proj.get("bauzone"),
     )
     data = analysis.model_dump()
     data["documents"] = {"file_url": file_url, "doc_type": "grundriss"}

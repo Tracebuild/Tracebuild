@@ -27,11 +27,11 @@ async def list_standards(
 async def upload_standards(
     file: UploadFile = File(...),
     domain: str = Form("bau"),
-    layer: int = Form(2),
     jurisdiction_type: str = Form("cantonal"),
     jurisdiction_name: str = Form(""),
     category: str = Form(...),
     source_name: str = Form(""),
+    zone: str = Form(""),
     user: CurrentUser = AuthDep,
 ):
     allowed = {
@@ -43,6 +43,8 @@ async def upload_standards(
             raise HTTPException(
                 status_code=422, detail="Only PDF or text files are allowed."
             )
+    if jurisdiction_type != "national" and not jurisdiction_name:
+        raise HTTPException(status_code=422, detail="Kanton/Gemeinde fehlt")
 
     file_bytes = await file.read()
 
@@ -51,11 +53,11 @@ async def upload_standards(
         file_bytes=file_bytes,
         filename=file.filename or "upload",
         domain=domain,
-        layer=layer,
         jurisdiction_type=jurisdiction_type,
         jurisdiction_name=jurisdiction_name or None,
         category=category,
         source_name=source_name,
+        zone=zone or None,
     )
 
     return APIResponse(data={

@@ -2,7 +2,7 @@ from uuid import UUID
 from supabase import Client
 from app.models.schemas import ProjectCreate, ProjectOut
 from app.services.geoportal_service import lookup_parcel
-from app.services.norm_assignment_service import assign_norms_to_project, assign_geoportal_norms_to_project
+from app.services.norm_assignment_service import assign_norms_to_project
 
 
 class ProjectService:
@@ -31,14 +31,12 @@ class ProjectService:
     async def create_project(self, org_id: UUID, data: ProjectCreate) -> ProjectOut:
         loc = data.location
 
-        # Try geoportal lookup when a parcel number is provided
+        # Geoportal is only used to determine the Bauzone — norms themselves are never
+        # fetched from it, they come from the manually maintained norms catalog.
         bauzone = data.bauzone
-        documents: list[dict] = []
-        if data.parcel_number:
+        if data.parcel_number and not bauzone:
             geo = await lookup_parcel(data.parcel_number, loc.municipality, loc.canton)
-            if not bauzone:
-                bauzone = geo.get("bauzone")
-            documents = geo.get("documents", [])
+            bauzone = geo.get("bauzone")
 
         payload = {
             "org_id": str(org_id),
@@ -52,7 +50,7 @@ class ProjectService:
         res = self.db.table("projects").insert(payload).execute()
         project = ProjectOut(**res.data[0])
 
-        # Auto-assign matching norms
+        # Auto-assign matching norms from the catalog
         assign_norms_to_project(
             self.db,
             project_id=str(project.id),
@@ -60,16 +58,6 @@ class ProjectService:
             canton=loc.canton,
             municipality=loc.municipality,
             domain=data.domain,
-        )
-
-        assign_geoportal_norms_to_project(
-            self.db,
-            project_id=str(project.id),
-            domain=data.domain,
-            canton=loc.canton,
-            municipality=loc.municipality,
-            zone_label=bauzone,
-            documents=documents,
         )
 
         return project

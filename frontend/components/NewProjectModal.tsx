@@ -62,7 +62,6 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
   const [municipality, setMunicipality] = useState("");
   const [parcelNumber, setParcelNumber] = useState("");
   const [bauzone, setBauzone]           = useState("");
-  const [docCount, setDocCount]         = useState(0);
   const [lookupState, setLookupState]   = useState<"idle" | "loading" | "found" | "notfound">("idle");
   const [error, setError]               = useState<string | null>(null);
   const [loading, setLoading]           = useState(false);
@@ -77,11 +76,10 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
     if (lookupTimer.current) clearTimeout(lookupTimer.current);
     lookupTimer.current = setTimeout(async () => {
       try {
-        const result = await api.post<{ bauzone: string | null; documents?: unknown[] }>(
+        const result = await api.post<{ bauzone: string | null }>(
           "/geoportal/lookup",
           { parcel_number: parcelNumber, municipality, canton }
         );
-        setDocCount(result?.documents?.length ?? 0);
         if (result?.bauzone) {
           setBauzone(result.bauzone);
           setLookupState("found");
@@ -89,7 +87,6 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
           setLookupState("notfound");
         }
       } catch {
-        setDocCount(0);
         setLookupState("notfound");
       }
     }, 800);
@@ -156,7 +153,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
           <Field label="Parzellennummer" hint="(optional — für automatische Bauzonen-Erkennung)">
             <TextInput
               value={parcelNumber}
-              onChange={v => { setParcelNumber(v); setBauzone(""); setDocCount(0); setLookupState("idle"); }}
+              onChange={v => { setParcelNumber(v); setBauzone(""); setLookupState("idle"); }}
               placeholder="z.B. 1234"
             />
           </Field>
@@ -182,11 +179,6 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
             {lookupState === "notfound" && (
               <p style={{ fontSize: 11, color: "#7B8299", margin: "5px 0 0", lineHeight: 1.4 }}>
                 Parzelle nicht im Geoportal gefunden — Bauzone kann manuell eingegeben oder leer gelassen werden.
-              </p>
-            )}
-            {lookupState === "found" && docCount > 0 && (
-              <p style={{ fontSize: 11, color: "#34d399", margin: "5px 0 0", lineHeight: 1.4 }}>
-                {docCount} {docCount === 1 ? "Norm wird" : "Normen werden"} automatisch aus dem Geoportal verknüpft — keine manuelle Eingabe nötig.
               </p>
             )}
           </Field>

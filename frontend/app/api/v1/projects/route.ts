@@ -1,6 +1,6 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assignNorms, assignGeoportalNorms } from "@/lib/norm-assignment";
+import { assignNorms } from "@/lib/norm-assignment";
 import { lookupParcel } from "@/lib/geoportal";
 
 export async function GET() {
@@ -26,15 +26,12 @@ export async function POST(request: Request) {
   const { name, domain = "bau", location = {}, parcel_number, bauzone: bInput } = body;
   if (!name) return err("Name fehlt");
 
+  // Geoportal is only used to determine the Bauzone — norms themselves are never
+  // fetched from it, they come from the manually maintained norms catalog.
   let zone: string | null = bInput ?? null;
-  let documents: import("@/lib/geoportal").GeoportalDocument[] = [];
-
-  // Re-run the geoportal lookup server-side so norm import always reflects the
-  // authoritative source, rather than trusting whatever the client shuttled back.
-  if (parcel_number && location.municipality) {
+  if (!zone && parcel_number && location.municipality) {
     const geo = await lookupParcel(parcel_number, location.municipality, location.canton).catch(() => null);
     if (geo?.bauzone) zone = geo.bauzone;
-    if (geo?.documents) documents = geo.documents;
   }
 
   const admin = createAdminClient();
@@ -67,14 +64,5 @@ export async function POST(request: Request) {
     domain
   ).catch(() => 0);
 
-  const geoportal_norms_count = await assignGeoportalNorms(
-    project.id,
-    domain,
-    location.canton ?? "",
-    location.municipality ?? "",
-    zone,
-    documents
-  ).catch(() => 0);
-
-  return ok({ project, assigned_norms_count, geoportal_norms_count, zone }, 201);
+  return ok({ project, assigned_norms_count, zone }, 201);
 }
