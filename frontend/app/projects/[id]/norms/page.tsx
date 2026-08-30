@@ -82,7 +82,7 @@ function NormCard({ pn, onRemove }: { pn: ProjectNorm; onRemove: (normId: string
               {(norm.source_url || norm.source_doc) && (
                 <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
                   {norm.source_url && (
-                    <a href={norm.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#B7926A", textDecoration: "none" }}>
+                    <a href={norm.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "#85A6E9", textDecoration: "none" }}>
                       Quelle ansehen →
                     </a>
                   )}
@@ -193,7 +193,13 @@ function AddCustomNormModal({ projectId, onClose, onAdded }: { projectId: string
             <button type="button" onClick={onClose} style={{ flex: 1, border: "1px solid rgba(133,166,233,0.2)", color: "#7B8299", padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 500, background: "none", cursor: "pointer", fontFamily: "inherit" }}>
               Abbrechen
             </button>
-            <button type="submit" disabled={loading} style={{ flex: 1, background: "#B7926A", color: "#fff", padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "inherit" }}>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ flex: 1, background: "#2862D7", color: "#fff", padding: "9px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "inherit", transition: "background .15s" }}
+              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = "#3470E8"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#2862D7"; }}
+            >
               {loading ? "Wird gespeichert..." : "Speichern"}
             </button>
           </div>
@@ -231,7 +237,7 @@ function BauzoneInput({ projectId, onSaved }: { projectId: string; onSaved: (zon
       <button
         onClick={handleSave}
         disabled={saving || !value.trim()}
-        style={{ padding: "6px 14px", background: "#F59E0B", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: saving || !value.trim() ? "not-allowed" : "pointer", opacity: saving || !value.trim() ? 0.5 : 1, fontFamily: "inherit" }}
+        style={{ padding: "6px 14px", background: "#2862D7", color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: saving || !value.trim() ? "not-allowed" : "pointer", opacity: saving || !value.trim() ? 0.5 : 1, fontFamily: "inherit" }}
       >
         {saving ? "..." : "Speichern"}
       </button>
@@ -329,7 +335,7 @@ export default function NormenPage({ params }: { params: { id: string } }) {
                 </span>
               )}
               {project.bauzone && (
-                <span style={{ fontSize: 11, background: "rgba(183,146,106,0.12)", color: "#B7926A", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>
+                <span style={{ fontSize: 11, background: "rgba(40,98,215,0.12)", color: "#85A6E9", padding: "2px 8px", borderRadius: 100, fontWeight: 600 }}>
                   Zone {project.bauzone}
                 </span>
               )}
@@ -355,9 +361,9 @@ export default function NormenPage({ params }: { params: { id: string } }) {
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 13, color: "#fff", background: "#B7926A", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, whiteSpace: "nowrap" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#9E7A52"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#B7926A"; }}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 8, fontSize: 13, color: "#fff", background: "#2862D7", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, whiteSpace: "nowrap" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#3470E8"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#2862D7"; }}
           >
             <svg style={{ width: 14, height: 14 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -400,8 +406,8 @@ export default function NormenPage({ params }: { params: { id: string } }) {
         </div>
       ) : grouped.length === 0 && otherZoneNorms.length === 0 ? (
         <div style={{ background: "rgba(23,37,64,0.55)", border: "1px solid rgba(133,166,233,0.1)", borderRadius: 16, padding: "64px 24px", textAlign: "center" }}>
-          <div style={{ width: 40, height: 40, background: "rgba(183,146,106,0.12)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-            <svg style={{ width: 20, height: 20, color: "#B7926A" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div style={{ width: 40, height: 40, background: "rgba(40,98,215,0.12)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+            <svg style={{ width: 20, height: 20, color: "#85A6E9" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>

@@ -63,7 +63,9 @@ async def create_analysis(
         location=proj.get("location") or {},
         bauzone=proj.get("bauzone"),
     )
-    return APIResponse(data=analysis.model_dump())
+    data = analysis.model_dump()
+    data["documents"] = {"file_url": file_url, "doc_type": "grundriss"}
+    return APIResponse(data=data)
 
 
 @router.get("", response_model=APIResponse)
@@ -72,7 +74,7 @@ async def list_analyses(project_id: UUID, user: CurrentUser = AuthDep):
     db = get_supabase()
     res = (
         db.table("analyses")
-        .select("*, analysis_items(*), documents!inner(project_id)")
+        .select("*, analysis_items(*), documents!inner(project_id, file_url, doc_type)")
         .eq("documents.project_id", str(project_id))
         .order("created_at", desc=True)
         .execute()

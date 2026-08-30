@@ -370,6 +370,8 @@ function setupLockNetwork(canvasEl: HTMLCanvasElement | null): () => void {
 // ── Component ──────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef    = useRef<HTMLElement>(null);
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const problemNetRef  = useRef<HTMLCanvasElement>(null);
   const solutionNetRef = useRef<HTMLCanvasElement>(null);
@@ -385,6 +387,22 @@ export default function LandingPage() {
   const teamRef     = useRef<HTMLElement>(null);
   const ctaRef      = useRef<HTMLElement>(null);
   const footerRef   = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onOutside = (e: MouseEvent | TouchEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) setMobileMenuOpen(false);
+    };
+    const onResize = () => { if (window.innerWidth > 768) setMobileMenuOpen(false); };
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("touchstart", onOutside);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("touchstart", onOutside);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -535,9 +553,27 @@ export default function LandingPage() {
         .lp-footer-link:hover { color:#fff; }
         @keyframes glowPulse { 0%,100%{opacity:.16;transform:scale(1)} 50%{opacity:.28;transform:scale(1.1)} }
 
-        /* Mobile: collapse quick-nav + hide login (login is desktop/laptop only) */
+        /* Mobile hamburger: hidden on desktop, shown + wired to a real menu on mobile */
+        .lp-hamburger { display:none; width:36px; height:36px; align-items:center; justify-content:center; border-radius:9px; background:rgba(20,20,24,.55); border:1px solid rgba(255,255,255,.09); cursor:pointer; flex-shrink:0; transition:border-color .2s, background .2s; }
+        .lp-hamburger:hover { border-color:#2862D7; background:rgba(91,139,247,.14); }
+        .lp-mobile-menu { display:none; }
+        .lp-mobile-link { display:block; padding:14px 18px; font-size:14px; font-weight:500; color:#e4e5ea; text-decoration:none; border-radius:10px; transition:background .15s, color .15s; }
+        .lp-mobile-link:hover { background:rgba(255,255,255,.06); color:#fff; }
+
+        /* Mobile: quick-nav collapses into a hamburger menu; login stays desktop/laptop only */
         @media (max-width: 768px) {
           .lp-nav-links, .lp-desktop-only { display:none !important; }
+          .lp-hamburger { display:flex; }
+          .lp-mobile-menu {
+            display:flex; flex-direction:column; gap:2px;
+            width:calc(100% - 32px); max-width:420px; margin-top:8px; padding:8px;
+            background:rgba(10,10,12,.92); backdrop-filter:blur(10px) saturate(107%); -webkit-backdrop-filter:blur(10px) saturate(107%);
+            border:1px solid rgba(255,255,255,.09); border-radius:16px;
+            box-shadow:0 20px 40px -12px rgba(0,0,0,.6);
+            max-height:0; opacity:0; overflow:hidden; pointer-events:none;
+            transition:max-height .3s cubic-bezier(.4,0,.2,1), opacity .2s ease, padding .3s ease;
+          }
+          .lp-mobile-menu-open { max-height:280px; opacity:1; pointer-events:auto; padding:8px; }
           .lp-dash { grid-template-columns: 1fr !important; aspect-ratio: auto !important; }
           .lp-dash-sidebar, .lp-dash-main { border-right:none !important; border-bottom:1px solid rgba(255,255,255,.08) !important; }
           .lp-dash-plan { min-height: 220px !important; }
@@ -559,7 +595,7 @@ export default function LandingPage() {
         <canvas ref={canvasRef} style={{ position:"fixed", inset:0, width:"100vw", height:"100vh", zIndex:0, pointerEvents:"none", display:"block" }} />
 
         {/* NAV */}
-        <header style={{ position:"fixed", top:0, left:0, right:0, zIndex:90, display:"flex", justifyContent:"center" }}>
+        <header ref={headerRef} style={{ position:"fixed", top:0, left:0, right:0, zIndex:90, display:"flex", flexDirection:"column", alignItems:"center" }}>
           <div style={navS}>
             <div style={{ display:"flex", alignItems:"center", gap:9 }}>
               <Image src="/Logo-new.png" alt="TraceBuild" width={533} height={400} style={{ height:30, width:"auto", objectFit:"contain", display:"block" }} priority />
@@ -573,7 +609,27 @@ export default function LandingPage() {
               <a href="#kontakt" className="lp-nav-link">Kontakt</a>
             </nav>
             <a href="/login" className="lp-nav-login lp-desktop-only">Login</a>
+            <button
+              className="lp-hamburger"
+              aria-label={mobileMenuOpen ? "Menü schliessen" : "Menü öffnen"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(v => !v)}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                {mobileMenuOpen ? (
+                  <path d="M3 3L13 13M13 3L3 13" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+                ) : (
+                  <path d="M2.5 4.5H13.5M2.5 8H13.5M2.5 11.5H13.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          <nav className={`lp-mobile-menu ${mobileMenuOpen ? "lp-mobile-menu-open" : ""}`} aria-hidden={!mobileMenuOpen}>
+            <a href="#story"   className="lp-mobile-link" onClick={() => setMobileMenuOpen(false)}>Produkt</a>
+            <a href="#preise"  className="lp-mobile-link" onClick={() => setMobileMenuOpen(false)}>Preise</a>
+            <a href="#kontakt" className="lp-mobile-link" onClick={() => setMobileMenuOpen(false)}>Kontakt</a>
+          </nav>
         </header>
 
         {/* HERO */}
@@ -602,7 +658,7 @@ export default function LandingPage() {
           <div ref={problemRef} className="lp-glass-card" style={glassCardStyle}>
             <p style={{ fontSize:12, color:"#c69bf0", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 20px" }}>Wir kennen das Problem</p>
             <h2 style={{ fontSize:"clamp(26px,3.6vw,38px)", fontWeight:600, color:"#fff", lineHeight:1.3, letterSpacing:"-0.015em", margin:"0 0 22px", textWrap:"pretty" } as React.CSSProperties}>Planprüfung von Hand kostet Zeit, die im Projekt niemand übrig hat.</h2>
-            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Jede Zeichnung gegen SIA-Normen, kantonale Vorschriften und interne Richtlinien abzugleichen, ist mühsam und fehleranfällig. Ein übersehener Normverstoss wird oft erst auf der Baustelle sichtbar — wenn eine Korrektur am teuersten ist.</p>
+            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Jede Zeichnung gegen SIA-Normen, kantonale Vorschriften und interne Richtlinien abzugleichen, ist mühsam und fehleranfällig. Ein übersehener Normverstoss wird oft erst auf der Baustelle sichtbar — wenn eine Korrektur am teuersten ist. Genauso zeitraubend: die passenden Normen, Richtlinien und Vorschriften erst mühsam aus verschiedenen Quellen im Web zusammensuchen zu müssen, bevor überhaupt geprüft werden kann.</p>
           </div>
         </section>
 
@@ -617,6 +673,7 @@ export default function LandingPage() {
             <p style={{ fontSize:12, color:"#8fb3f5", letterSpacing:".14em", textTransform:"uppercase", fontWeight:600, margin:"0 0 20px" }}>Unsere Lösung</p>
             <h2 style={{ fontSize:"clamp(26px,3.6vw,38px)", fontWeight:600, color:"#fff", lineHeight:1.3, letterSpacing:"-0.015em", margin:"0 0 22px", textWrap:"pretty" } as React.CSSProperties}>TraceBuild übernimmt den Abgleich — du prüfst nur noch das Ergebnis.</h2>
             <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:0, textWrap:"pretty" } as React.CSSProperties}>Zeichnung hochladen, TraceBuild liest Masse, Bauteile und Beschriftungen automatisch aus und gleicht sie in Minuten mit SIA-Normen und kantonalen Vorschriften ab. Jeder Fund ist auf den Millimeter genau im Plan verortet und mit Norm-Referenz belegt — bereit für den Prüfbericht, nicht für eine weitere Nachkontrolle.</p>
+            <p style={{ fontSize:16, color:"#9a9ba3", lineHeight:1.75, margin:"18px 0 0", textWrap:"pretty" } as React.CSSProperties}>Zusätzlich hast du direkten Zugriff auf alle relevanten Normen, Richtlinien und kantonalen Vorschriften in einer zentralen Wissensbasis — ohne dich durch verstreute Quellen im Web zu suchen.</p>
           </div>
         </section>
 
@@ -714,9 +771,9 @@ export default function LandingPage() {
         {/* TRUST STRIP */}
         <section ref={trustRef} className="lp-trust-section" style={{ position:"relative", padding:"60px 24px", minHeight:"110vh", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1, transition:"opacity .2s cubic-bezier(.4,0,.2,1), filter .2s cubic-bezier(.4,0,.2,1)", overflow:"hidden" }}>
           <canvas ref={trustNetRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:0, pointerEvents:"none", display:"block", maskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)", WebkitMaskImage:"linear-gradient(to bottom, transparent 0%, black 40%, black 60%, transparent 100%)" }} />
-          <div style={{ maxWidth:880, margin:"0 auto", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"14px 40px", background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, padding:"26px 32px", position:"relative", zIndex:1 }}>
+          <div style={{ maxWidth:880, margin:"0 auto", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"14px 40px", background:"rgba(255,255,255,.03)", backdropFilter:"blur(1.5px)", WebkitBackdropFilter:"blur(1.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:16, padding:"26px 32px", position:"relative", zIndex:1 }}>
             {["Daten bleiben in der Schweiz","Revisionssicher dokumentiert","Laufend aktualisierte Normdatenbank","Feste Ansprechperson"].map(t => (
-              <span key={t} style={{ fontSize:13, color:"#c7c8d1" }}>{t}</span>
+              <span key={t} style={{ fontSize:15, color:"#c7c8d1" }}>{t}</span>
             ))}
           </div>
         </section>
@@ -734,7 +791,7 @@ export default function LandingPage() {
               {/* Starter */}
               <div style={{ background:"rgba(255,255,255,.03)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(255,255,255,.1)", borderRadius:18, padding:"36px 30px" }}>
                 <p style={{ fontSize:12.5, color:"#9a9ba3", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Starter</p>
-                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>CHF 149<span style={{ fontSize:13, color:"rgba(117,118,128,.5)", fontWeight:400 }}> /Monat</span></p>
+                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>####<span style={{ fontSize:13, color:"rgba(117,118,128,.5)", fontWeight:400 }}> /Monat</span></p>
                 <p style={{ fontSize:13, color:"rgba(117,118,128,.5)", margin:"0 0 28px" }}>Für einzelne Büros</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:11, margin:"0 0 32px" }}>
                   {["Bis 30 Pläne / Monat","SIA-Normabgleich","PDF-Prüfberichte"].map(f => <span key={f} style={{ fontSize:13.5, color:"#c7c8d1" }}>{f}</span>)}
@@ -746,7 +803,7 @@ export default function LandingPage() {
               <div style={{ position:"relative", background:"rgba(40,98,215,.08)", backdropFilter:"blur(4.5px)", WebkitBackdropFilter:"blur(4.5px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.04)", border:"1px solid rgba(91,139,247,.35)", borderRadius:18, padding:"36px 30px" }}>
                 <span style={{ position:"absolute", top:0, left:24, right:24, height:2, background:"linear-gradient(90deg,#4fd1ff,#2862D7)", borderRadius:2 }} />
                 <p style={{ fontSize:12.5, color:"#8fb3f5", fontWeight:600, letterSpacing:".04em", margin:"0 0 18px", textTransform:"uppercase" }}>Team · Beliebt</p>
-                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>CHF 349<span style={{ fontSize:13, color:"#9a9ba3", fontWeight:400 }}> /Monat</span></p>
+                <p style={{ fontSize:34, fontWeight:600, color:"#fff", margin:"0 0 4px", letterSpacing:"-0.02em" }}>####<span style={{ fontSize:13, color:"#9a9ba3", fontWeight:400 }}> /Monat</span></p>
                 <p style={{ fontSize:13, color:"#9a9ba3", margin:"0 0 28px" }}>Für wachsende Büros</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:11, margin:"0 0 32px" }}>
                   {["Bis 150 Pläne / Monat","SIA + kantonale Normen","Bis 10 Teammitglieder","Feste Ansprechperson"].map(f => <span key={f} style={{ fontSize:13.5, color:"#eef1fb" }}>{f}</span>)}

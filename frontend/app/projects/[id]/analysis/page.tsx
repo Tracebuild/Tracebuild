@@ -32,6 +32,7 @@ interface AnalysisWithDoc {
   cost_usd: number | null;
   created_at: string;
   planType: string;
+  fileUrl: string | null;
   items: AnalysisItem[];
 }
 
@@ -40,7 +41,7 @@ interface RawGetAnalysis {
   status: string;
   cost_usd: number | null;
   created_at: string;
-  documents?: { doc_type: string | null } | null;
+  documents?: { doc_type: string | null; file_url?: string | null } | null;
   analysis_items?: AnalysisItem[];
   items?: AnalysisItem[];
 }
@@ -152,6 +153,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
         cost_usd: a.cost_usd,
         created_at: a.created_at,
         planType: a.documents?.doc_type ?? "Grundriss",
+        fileUrl: a.documents?.file_url || null,
         items: a.items ?? a.analysis_items ?? [],
       }));
       setAnalyses(normalized);
@@ -221,6 +223,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
         cost_usd: raw.cost_usd,
         created_at: raw.created_at,
         planType: selectedPlanType,
+        fileUrl: raw.documents?.file_url || null,
         items: raw.items ?? raw.analysis_items ?? [],
       };
       setAnalyses((prev) => [analysis, ...prev]);
@@ -679,7 +682,34 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
           const vIdx = typeAnalyses.findIndex((a) => a.id === selectedAnalysis.id);
           const vNr  = typeAnalyses.length - vIdx;
           return (
-            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+              {/* PDF Viewer */}
+              <div style={{ flex: "1 1 480px", minWidth: 320, position: "sticky", top: 20 }}>
+                <div style={{ ...CARD, height: 720, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                  <div style={{ padding: "10px 16px", borderBottom: "1px solid rgba(133,166,233,0.1)", display: "flex", alignItems: "center", gap: 8 }}>
+                    <svg style={{ width: 14, height: 14, color: "#7B8299", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#ABAEBB" }}>Plan-Vorschau</span>
+                  </div>
+                  {selectedAnalysis.fileUrl ? (
+                    <iframe
+                      src={selectedAnalysis.fileUrl}
+                      title="Plan-Vorschau"
+                      style={{ flex: 1, width: "100%", border: "none", background: "#0E111B" }}
+                    />
+                  ) : (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <p style={{ fontSize: 13, color: "#7B8299", textAlign: "center", padding: "0 24px" }}>
+                        Keine Vorschau verfügbar für diesen Plan.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Results */}
+              <div style={{ flex: "1 1 420px", minWidth: 320, display: "flex", flexDirection: "column", gap: 18 }}>
               {/* Header */}
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
                 <div>
@@ -762,6 +792,7 @@ export default function AnalysisPage({ params }: { params: { id: string } }) {
                 ) : (
                   filteredItems.map((item) => <CheckCard key={item.id} item={item} />)
                 )}
+              </div>
               </div>
             </div>
           );
