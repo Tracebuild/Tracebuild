@@ -117,7 +117,7 @@ export default function DatabasePage() {
     setStandards((prev) => prev.filter((s) => s.id !== id));
   }
 
-  const inputCls = "w-full border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 caret-stone-900 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] transition-colors bg-white";
+  const inputCls = "w-full rounded-lg px-3 py-2 text-sm text-white bg-[rgba(23,37,64,0.6)] border border-[rgba(133,166,233,0.25)] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors";
 
   return (
     <div className="flex gap-6">
@@ -131,7 +131,7 @@ export default function DatabasePage() {
             onDrop={handleDrop}
             onClick={() => fileRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-              dragOver ? "border-[#B7926A] bg-[#f3ece3]" : "border-[#e7e2d9] hover:border-[#c8a882]"
+              dragOver ? "border-[#2862D7] bg-[#2862D7]/10" : "border-[rgba(133,166,233,0.2)] hover:border-[#2862D7]/50"
             }`}
           >
             <input
@@ -142,19 +142,19 @@ export default function DatabasePage() {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
             {file ? (
-              <p className="text-sm text-[#8b6344] font-medium truncate">{file.name}</p>
+              <p className="text-sm text-[#85A6E9] font-medium truncate">{file.name}</p>
             ) : (
               <div>
                 <p className="text-xl mb-1">📋</p>
-                <p className="text-sm text-stone-500">PDF oder TXT wählen</p>
+                <p className="text-sm text-[#ABAEBB]">PDF oder TXT wählen</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Ebene</label>
-            <select value={jurisdictionType} onChange={(e) => setJurisdictionType(e.target.value as typeof jurisdictionType)} className={inputCls}>
-              {JURISDICTIONS.map((j) => <option key={j.value} value={j.value}>{j.label}</option>)}
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
+            <select value={canton} onChange={(e) => setCanton(e.target.value)} className={`${inputCls} appearance-none`}>
+              {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
@@ -184,8 +184,8 @@ export default function DatabasePage() {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">
-              Kategorie <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">
+              Kategorie <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
@@ -198,18 +198,7 @@ export default function DatabasePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Zone (optional)</label>
-            <input
-              type="text"
-              value={zone}
-              onChange={(e) => setZone(e.target.value)}
-              placeholder="z.B. W2 — leer = gilt für alle Zonen"
-              className={inputCls}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-stone-600 mb-1">Quelle (optional)</label>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Quelle (optional)</label>
             <input
               type="text"
               value={sourceName}
@@ -220,16 +209,16 @@ export default function DatabasePage() {
           </div>
 
           {error && (
-            <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>
           )}
           {success && (
-            <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{success}</p>
+            <p className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">{success}</p>
           )}
 
           <button
             type="submit"
             disabled={uploading || !file}
-            className="w-full bg-[#B7926A] hover:bg-[#a67e5a] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+            className="w-full bg-[#2862D7] hover:bg-[#3470E8] text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {uploading ? "Wird verarbeitet…" : "Hochladen & speichern"}
           </button>
@@ -242,7 +231,7 @@ export default function DatabasePage() {
           <h2 className="text-base font-semibold text-white">
             Normen-Datenbank
             {standards.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-stone-400">
+              <span className="ml-2 text-sm font-normal text-[#7B8299]">
                 ({standards.length} Einträge)
               </span>
             )}
@@ -250,7 +239,7 @@ export default function DatabasePage() {
           <select
             value={filterJurisdiction}
             onChange={(e) => setFilterJurisdiction(e.target.value)}
-            className="border border-stone-200 rounded-lg px-3 py-1.5 text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-[#B7926A]/30 focus:border-[#B7926A] bg-white"
+            className={`${inputCls} w-auto py-1.5 appearance-none`}
           >
             <option value="">Alle Kantone</option>
             {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -260,30 +249,30 @@ export default function DatabasePage() {
         {loading ? (
           <div className="space-y-2">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white border border-[#e7e2d9] rounded-xl p-4 animate-pulse">
-                <div className="h-3 bg-stone-100 rounded w-1/4 mb-2" />
-                <div className="h-3 bg-stone-100 rounded w-3/4" />
+              <div key={i} className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 animate-pulse">
+                <div className="h-3 bg-[rgba(60,63,68,0.5)] rounded w-1/4 mb-2" />
+                <div className="h-3 bg-[rgba(60,63,68,0.5)] rounded w-3/4" />
               </div>
             ))}
           </div>
         ) : standards.length === 0 ? (
-          <div className="bg-white border border-[#e7e2d9] rounded-xl p-12 text-center">
-            <p className="text-stone-400 text-sm">Noch keine Normen in der Datenbank.</p>
-            <p className="text-stone-300 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
+          <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-12 text-center">
+            <p className="text-[#7B8299] text-sm">Noch keine Normen in der Datenbank.</p>
+            <p className="text-[#7B8299]/70 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {standards.map((s) => (
               <div
                 key={s.id}
-                className="bg-white border border-[#e7e2d9] rounded-xl p-4 flex gap-3 group"
+                className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 flex gap-3 group"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs bg-[#f3ece3] text-[#8b6344] px-2 py-0.5 rounded-full font-medium">
-                      {s.jurisdiction_name ?? "Bund"}
+                    <span className="text-xs bg-[#2862D7]/10 text-[#85A6E9] px-2 py-0.5 rounded-full font-medium">
+                      {s.jurisdiction_name ?? "—"}
                     </span>
-                    <span className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
+                    <span className="text-xs bg-[rgba(60,63,68,0.5)] text-[#ABAEBB] px-2 py-0.5 rounded-full">
                       {s.category}
                     </span>
                     {s.zone && (
@@ -292,15 +281,14 @@ export default function DatabasePage() {
                       </span>
                     )}
                     {s.source_url && (
-                      <span className="text-xs text-stone-400 truncate">{s.source_url}</span>
+                      <span className="text-xs text-[#7B8299] truncate">{s.source_url}</span>
                     )}
                   </div>
-                  {s.title && <p className="text-sm font-medium text-stone-800">{s.title}</p>}
-                  <p className="text-sm text-stone-700 line-clamp-2">{s.text}</p>
+                  <p className="text-sm text-[#ABAEBB] line-clamp-2">{s.text}</p>
                 </div>
                 <button
                   onClick={() => handleDelete(s.id)}
-                  className="text-stone-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
+                  className="text-[#7B8299] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0 text-lg leading-none"
                   title="Löschen"
                 >
                   ×

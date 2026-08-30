@@ -440,7 +440,7 @@ export default function OrgAdminPage() {
   // ── Guards ──
   if (authorized === null) {
     return (
-      <div className="min-h-screen bg-[#151E32] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-[#2862D7]/30 border-t-[#2862D7] rounded-full animate-spin" />
       </div>
     );
@@ -448,7 +448,7 @@ export default function OrgAdminPage() {
 
   if (authorized === false) {
     return (
-      <div className="min-h-screen bg-[#151E32] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <p className="text-[#ABAEBB] text-sm">Zugriff verweigert — nur für Org-Admins.</p>
         <button onClick={() => router.replace("/dashboard")} className="text-sm font-semibold text-[#85A6E9] hover:underline">
           Zum Dashboard →

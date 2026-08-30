@@ -21,34 +21,31 @@ interface FileEntry {
 function FileCard({ entry, onDelete }: { entry: FileEntry; onDelete: (ids: string[]) => void }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 group">
+    <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 group">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
-          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-            {entry.jurisdiction_name ?? "Bund"}
+          <span className="text-xs bg-[#2862D7]/10 text-[#85A6E9] px-2 py-0.5 rounded-full font-medium">
+            {entry.jurisdiction_name ?? "—"}
           </span>
-          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{entry.category}</span>
-          {entry.zone && (
-            <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">Zone {entry.zone}</span>
-          )}
-          <span className="text-sm text-gray-700 font-medium truncate">📄 {entry.title || entry.source_url || "—"}</span>
+          <span className="text-xs bg-[rgba(60,63,68,0.5)] text-[#ABAEBB] px-2 py-0.5 rounded-full">{entry.category}</span>
+          <span className="text-sm text-white font-medium truncate">📄 {entry.source_url || "—"}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="text-xs text-blue-500 hover:text-blue-700 whitespace-nowrap"
+            className="text-xs text-[#85A6E9] hover:text-white whitespace-nowrap transition-colors"
           >
             {expanded ? "Inhalt verbergen ▲" : "Inhalt anzeigen ▼"}
           </button>
           <button
             onClick={() => onDelete(entry.ids)}
-            className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 text-lg leading-none"
+            className="text-[#7B8299] hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 text-lg leading-none"
             title="Löschen"
           >×</button>
         </div>
       </div>
       {expanded && (
-        <p className="mt-3 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap border-t border-gray-100 pt-3">
+        <p className="mt-3 text-sm text-[#ABAEBB] leading-relaxed whitespace-pre-wrap border-t border-[rgba(60,63,68,0.4)] pt-3">
           {entry.text}
         </p>
       )}
@@ -196,18 +193,20 @@ export default function StandardsPage() {
     }
   }
 
+  const inputCls = "w-full rounded-lg px-3 py-2 text-sm text-white bg-[rgba(23,37,64,0.6)] border border-[rgba(133,166,233,0.25)] placeholder:text-[#7B8299] focus:outline-none focus:ring-2 focus:ring-[#2862D7]/40 focus:border-[#2862D7] transition-colors";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <div style={{ minHeight: "100vh", background: "radial-gradient(120% 90% at 50% -10%,#182541 0%,#0A0E17 55%)" }}>
+      <header style={{ background: "rgba(10,14,23,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "1px solid rgba(133,166,233,0.12)", position: "sticky", top: 0, zIndex: 40 }}>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+            <Link href="/dashboard" className="text-sm text-[#7B8299] hover:text-white transition-colors">
               ← Dashboard
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">Normen-Datenbank</h1>
+            <h1 className="text-xl font-bold text-white">Normen-Datenbank</h1>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{email}</span>
+            <span className="text-sm text-[#7B8299]">{email}</span>
             <LogoutButton />
           </div>
         </div>
@@ -216,7 +215,7 @@ export default function StandardsPage() {
       <main className="max-w-7xl mx-auto px-6 py-8 flex gap-8">
         {/* Upload-Panel */}
         <div className="w-72 shrink-0">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Norm hochladen</h2>
+          <h2 className="text-sm font-semibold text-white mb-3">Norm hochladen</h2>
           <form onSubmit={handleUpload} className="space-y-3">
             <div
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -224,26 +223,25 @@ export default function StandardsPage() {
               onDrop={handleDrop}
               onClick={() => fileRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors ${
-                dragOver ? "border-blue-400 bg-blue-50" : "border-gray-200 hover:border-blue-300"
+                dragOver ? "border-[#2862D7] bg-[#2862D7]/10" : "border-[rgba(133,166,233,0.2)] hover:border-[#2862D7]/50"
               }`}
             >
               <input ref={fileRef} type="file" accept=".pdf,.txt" className="hidden"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
               {file ? (
-                <p className="text-sm text-blue-700 font-medium truncate">{file.name}</p>
+                <p className="text-sm text-[#85A6E9] font-medium truncate">{file.name}</p>
               ) : (
                 <div>
-                  <p className="text-sm text-gray-500">PDF / TXT</p>
-                  <p className="text-xs text-gray-400">Drag & Drop oder klicken</p>
+                  <p className="text-sm text-[#ABAEBB]">PDF / TXT</p>
+                  <p className="text-xs text-[#7B8299]">Drag & Drop oder klicken</p>
                 </div>
               )}
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Ebene</label>
-              <select value={jurisdictionType} onChange={(e) => setJurisdictionType(e.target.value as typeof jurisdictionType)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {JURISDICTIONS.map((j) => <option key={j.value} value={j.value}>{j.label}</option>)}
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">Kanton</label>
+              <select value={canton} onChange={(e) => setCanton(e.target.value)} className={`${inputCls} appearance-none`}>
+                {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
 
@@ -269,33 +267,26 @@ export default function StandardsPage() {
             )}
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Kategorie <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">
+                Kategorie <span className="text-red-400">*</span>
               </label>
               <input type="text" required value={category} onChange={(e) => setCategory(e.target.value)}
                 placeholder="z.B. Grenzabstand, Gebäudehöhe"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className={inputCls} />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Zone (optional)</label>
-              <input type="text" value={zone} onChange={(e) => setZone(e.target.value)}
-                placeholder="z.B. W2 — leer = gilt für alle Zonen"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Quelle (optional)</label>
+              <label className="block text-xs font-medium text-[#7B8299] mb-1">Quelle (optional)</label>
               <input type="text" value={sourceName} onChange={(e) => setSourceName(e.target.value)}
                 placeholder="z.B. PBG ZH § 270"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 caret-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className={inputCls} />
             </div>
 
-            {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
-            {success && <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{success}</p>}
+            {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+            {success && <p className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">{success}</p>}
 
             <button type="submit" disabled={uploading || !file}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              className="w-full bg-[#2862D7] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#3470E8] disabled:opacity-50 transition-colors">
               {uploading ? "Wird verarbeitet…" : "Hochladen & speichern"}
             </button>
           </form>
@@ -304,23 +295,23 @@ export default function StandardsPage() {
         {/* Liste */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-700">
+            <h2 className="text-sm font-semibold text-white">
               Hochgeladene Norm-Dateien
               {fileEntries.length > 0 && (
-                <span className="ml-2 text-gray-400 font-normal">
+                <span className="ml-2 text-[#7B8299] font-normal">
                   ({fileEntries.length} {fileEntries.length === 1 ? "Datei" : "Dateien"})
                 </span>
               )}
             </h2>
             <div className="flex gap-2">
               <select value={filterJurisdiction} onChange={(e) => setFilterJurisdiction(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className={`${inputCls} w-auto py-1.5 appearance-none`}>
                 <option value="">Alle Kantone</option>
                 {CANTONS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               {categories.length > 0 && (
                 <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  className={`${inputCls} w-auto py-1.5 appearance-none`}>
                   <option value="">Alle Kategorien</option>
                   {categories.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -331,16 +322,16 @@ export default function StandardsPage() {
           {loading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 animate-pulse">
-                  <div className="h-3 bg-gray-100 rounded w-1/4 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                <div key={i} className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-4 animate-pulse">
+                  <div className="h-3 bg-[rgba(60,63,68,0.5)] rounded w-1/4 mb-2" />
+                  <div className="h-3 bg-[rgba(60,63,68,0.5)] rounded w-3/4" />
                 </div>
               ))}
             </div>
           ) : fileEntries.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-16 text-center">
-              <p className="text-gray-400 text-sm">Noch keine Normen vorhanden.</p>
-              <p className="text-gray-300 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
+            <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl p-16 text-center">
+              <p className="text-[#7B8299] text-sm">Noch keine Normen vorhanden.</p>
+              <p className="text-[#7B8299]/70 text-xs mt-1">Lade eine PDF- oder Textdatei hoch.</p>
             </div>
           ) : (
             <div className="space-y-2">
