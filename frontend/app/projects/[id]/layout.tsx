@@ -17,7 +17,6 @@ export default function ProjectLayout({
     { href: `/projects/${params.id}/analysis`,  label: "Plan-Analyse" },
     { href: `/projects/${params.id}/norms`,      label: "Normen" },
     { href: `/projects/${params.id}/chat`,       label: "KI Chat" },
-    { href: `/projects/${params.id}/database`,   label: "Datenbank" },
     { href: `/projects/${params.id}/settings`,   label: "Einstellungen" },
   ];
 
