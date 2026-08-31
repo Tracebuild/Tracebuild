@@ -11,6 +11,16 @@ const LAYER_BY_JURISDICTION: Record<string, number> = {
 // POST /api/v1/admin/norms/upload — super_admin only. Uploads a norm directly as
 // platform-wide (org_id: null), visible to every organization from creation.
 export async function POST(request: Request) {
+  // See standards/upload: never let an uncaught throw become an unparseable HTML page.
+  try {
+    return await handleUpload(request);
+  } catch (e) {
+    console.error("Plattform-Norm-Upload fehlgeschlagen:", e);
+    return err(e instanceof Error ? `${e.name}: ${e.message}` : "Unbekannter Serverfehler", 500);
+  }
+}
+
+async function handleUpload(request: Request) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
   if (user.role !== "super_admin") return forbidden();
