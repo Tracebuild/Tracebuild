@@ -9,6 +9,18 @@ const LAYER_BY_JURISDICTION: Record<string, number> = {
 };
 
 export async function POST(request: Request) {
+  // Any uncaught throw here would be rendered by Next as an HTML error page, which
+  // the client cannot parse — the user then only ever sees "Serverfehler". Convert
+  // it to the normal JSON envelope so the actual cause is visible.
+  try {
+    return await handleUpload(request);
+  } catch (e) {
+    console.error("Norm-Upload fehlgeschlagen:", e);
+    return err(e instanceof Error ? `${e.name}: ${e.message}` : "Unbekannter Serverfehler", 500);
+  }
+}
+
+async function handleUpload(request: Request) {
   const user = await getAuthUser();
   if (!user) return unauthorized();
 

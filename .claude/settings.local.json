@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(cmd.exe /c \"winget --version\")",
       "Bash(cmd.exe /c \"choco --version\")",
