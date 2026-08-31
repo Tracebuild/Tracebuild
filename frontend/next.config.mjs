@@ -10,6 +10,21 @@ const nextConfig = {
   // `serverExternalPackages` only exists from Next 15 and is silently ignored here.
   experimental: {
     serverComponentsExternalPackages: ["pdf-parse"],
+    // pdf-parse → pdfjs-dist v5 eagerly loads the native @napi-rs/canvas binary
+    // (it supplies the DOMMatrix/ImageData/Path2D polyfills pdfjs needs even for
+    // plain text extraction). Vercel's file tracing does not follow the platform
+    // dispatch into the .node binary, so without this the upload route dies with
+    // "DOMMatrix is not defined". Include every Linux variant Vercel might run.
+    outputFileTracingIncludes: {
+      "/api/v1/standards/upload": [
+        "./node_modules/@napi-rs/canvas*/**",
+        "./node_modules/pdfjs-dist/**",
+      ],
+      "/api/v1/admin/norms/upload": [
+        "./node_modules/@napi-rs/canvas*/**",
+        "./node_modules/pdfjs-dist/**",
+      ],
+    },
   },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
