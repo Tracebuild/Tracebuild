@@ -47,7 +47,8 @@ async function handleUpload(request: Request) {
       text = await extractPdfText(fileBytes);
     } catch (e) {
       console.error("PDF-Textextraktion fehlgeschlagen:", e);
-      return err("PDF konnte nicht gelesen werden");
+      const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      return err(`PDF konnte nicht gelesen werden — ${detail}`, 500);
     }
     if (!text.trim()) {
       return err("Aus diesem PDF liess sich kein Text lesen — vermutlich ein Scan ohne Texterkennung (OCR).");
