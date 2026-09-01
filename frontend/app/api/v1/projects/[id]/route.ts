@@ -1,5 +1,6 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assignNorms } from "@/lib/norm-assignment";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const user = await getAuthUser();
@@ -25,7 +26,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   const { data: project } = await admin
     .from("projects")
-    .select("id")
+    .select("id, domain, location")
     .eq("id", params.id)
     .eq("org_id", user.org_id)
     .single();
@@ -38,6 +39,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (body.location !== undefined) updates.location = body.location;
   if (body.domain !== undefined) updates.domain = body.domain;
   if (body.status !== undefined) updates.status = body.status;
+  // Zone and parcel are set by hand for now; without these the Bauzone field in the
+  // Normen tab and in the project settings would silently write nothing.
+  if (body.bauzone !== undefined) updates.bauzone = body.bauzone;
+  if (body.parcel_number !== undefined) updates.parcel_number = body.parcel_number;
 
   const { data, error } = await admin
     .from("projects")
@@ -47,6 +52,28 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     .single();
 
   if (error) return err(error.message, 500);
+
+  // Canton or municipality changed → the set of applicable norms changed with it.
+  const oldLoc = (project.location ?? {}) as { canton?: string; municipality?: string };
+  const newLoc = (data.location ?? {}) as { canton?: string; municipality?: string };
+  const jurisdictionChanged =
+    oldLoc.canton !== newLoc.canton || oldLoc.municipality !== newLoc.municipality;
+
+  if (jurisdictionChanged || body.domain !== undefined) {
+    try {
+      await assignNorms(
+        params.id,
+        user.org_id,
+        newLoc.canton ?? "",
+        newLoc.municipality ?? "",
+        data.domain ?? "bau"
+      );
+    } catch (e) {
+      // The project update itself succeeded — don't fail the request over the sync.
+      console.error("Normzuweisung nach Projektänderung fehlgeschlagen:", e);
+    }
+  }
+
   return ok(data);
 }
 

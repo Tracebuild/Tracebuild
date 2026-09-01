@@ -10,6 +10,8 @@ interface Project {
   domain: string;
   location: { canton: string; municipality: string; country?: string };
   status: string;
+  parcel_number: string | null;
+  bauzone: string | null;
 }
 
 const CANTONS = [
@@ -24,6 +26,8 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
   const [name, setName] = useState("");
   const [canton, setCanton] = useState("ZH");
   const [municipality, setMunicipality] = useState("");
+  const [parcelNumber, setParcelNumber] = useState("");
+  const [bauzone, setBauzone] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -36,6 +40,8 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
       setName(p.name);
       setCanton(p.location?.canton ?? "ZH");
       setMunicipality(p.location?.municipality ?? "");
+      setParcelNumber(p.parcel_number ?? "");
+      setBauzone(p.bauzone ?? "");
       setLoading(false);
     });
   }, [params.id]);
@@ -49,6 +55,8 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
       await api.patch(`/projects/${params.id}`, {
         name,
         location: { canton, municipality, country: project?.location?.country ?? "CH" },
+        parcel_number: parcelNumber.trim() || null,
+        bauzone: bauzone.trim() || null,
       });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -115,6 +123,28 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
               required
               value={municipality}
               onChange={(e) => setMunicipality(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Parzellennummer</label>
+            <input
+              type="text"
+              value={parcelNumber}
+              onChange={(e) => setParcelNumber(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[#7B8299] mb-1">Bauzone</label>
+            <input
+              type="text"
+              value={bauzone}
+              onChange={(e) => setBauzone(e.target.value)}
+              placeholder="z.B. W2"
               className={inputCls}
             />
           </div>
