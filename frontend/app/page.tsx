@@ -1,6 +1,7 @@
 import SmoothScrollProvider from "@/components/landing/redesign/SmoothScrollProvider";
 import Navbar from "@/components/landing/redesign/Navbar";
 import Hero from "@/components/landing/redesign/Hero";
+import ProblemSolution from "@/components/landing/redesign/ProblemSolution";
 
 /* Sections below the hero land in later milestones. Stubs keep the nav anchors
    and active-section detection working in the meantime. */
@@ -34,6 +35,7 @@ export default function LandingPage() {
         <Navbar />
         <main>
           <Hero />
+          <ProblemSolution />
           <Stub id="produkt" label="Produkt-Showcase — folgt" />
           <span id="normen-datenbank" style={{ position: "absolute" }} />
           <Stub id="preise" label="Preise — folgt" />

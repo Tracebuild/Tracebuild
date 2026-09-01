@@ -128,43 +128,41 @@ export default function Hero() {
         </motion.p>
       </motion.div>
 
-      {/* scroll cue */}
-      {!prefersReduced && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1, duration: 0.6 }}
+      {/* scroll cue — motion stilled automatically under reduced-motion */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.1, duration: 0.6 }}
+        style={{
+          position: "absolute",
+          bottom: 28,
+          left: "50%",
+          x: "-50%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          zIndex: 2,
+        }}
+      >
+        <span
           style={{
-            position: "absolute",
-            bottom: 28,
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 8,
-            zIndex: 2,
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--tb-text-tertiary)",
           }}
         >
-          <span
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--tb-text-tertiary)",
-            }}
-          >
-            Scrollen
-          </span>
-          <span style={{ position: "relative", width: 1, height: 40, background: "var(--tb-hairline)", overflow: "hidden" }}>
-            <motion.span
-              animate={{ y: [-40, 40] }}
-              transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
-              style={{ position: "absolute", inset: 0, background: "var(--tb-accent-gradient)" }}
-            />
-          </span>
-        </motion.div>
-      )}
+          Scrollen
+        </span>
+        <span style={{ position: "relative", width: 1, height: 40, background: "var(--tb-hairline)", overflow: "hidden" }}>
+          <motion.span
+            animate={{ y: [-40, 40] }}
+            transition={{ duration: 2, ease: "easeInOut", repeat: Infinity }}
+            style={{ position: "absolute", inset: 0, background: "var(--tb-accent-gradient)" }}
+          />
+        </span>
+      </motion.div>
     </section>
   );
 }
