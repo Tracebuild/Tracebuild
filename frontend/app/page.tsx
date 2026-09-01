@@ -5,30 +5,9 @@ import ProblemSolution from "@/components/landing/redesign/ProblemSolution";
 import Showcase from "@/components/landing/redesign/Showcase";
 import TrustBlocks from "@/components/landing/redesign/TrustBlocks";
 import Pricing from "@/components/landing/redesign/Pricing";
-
-/* Sections below the hero land in later milestones. Stubs keep the nav anchors
-   and active-section detection working in the meantime. */
-function Stub({ id, label }: { id: string; label: string }) {
-  return (
-    <section
-      id={id}
-      style={{
-        position: "relative",
-        minHeight: "60vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "var(--tb-section-y) var(--tb-gutter)",
-        color: "var(--tb-text-tertiary)",
-        fontSize: 13,
-        letterSpacing: "0.14em",
-        textTransform: "uppercase",
-      }}
-    >
-      {label}
-    </section>
-  );
-}
+import TeamContact from "@/components/landing/redesign/TeamContact";
+import FinalCta from "@/components/landing/redesign/FinalCta";
+import Footer from "@/components/landing/redesign/Footer";
 
 export default function LandingPage() {
   return (
@@ -42,8 +21,10 @@ export default function LandingPage() {
           <Showcase />
           <TrustBlocks />
           <Pricing />
-          <Stub id="kontakt" label="Team & Kontakt — folgt" />
+          <TeamContact />
+          <FinalCta />
         </main>
+        <Footer />
       </div>
     </SmoothScrollProvider>
   );
