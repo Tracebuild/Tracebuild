@@ -22,6 +22,154 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 
+/* ─── Landing redesign · design tokens ────────────────── */
+/* Palette values are the existing brand tokens, mapped to semantic roles.
+   No new colours. Prefixed --tb-* so they never collide with the app's
+   light-mode --background / --foreground. */
+
+:root {
+  /* surfaces */
+  --tb-canvas: linear-gradient(150deg, #0a1a24 0%, #0a1420 45%, #070b14 100%);
+  --tb-canvas-solid: #0a1420;
+  --tb-glass: rgba(255, 255, 255, 0.03);
+  --tb-glass-hover: rgba(255, 255, 255, 0.05);
+  --tb-float: #0a1420;
+  --tb-border: rgba(255, 255, 255, 0.1);
+  --tb-border-strong: rgba(255, 255, 255, 0.2);
+  --tb-hairline: rgba(255, 255, 255, 0.06);
+
+  /* text */
+  --tb-text: #ffffff;
+  --tb-text-secondary: #9a9ba3;
+  --tb-text-tertiary: #7b8299;
+  --tb-text-muted: #6b7086;
+  --tb-text-bright: #c7c8d1;
+  --tb-text-bright-2: #e4e5ea;
+  --tb-text-bright-3: #eef1fb;
+
+  /* accent */
+  --tb-accent: #38bdf8;
+  --tb-accent-cyan: #4fd1ff;
+  --tb-accent-blue: #2862d7;
+  --tb-accent-gradient: linear-gradient(120deg, #4fd1ff 0%, #38bdf8 45%, #2862d7 100%);
+  --tb-on-accent: #06121c;
+  --tb-info: #8fb3f5;
+  --tb-lavender: #c69bf0;
+
+  /* status — mockups only */
+  --tb-danger: #ef4444;
+  --tb-danger-bright: #f87171;
+  --tb-warn: #f59e0b;
+  --tb-warn-bright: #fbbf24;
+
+  /* radius */
+  --tb-r-chip: 8px;
+  --tb-r-btn: 12px;
+  --tb-r-card: 16px;
+  --tb-r-container: 24px;
+  --tb-r-pill: 999px;
+
+  /* elevation */
+  --tb-lift: 0 20px 60px -24px rgba(7, 11, 20, 0.6);
+  --tb-glow: 0 0 0 1px rgba(56, 189, 248, 0.18), 0 24px 80px -24px rgba(40, 98, 215, 0.22);
+  --tb-float-shadow: 0 24px 80px -24px rgba(0, 0, 0, 0.55);
+
+  /* motion */
+  --tb-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --tb-ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --tb-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --tb-dur-fast: 160ms;
+  --tb-dur-base: 240ms;
+  --tb-dur-slow: 420ms;
+  --tb-dur-xslow: 720ms;
+
+  /* layout */
+  --tb-max-wide: 1240px;
+  --tb-max: 1120px;
+  --tb-max-prose: 640px;
+  --tb-gutter: clamp(20px, 5vw, 80px);
+  --tb-section-y: clamp(96px, 14vh, 200px);
+}
+
+.tb-landing {
+  background: var(--tb-canvas);
+  background-attachment: fixed;
+  color: var(--tb-text);
+  font-family: var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.tb-landing h1,
+.tb-landing h2,
+.tb-landing h3 {
+  font-family: var(--font-display, var(--font-sans, sans-serif));
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+  margin: 0;
+}
+
+.tb-landing :focus-visible {
+  outline: 2px solid var(--tb-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Grain overlay — one fixed low-opacity layer, cheap stepped drift on desktop */
+.tb-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .tb-grain {
+    animation: tbGrainDrift 1.2s steps(3) infinite;
+  }
+}
+
+@keyframes tbGrainDrift {
+  0% { background-position: 0 0; }
+  33% { background-position: -70px 40px; }
+  66% { background-position: 40px -60px; }
+  100% { background-position: 0 0; }
+}
+
+/* Word-by-word headline reveal — CSS-driven so it runs at first paint and
+   degrades to plain visible text if JS never hydrates. */
+@keyframes tbWordUp {
+  from { transform: translateY(110%); }
+  to   { transform: translateY(0); }
+}
+@keyframes tbAccentWipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.tb-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+}
+.tb-word-inner {
+  display: inline-block;
+  will-change: transform;
+  animation: tbWordUp 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.tb-word-accent {
+  display: inline-block;
+  background: var(--tb-accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tbAccentWipe 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
 /* ─── Keyframes ───────────────────────────────────────── */
 
 @keyframes fadeUp {
