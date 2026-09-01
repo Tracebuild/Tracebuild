@@ -4,6 +4,7 @@ import Hero from "@/components/landing/redesign/Hero";
 import ProblemSolution from "@/components/landing/redesign/ProblemSolution";
 import Showcase from "@/components/landing/redesign/Showcase";
 import TrustBlocks from "@/components/landing/redesign/TrustBlocks";
+import Pricing from "@/components/landing/redesign/Pricing";
 
 /* Sections below the hero land in later milestones. Stubs keep the nav anchors
    and active-section detection working in the meantime. */
@@ -40,7 +41,7 @@ export default function LandingPage() {
           <ProblemSolution />
           <Showcase />
           <TrustBlocks />
-          <Stub id="preise" label="Preise — folgt" />
+          <Pricing />
           <Stub id="kontakt" label="Team & Kontakt — folgt" />
         </main>
       </div>
