@@ -1,6 +1,7 @@
 import { getAuthUser, ok, unauthorized, forbidden, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractPdfText } from "@/lib/pdf-text";
+import { assignNormsToOrgProjects } from "@/lib/norm-assignment";
 
 const LAYER_BY_JURISDICTION: Record<string, number> = {
   national: 1,
@@ -100,5 +101,14 @@ async function handleUpload(request: Request) {
     .single();
 
   if (error) return err(error.message, 500);
-  return ok({ count: 1, jurisdiction_name: jurisdictionName, category, id: data.id }, 201);
+
+  // A platform-wide norm applies to every organization, so every org's projects
+  // need re-syncing — not just the uploading admin's.
+  const { data: orgs } = await admin.from("organizations").select("id").is("deleted_at", null);
+  let projects_updated = 0;
+  for (const org of orgs ?? []) {
+    projects_updated += await assignNormsToOrgProjects(org.id);
+  }
+
+  return ok({ count: 1, jurisdiction_name: jurisdictionName, category, id: data.id, projects_updated }, 201);
 }
