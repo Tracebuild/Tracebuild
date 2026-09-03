@@ -17,9 +17,10 @@ export default function LandingPage() {
           zurückfallen lässt, und reicht sie an /auth/callback weiter. */}
       <AuthHashRedirect />
       <div className="tb-landing">
+        <a href="#tb-main" className="tb-skip">Zum Inhalt springen</a>
         <div className="tb-grain" />
         <Navbar />
-        <main>
+        <main id="tb-main">
           <Hero />
           <ProblemSolution />
           <Showcase />
