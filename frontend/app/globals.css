@@ -116,6 +116,25 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 2px;
 }
 
+.tb-skip {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 200;
+  padding: 10px 16px;
+  border-radius: var(--tb-r-btn);
+  background: var(--tb-float);
+  border: 1px solid var(--tb-border-strong);
+  color: var(--tb-text);
+  font-size: 13px;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform var(--tb-dur-base) var(--tb-ease-out);
+}
+.tb-skip:focus {
+  transform: translateY(0);
+}
+
 /* Grain overlay — one fixed low-opacity layer, cheap stepped drift on desktop */
 .tb-grain {
   position: fixed;
@@ -141,10 +160,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Word-by-word headline reveal — CSS-driven so it runs at first paint and
-   degrades to plain visible text if JS never hydrates. */
+   degrades to plain visible text if JS never hydrates. Fade + small rise
+   (not a clipping mask) so the text counts as painted immediately for LCP. */
 @keyframes tbWordUp {
-  from { transform: translateY(110%); }
-  to   { transform: translateY(0); }
+  from { opacity: 0; transform: translateY(0.32em); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes tbAccentWipe {
   from { clip-path: inset(0 100% 0 0); }
@@ -152,13 +172,11 @@ h1, h2, h3, h4, h5, h6 {
 }
 .tb-word-mask {
   display: inline-block;
-  overflow: hidden;
   vertical-align: top;
 }
 .tb-word-inner {
   display: inline-block;
-  will-change: transform;
-  animation: tbWordUp 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: tbWordUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .tb-word-accent {
   display: inline-block;

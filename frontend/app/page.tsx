@@ -13,9 +13,10 @@ export default function LandingPage() {
   return (
     <SmoothScrollProvider>
       <div className="tb-landing">
+        <a href="#tb-main" className="tb-skip">Zum Inhalt springen</a>
         <div className="tb-grain" />
         <Navbar />
-        <main>
+        <main id="tb-main">
           <Hero />
           <ProblemSolution />
           <Showcase />
