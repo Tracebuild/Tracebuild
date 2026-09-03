@@ -59,5 +59,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
 
   const { error } = await admin.from("users").delete().eq("id", params.id);
   if (error) return err(error.message, 500);
+
+  // Einladungs-Zuordnung mitlöschen. Sonst legt die Selbstheilung in
+  // lib/auth.ts die gerade entfernte Zeile beim nächsten Login wieder an.
+  try {
+    await admin.auth.admin.updateUserById(params.id, { app_metadata: { org_id: null, invited_role: null } });
+  } catch { /* best effort — die users-Zeile ist bereits weg */ }
+
   return ok({ id: params.id });
 }

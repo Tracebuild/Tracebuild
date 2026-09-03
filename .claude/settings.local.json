@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(cmd.exe /c \"winget --version\")",
       "Bash(cmd.exe /c \"choco --version\")",
@@ -15,7 +14,9 @@
       "Bash(powershell.exe -Command ':*)",
       "Bash(powershell.exe -Command \"\\(Invoke-RestMethod -Uri 'http://localhost:8000/openapi.json'\\).paths.PSObject.Properties.Name\")",
       "Bash(\".venv/Scripts/python.exe\" -c \"from app.api.routes import standards_admin; print\\('OK'\\)\")",
-      "Bash(\".venv/Scripts/python.exe\" -c \"from app.main import app; print\\([r.path for r in app.routes]\\)\")"
-    ]
+      "Bash(\".venv/Scripts/python.exe\" -c \"from app.main import app; print\\([r.path for r in app.routes]\\)\")",
+      "Bash(node -e ' *)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

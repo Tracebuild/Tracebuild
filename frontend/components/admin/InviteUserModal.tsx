@@ -6,6 +6,7 @@ import type { Organization } from "./types";
 export type InviteRole = "org_admin" | "project_manager" | "member";
 
 export interface SentInvite {
+  name: string;
   email: string;
   orgId: string;
   orgName: string;
@@ -65,34 +66,39 @@ function StatusIcon({ status }: { status: QueueItem["status"] }) {
 export default function InviteUserModal({ orgs, defaultOrgId, onClose, onSent }: Props) {
   const [orgId, setOrgId] = useState(defaultOrgId ?? orgs[0]?.id ?? "");
   const [role, setRole]   = useState<InviteRole>("member");
+  const [name, setName]   = useState("");
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
   const [queue, setQueue]     = useState<QueueItem[]>([]);
   const [sending, setSending] = useState(false);
-  const emailRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   const selectedOrg = orgs.find(o => o.id === orgId);
 
   function addToQueue(e?: React.FormEvent) {
     e?.preventDefault();
-    const trimmed = email.trim().toLowerCase();
+    const trimmedName  = name.trim().replace(/\s+/g, " ");
+    const trimmedEmail = email.trim().toLowerCase();
     if (!orgId) { setFormError("Bitte Organisation wählen."); return; }
-    if (!trimmed || !EMAIL_RE.test(trimmed)) { setFormError("Ungültige E-Mail-Adresse."); return; }
-    if (queue.some(q => q.email === trimmed && q.orgId === orgId)) {
+    if (trimmedName.length < 2) { setFormError("Bitte den Namen der Person angeben."); return; }
+    if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) { setFormError("Ungültige E-Mail-Adresse."); return; }
+    if (queue.some(q => q.email === trimmedEmail && q.orgId === orgId)) {
       setFormError("Diese Person steht bereits auf der Liste.");
       return;
     }
     setFormError("");
     setQueue(prev => [...prev, {
       id: crypto.randomUUID(),
-      email: trimmed,
+      name: trimmedName,
+      email: trimmedEmail,
       orgId,
       orgName: selectedOrg?.name ?? "—",
       role,
       status: "pending",
     }]);
+    setName("");
     setEmail("");
-    emailRef.current?.focus();
+    nameRef.current?.focus();
   }
 
   function removeFromQueue(id: string) {
@@ -111,14 +117,14 @@ export default function InviteUserModal({ orgs, defaultOrgId, onClose, onSent }:
         const res = await fetch("/api/v1/admin/invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: item.email, role: item.role, org_id: item.orgId }),
+          body: JSON.stringify({ name: item.name, email: item.email, role: item.role, org_id: item.orgId }),
         });
-        const json = await res.json() as { data: unknown; error: string | null };
-        if (!res.ok || json.error) {
-          setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "error", error: json.error ?? `Fehler ${res.status}` } : q));
+        const json = await res.json().catch(() => null) as { data: unknown; error: string | null } | null;
+        if (!res.ok || !json || json.error) {
+          setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "error", error: json?.error ?? `Fehler ${res.status}` } : q));
         } else {
           setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "sent" } : q));
-          succeeded.push({ email: item.email, orgId: item.orgId, orgName: item.orgName, role: item.role });
+          succeeded.push({ name: item.name, email: item.email, orgId: item.orgId, orgName: item.orgName, role: item.role });
         }
       } catch {
         setQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: "error", error: "Netzwerkfehler" } : q));
@@ -172,18 +178,30 @@ export default function InviteUserModal({ orgs, defaultOrgId, onClose, onSent }:
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">Name</label>
+                <input
+                  ref={nameRef}
+                  type="text"
+                  value={name}
+                  onChange={e => { setName(e.target.value); if (formError) setFormError(""); }}
+                  onKeyDown={e => { if (e.key === "Escape") onClose(); }}
+                  placeholder="Vor- und Nachname"
+                  className={inputCls}
+                  autoFocus
+                />
+              </div>
+
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-[#ABAEBB] mb-1.5">E-Mail</label>
                   <input
-                    ref={emailRef}
                     type="email"
                     value={email}
                     onChange={e => { setEmail(e.target.value); if (formError) setFormError(""); }}
                     onKeyDown={e => { if (e.key === "Escape") onClose(); }}
                     placeholder="name@firma.ch"
                     className={inputCls}
-                    autoFocus
                   />
                 </div>
                 <div className="w-40 flex-shrink-0">
@@ -223,7 +241,8 @@ export default function InviteUserModal({ orgs, defaultOrgId, onClose, onSent }:
                 {queue.map(item => (
                   <div key={item.id} className="flex items-center justify-between bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-xl px-3.5 py-2.5">
                     <div className="min-w-0">
-                      <p className="text-sm text-white truncate">{item.email}</p>
+                      <p className="text-sm text-white truncate">{item.name}</p>
+                      <p className="text-[11px] text-[#ABAEBB] truncate">{item.email}</p>
                       <p className="text-[11px] text-[#7B8299] truncate">{item.orgName} · {ROLE_LABELS[item.role]}</p>
                       {item.status === "error" && <p className="text-[11px] text-red-400 mt-0.5">{item.error}</p>}
                     </div>

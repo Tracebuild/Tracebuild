@@ -1,116 +1,59 @@
 import { getAuthUser, ok, unauthorized, err } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { anthropic } from "@/lib/anthropic";
 import { normMatchesZone } from "@/lib/zone-match";
+import {
+  runNormAnalysis,
+  type AnalysisRunResult,
+  type CheckItem,
+  type FileBlock,
+  type NormInput,
+} from "@/lib/analysis-engine";
 
 export const maxDuration = 300;
 
-// ── Prompt ────────────────────────────────────────────────────────────────────
+/** Zeitdeckel für die Modell-Phase, gemessen ab Beginn der Route (Vercel killt bei 300 s). */
+const ROUTE_MODEL_BUDGET_MS = 250_000;
 
-const SYSTEM_PROMPT = `Du bist ein Schweizer Baurechtsexperte und prüfst Baupläne auf Normkonformität.
-
-Dir werden folgende Informationen übergeben:
-- Bilder der Baupläne (PDF-Seiten als Bilder)
-- Eine Liste der gültigen Normen für dieses Projekt (Titel + Inhalt)
-- Projektkontext: Gemeinde, Kanton, Bauzone
-
-Deine Aufgabe:
-- Prüfe jeden Plan gegen die übergebenen Normen
-- Identifiziere für jede relevante Norm ob sie erfüllt ist (ok), nicht erfüllt (fail) oder unklar ist (warn)
-- Begründe jeden Befund konkret mit Bezug auf den Plan
-- Bei fail/warn: gib eine konkrete Verbesserungsempfehlung
-- Sei präzise, kein Blabla — ein Architekt liest das
-
-Antworte AUSSCHLIESSLICH mit einem JSON-Array von Prüfpunkten. Kein Text davor oder danach.
-
-Schema für jeden Eintrag:
-{
-  "check_id": "<uuid>",
-  "norm_id": "<norm-id aus der Liste oder null>",
-  "norm_title": "<Titel der geprüften Norm>",
-  "category": "<grenzabstand|gebaeudehöhe|erschliessung|brandschutz|parkierung|andere>",
-  "status": "<ok|fail|warn>",
-  "finding": "<was konkret im Plan erkannt/gemessen wurde>",
-  "suggestion": "<Verbesserungsempfehlung oder null bei ok>",
-  "confidence": "<high|medium|low>",
-  "page_reference": <Seitennummer als Integer oder null>
-}`;
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type Category = "grenzabstand" | "gebaeudehöhe" | "erschliessung" | "brandschutz" | "parkierung" | "andere";
-type Status = "ok" | "fail" | "warn";
-type Confidence = "high" | "medium" | "low";
-
-interface CheckItem {
-  check_id: string;
-  norm_id: string | null;
-  norm_title: string;
-  category: Category;
-  status: Status;
-  finding: string;
-  suggestion: string | null;
-  confidence: Confidence;
-  page_reference: number | null;
-}
-
-const VALID_CATEGORIES = new Set<string>(["grenzabstand", "gebaeudehöhe", "erschliessung", "brandschutz", "parkierung", "andere"]);
-const VALID_STATUSES   = new Set<string>(["ok", "fail", "warn"]);
-const VALID_CONFS      = new Set<string>(["high", "medium", "low"]);
-
-function normalize(item: Record<string, unknown>): CheckItem {
-  return {
-    check_id:       String(item.check_id ?? crypto.randomUUID()),
-    norm_id:        typeof item.norm_id === "string" ? item.norm_id : null,
-    norm_title:     String(item.norm_title ?? ""),
-    category:       (VALID_CATEGORIES.has(String(item.category)) ? item.category : "andere") as Category,
-    status:         (VALID_STATUSES.has(String(item.status))     ? item.status   : "warn")   as Status,
-    finding:        String(item.finding ?? item.note ?? ""),
-    suggestion:     typeof item.suggestion === "string" ? item.suggestion : null,
-    confidence:     (VALID_CONFS.has(String(item.confidence))    ? item.confidence : "medium") as Confidence,
-    page_reference: Number.isInteger(item.page_reference) ? item.page_reference as number : null,
-  };
-}
-
-function parseItems(raw: string): CheckItem[] {
-  const match = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const jsonStr = match ? match[1].trim() : raw.trim();
-  const data = JSON.parse(jsonStr);
-  if (!Array.isArray(data)) throw new Error("Not an array");
-  return (data as Record<string, unknown>[]).map(normalize);
-}
-
-// ── Norm context builder ──────────────────────────────────────────────────────
+// ── Norm-Auswahl ──────────────────────────────────────────────────────────────
 
 interface ProjectNormRow {
   norms: {
     id: string;
     title: string;
-    category: string;
-    text: string;
+    category: string | null;
+    text: string | null;
     layer: number;
     zone: string | null;
   } | null;
 }
 
-function buildNormContext(pnRows: ProjectNormRow[], projectZone: string | null): string {
-  const norms = pnRows
+/** Ohne hinterlegte Normen wird trotzdem geprüft — dann eben gegen das Fachwissen. */
+const FALLBACK_NORM: NormInput = {
+  id: "",
+  title: "Allgemeine Schweizer Bauvorschriften",
+  category: null,
+  text:
+    "Für dieses Projekt sind keine Normen hinterlegt. Prüfe den Plan anhand deines Fachwissens " +
+    "über Schweizer Bauvorschriften: Grenz- und Strassenabstände, Gebäude- und Firsthöhe, " +
+    "Geschosszahl, Erschliessung und Zufahrt, Parkierung, Brandschutz, Terrainveränderungen und " +
+    "Mindestanforderungen an Aufenthaltsräume. Alles, was ohne hinterlegte Norm nicht " +
+    "abschliessend beurteilbar ist, markierst du als warn.",
+};
+
+function selectNorms(
+  pnRows: ProjectNormRow[],
+  projectZone: string | null,
+): { norms: NormInput[]; source: "project_norms" | "fallback" } {
+  const applicable = pnRows
     .map((r) => r.norms)
-    .filter(Boolean) as NonNullable<ProjectNormRow["norms"]>[];
-  const applicable = norms.filter((n) => normMatchesZone(n.zone, projectZone));
-  if (applicable.length === 0) {
-    return "Keine projektspezifischen Normen hinterlegt. Nutze dein Fachwissen über Schweizer Bauvorschriften.";
-  }
-  const lines = [`NORMEN (${applicable.length} projektspezifische Normen):\n`];
-  applicable.forEach((n, i) => {
-    lines.push(
-      `[${i + 1}] Norm-ID: ${n.id}\n` +
-      `    Titel: ${n.title}\n` +
-      `    Kategorie: ${n.category}\n` +
-      `    Inhalt: ${n.text}`
-    );
-  });
-  return lines.join("\n\n");
+    .filter((n): n is NonNullable<ProjectNormRow["norms"]> => !!n)
+    .filter((n) => normMatchesZone(n.zone, projectZone))
+    .filter((n) => (n.text ?? "").trim().length > 0)
+    .map<NormInput>((n) => ({ id: n.id, title: n.title, category: n.category, text: n.text ?? "" }));
+
+  return applicable.length > 0
+    ? { norms: applicable, source: "project_norms" }
+    : { norms: [FALLBACK_NORM], source: "fallback" };
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -151,6 +94,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 // ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const routeStart = Date.now();
+
   const user = await getAuthUser();
   if (!user) return unauthorized();
 
@@ -206,112 +151,156 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .single();
   if (analysisError) return err(analysisError.message, 500);
 
+  // Kosten müssen auch im Fehlerfall in die DB — deshalb ausserhalb des try.
+  let run: AnalysisRunResult | null = null;
+
   try {
-    // 1. Load project norms
-    const { data: pnRows } = await admin
+    // 1. Normen laden
+    const { data: pnRows, error: pnError } = await admin
       .from("project_norms")
       .select("norms(id, title, category, text, layer, zone)")
       .eq("project_id", params.id);
 
-    const normContext = buildNormContext((pnRows ?? []) as unknown as ProjectNormRow[], project.bauzone ?? null);
+    // Nicht stillschweigend auf die Ersatznorm zurückfallen, wenn die Abfrage
+    // selbst kaputt ist — sonst sieht ein DB-Fehler aus wie "keine Normen".
+    if (pnError) {
+      console.error(`Projekt ${params.id}: project_norms konnte nicht gelesen werden:`, pnError);
+    }
 
-    // 2. Build file block
-    const fileBlock = isPdf
-      ? ({ type: "document", source: { type: "base64", media_type: "application/pdf" as const, data: base64Data } } as const)
-      : ({ type: "image",    source: { type: "base64", media_type: (file.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif", data: base64Data } } as const);
+    const { norms, source: normsSource } = selectNorms(
+      (pnRows ?? []) as unknown as ProjectNormRow[],
+      project.bauzone ?? null,
+    );
+    if (normsSource === "fallback") {
+      console.warn(`Projekt ${params.id}: keine Normen in project_norms — Analyse läuft auf Fachwissen.`);
+    }
+    const assignedIds = new Set(norms.map((n) => n.id).filter(Boolean));
 
-    const canton       = project.location?.canton      ?? "";
-    const municipality = project.location?.municipality ?? "";
-    const bauzone      = project.bauzone                ?? "";
-
-    const userText =
-      `PROJEKTKONTEXT:\n` +
-      `- Gemeinde: ${municipality}\n` +
-      `- Kanton: ${canton}\n` +
-      `- Bauzone: ${bauzone || "unbekannt"}\n\n` +
-      `${normContext}\n\n` +
-      `Analysiere den beigefügten Bauplan gegen alle genannten Normen.\n` +
-      `Gib für jede Norm mindestens einen Prüfpunkt aus.`;
-
-    type Msg = Parameters<typeof anthropic.messages.create>[0]["messages"][number];
-    const messages: Msg[] = [{
-      role: "user",
-      content: [fileBlock, { type: "text", text: userText }],
-    }];
-
-    // 3. First call — no tools, pure JSON
-    let response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages,
-    });
-
-    let totalInput  = response.usage?.input_tokens  ?? 0;
-    let totalOutput = response.usage?.output_tokens ?? 0;
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    let rawText = textBlock?.type === "text" ? textBlock.text : "[]";
-
-    // 4. Parse — one retry on failure
-    let items: CheckItem[];
-    try {
-      items = parseItems(rawText);
-    } catch {
-      const retry = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        system: [{ type: "text", text: SYSTEM_PROMPT }],
-        messages: [
-          ...messages,
-          { role: "assistant", content: rawText },
-          {
-            role: "user",
-            content:
-              "Deine Antwort konnte nicht als valides JSON geparst werden. " +
-              "Gib NUR das JSON-Array aus, absolut kein anderer Text.",
+    // 2. Datei-Block
+    const fileBlock: FileBlock = isPdf
+      ? { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64Data } }
+      : {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: (file.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
+            data: base64Data,
           },
-        ],
-      });
-      totalInput  += retry.usage?.input_tokens  ?? 0;
-      totalOutput += retry.usage?.output_tokens ?? 0;
-      const retryText = retry.content.find((b) => b.type === "text");
-      rawText = retryText?.type === "text" ? retryText.text : "[]";
-      items = parseItems(rawText);   // throws → caught by outer try/catch
+        };
+
+    // 3. Ein Call pro Norm, parallel, mit Cache-Grenze hinter dem PDF.
+    const budgetMs = Math.max(45_000, ROUTE_MODEL_BUDGET_MS - (Date.now() - routeStart));
+    run = await runNormAnalysis(
+      norms,
+      fileBlock,
+      {
+        municipality: project.location?.municipality ?? "",
+        canton: project.location?.canton ?? "",
+        bauzone: project.bauzone ?? "",
+        parcel: project.parcel_number ?? null,
+      },
+      budgetMs,
+    );
+
+    // 4. norm_id gegen die tatsächlich zugewiesenen Normen validieren.
+    //    (Die Engine setzt sie serverseitig — das hier ist der Gurt zum Hosenträger,
+    //    damit eine unbekannte UUID nie den FK auf norms(id) verletzt.)
+    const rows = run.items.map((item: CheckItem) => ({
+      analysis_id: analysis.id,
+      norm_id: item.norm_id && assignedIds.has(item.norm_id) ? item.norm_id : null,
+      norm_title: item.norm_title,
+      category: item.category,
+      status: item.status,
+      note: item.finding, // 'note' column stores the finding text
+      suggestion: item.suggestion,
+      confidence: item.confidence,
+      page_reference: item.page_reference,
+    }));
+
+    // 5. Speichern — Fehler werden ausgewertet, und ein kaputter Datensatz
+    //    reisst nicht den ganzen Batch mit.
+    const insertErrors: string[] = [];
+    let savedCount = 0;
+
+    if (rows.length > 0) {
+      const { error: bulkError } = await admin.from("analysis_items").insert(rows);
+      if (!bulkError) {
+        savedCount = rows.length;
+      } else {
+        console.error("analysis_items bulk insert failed, falling back to row-by-row:", bulkError);
+        for (const row of rows) {
+          const { error: rowError } = await admin.from("analysis_items").insert(row);
+          if (rowError) insertErrors.push(`${row.norm_title}: ${rowError.message}`);
+          else savedCount++;
+        }
+      }
     }
 
-    // 5. Cost
-    const costUsd = totalInput * 3.0 / 1_000_000 + totalOutput * 15.0 / 1_000_000;
-
-    // 6. Save items
-    if (items.length > 0) {
-      await admin.from("analysis_items").insert(
-        items.map((item) => ({
-          analysis_id:    analysis.id,
-          norm_id:        item.norm_id,
-          norm_title:     item.norm_title,
-          category:       item.category,
-          status:         item.status,
-          note:           item.finding,        // 'note' column stores the finding text
-          suggestion:     item.suggestion,
-          confidence:     item.confidence,
-          page_reference: item.page_reference,
-        }))
-      );
-    }
-
-    // 7. Finalise analysis
-    const { data: finalAnalysis } = await admin
+    // 6. Analyse abschliessen. Kosten werden immer geschrieben.
+    const status = savedCount > 0 ? "done" : "error";
+    const { data: finalAnalysis, error: updateError } = await admin
       .from("analyses")
-      .update({ status: "done", result_json: { raw: rawText }, cost_usd: costUsd })
+      .update({
+        status,
+        cost_usd: run.cost_usd,
+        result_json: {
+          model: run.model,
+          norms_source: normsSource,
+          norms_error: pnError?.message ?? null,
+          norm_count: norms.length,
+          item_count: run.items.length,
+          saved_count: savedCount,
+          duration_ms: run.duration_ms,
+          usage: run.usage,
+          calls: run.calls,
+          failed_norms: run.failed_norms,
+          insert_errors: insertErrors,
+        },
+      })
       .eq("id", analysis.id)
       .select("*, documents(doc_type, file_url)")
       .single();
 
-    return ok({ ...finalAnalysis, items }, 201);
+    if (updateError) return err(updateError.message, 500);
 
+    if (savedCount === 0) {
+      const reason = run.failed_norms[0]?.error ?? insertErrors[0] ?? "Keine Prüfpunkte erzeugt";
+      return err(`Analyse ohne Ergebnis: ${reason}`, 502);
+    }
+
+    // 7. Zurückgelesenes Ergebnis an den Client — nicht die In-Memory-Items.
+    //    Die haben weder DB-`id` noch die Spalte `note`, die das UI liest.
+    const { data: savedItems } = await admin
+      .from("analysis_items")
+      .select("*")
+      .eq("analysis_id", analysis.id);
+
+    const normOrder = new Map(norms.map((n, i) => [n.id, i]));
+    const severity: Record<string, number> = { fail: 0, warn: 1, ok: 2 };
+    const items = (savedItems ?? []).slice().sort((a, b) => {
+      const byNorm = (normOrder.get(a.norm_id ?? "") ?? 999) - (normOrder.get(b.norm_id ?? "") ?? 999);
+      if (byNorm !== 0) return byNorm;
+      return (severity[a.status] ?? 9) - (severity[b.status] ?? 9);
+    });
+
+    return ok({ ...finalAnalysis, items, failed_norms: run.failed_norms }, 201);
   } catch (e) {
-    await admin.from("analyses").update({ status: "error" }).eq("id", analysis.id);
-    return err(e instanceof Error ? e.message : "Analyse fehlgeschlagen", 500);
+    const message = e instanceof Error ? e.message : "Analyse fehlgeschlagen";
+    await admin
+      .from("analyses")
+      .update({
+        status: "error",
+        // Auch wenn es schiefging: was das Modell gekostet hat, wird verbucht.
+        cost_usd: run?.cost_usd ?? 0,
+        result_json: {
+          error: message,
+          model: run?.model ?? null,
+          usage: run?.usage ?? null,
+          calls: run?.calls ?? [],
+          failed_norms: run?.failed_norms ?? [],
+        },
+      })
+      .eq("id", analysis.id);
+    return err(message, 500);
   }
 }

@@ -26,6 +26,7 @@ const TAB_LABELS: { id: Tab; label: string }[] = [
 interface OrgMember {
   id: string;
   email: string;
+  name: string | null;
   role: string;
   created_at: string;
 }
@@ -158,6 +159,7 @@ function MitgliederTab({
 }) {
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addName, setAddName] = useState("");
   const [addEmail, setAddEmail] = useState("");
   const [addRole, setAddRole] = useState("member");
   const [adding, setAdding] = useState(false);
@@ -165,32 +167,45 @@ function MitgliederTab({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`);
-    const json = await res.json();
-    setMembers(json.data ?? []);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/v1/admin/orgs/${org.id}/users`);
+      const json = await res.json().catch(() => null);
+      setMembers(json?.data ?? []);
+    } catch {
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
   }, [org.id]);
 
   useEffect(() => { load(); }, [load]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
+    const name = addName.trim().replace(/\s+/g, " ");
     if (!addEmail.trim()) return;
+    if (name.length < 2) { onToast("Bitte den Namen der Person angeben.", "error"); return; }
     setAdding(true);
-    const res = await fetch("/api/v1/admin/invite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: addEmail.trim(), role: addRole, org_id: org.id }),
-    });
-    const json = await res.json();
-    if (res.ok) {
-      onToast("Einladung gesendet.", "success");
-      setAddEmail("");
-      await load();
-    } else {
-      onToast(json.error ?? "Fehler.", "error");
+    try {
+      const res = await fetch("/api/v1/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email: addEmail.trim().toLowerCase(), role: addRole, org_id: org.id }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && !json?.error) {
+        onToast("Einladung gesendet.", "success");
+        setAddName("");
+        setAddEmail("");
+        await load();
+      } else {
+        onToast(json?.error ?? "Fehler.", "error");
+      }
+    } catch {
+      onToast("Netzwerkfehler — Einladung nicht gesendet.", "error");
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   }
 
   async function handleRemove(m: OrgMember) {
@@ -221,6 +236,11 @@ function MitgliederTab({
     <div className="space-y-4">
       <form onSubmit={handleAdd} className="flex gap-2 flex-wrap">
         <input
+          type="text" required placeholder="Name"
+          value={addName} onChange={e => setAddName(e.target.value)}
+          className={`${iCls} flex-1 min-w-[150px]`}
+        />
+        <input
           type="email" required placeholder="E-Mail des Benutzers"
           value={addEmail} onChange={e => setAddEmail(e.target.value)}
           className={`${iCls} flex-1 min-w-[180px]`}
@@ -250,11 +270,11 @@ function MitgliederTab({
           <p className="text-xs text-[#7B8299] mb-3">{members.length} Mitglieder</p>
           {members.map(m => (
             <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-[rgba(60,63,68,0.3)] last:border-0">
-              <Initials name={m.email} size="md" />
+              <Initials name={m.name || m.email} size="md" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{m.email}</p>
-                <p className="text-xs text-[#7B8299]">
-                  {new Date(m.created_at).toLocaleDateString("de-CH")}
+                <p className="text-sm font-medium text-white truncate">{m.name || m.email}</p>
+                <p className="text-xs text-[#7B8299] truncate">
+                  {m.name ? `${m.email} · ` : ""}{new Date(m.created_at).toLocaleDateString("de-CH")}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">

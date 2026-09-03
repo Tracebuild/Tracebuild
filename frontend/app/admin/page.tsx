@@ -315,17 +315,17 @@ export default function AdminPage() {
 
   useEffect(() => { loadCosts(); }, [loadCosts]);
 
-  async function resendInvite(orgId: string, email: string, role: string) {
+  async function resendInvite(orgId: string, email: string, role: string, name: string | null) {
     setResendingId(`${orgId}:${email}`);
     try {
       const res = await fetch("/api/v1/admin/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role, org_id: orgId }),
+        body: JSON.stringify({ email, name: name ?? "", role, org_id: orgId }),
       });
-      const json = await res.json() as { data: unknown; error: string | null };
-      if (!res.ok || json.error) {
-        addToast(json.error ?? "Einladung konnte nicht erneut gesendet werden.", "error");
+      const json = await res.json().catch(() => null) as { data: unknown; error: string | null } | null;
+      if (!res.ok || !json || json.error) {
+        addToast(json?.error ?? "Einladung konnte nicht erneut gesendet werden.", "error");
       } else {
         addToast(`Einladung erneut an ${email} gesendet.`, "success");
         await loadAllUsers();
@@ -477,7 +477,7 @@ export default function AdminPage() {
     sent.forEach(s => trackActivity("user_invited", s.orgName, s.orgId, s.email));
     addToast(
       sent.length === 1
-        ? `Einladung an ${sent[0].email} gesendet.`
+        ? `Einladung an ${sent[0].name || sent[0].email} gesendet.`
         : `${sent.length} Einladungen gesendet.`,
       "success"
     );
@@ -516,7 +516,10 @@ export default function AdminPage() {
     const q = userSearch.trim().toLowerCase();
     return userGroups
       .flatMap(g => g.users.map(u => ({ ...u, orgId: g.orgId, orgName: g.orgName })))
-      .filter(u => !q || u.email.toLowerCase().includes(q) || u.orgName.toLowerCase().includes(q));
+      .filter(u => !q
+        || u.email.toLowerCase().includes(q)
+        || (u.name ?? "").toLowerCase().includes(q)
+        || u.orgName.toLowerCase().includes(q));
   }, [userGroups, userSearch]);
 
   const kpiData = useMemo(() => {
@@ -706,7 +709,7 @@ export default function AdminPage() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="flex-1 sm:w-56">
-                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="E-Mail oder Organisation..." />
+                <SearchInput value={userSearch} onChange={setUserSearch} placeholder="Name, E-Mail oder Organisation..." />
               </div>
               <button
                 onClick={() => {
@@ -739,10 +742,11 @@ export default function AdminPage() {
           ) : (
             <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[680px]">
+                <table className="w-full text-sm min-w-[820px]">
                   <thead>
                     <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
-                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">E-Mail</th>
+                      <th className="py-3.5 px-5 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Name</th>
+                      <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">E-Mail</th>
                       <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Organisation</th>
                       <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-left">Status</th>
                       <th className="py-3.5 px-3 text-[11px] font-semibold text-[#7B8299] uppercase tracking-wider text-right">Rolle</th>
@@ -752,7 +756,8 @@ export default function AdminPage() {
                   <tbody>
                     {filteredUsers.map(u => (
                       <tr key={u.id} className="hover:bg-[#1E2D4A]/60 transition-colors border-b border-[rgba(60,63,68,0.3)] last:border-0">
-                        <td className="px-5 py-3 font-medium text-white">{u.email}</td>
+                        <td className="px-5 py-3 font-medium text-white">{u.name ?? "—"}</td>
+                        <td className="px-3 py-3 text-[#ABAEBB]">{u.email}</td>
                         <td className="px-3 py-3 text-[#ABAEBB]">{u.orgName}</td>
                         <td className="px-3 py-3">
                           <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
@@ -774,7 +779,7 @@ export default function AdminPage() {
                         <td className="px-5 py-3 text-right">
                           {u.status === "pending" && (
                             <button
-                              onClick={() => resendInvite(u.orgId, u.email, u.role)}
+                              onClick={() => resendInvite(u.orgId, u.email, u.role, u.name)}
                               disabled={resendingId === `${u.orgId}:${u.email}`}
                               className="text-xs font-medium text-[#85A6E9] hover:text-white disabled:opacity-40 transition-colors whitespace-nowrap"
                               title="Einladung erneut senden"

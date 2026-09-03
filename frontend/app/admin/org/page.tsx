@@ -11,6 +11,7 @@ type UserRole = "super_admin" | "org_admin" | "project_manager" | "member";
 interface OrgUser {
   id: string;
   email: string;
+  name: string | null;
   role: UserRole;
   created_at: string;
 }
@@ -111,6 +112,7 @@ function InviteModal({
   onClose: () => void;
   onSuccess: (msg: string) => void;
 }) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
   const [loading, setLoading] = useState(false);
@@ -118,18 +120,23 @@ function InviteModal({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedName = name.trim().replace(/\s+/g, " ");
+    if (trimmedName.length < 2) { setError("Bitte den Namen der Person angeben."); return; }
     setLoading(true);
     setError("");
     try {
       const res = await fetch("/api/v1/admin/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ name: trimmedName, email: email.trim().toLowerCase(), role }),
       });
-      const json = await res.json() as { data: unknown; error: string | null };
-      if (!res.ok || json.error) { setError(json.error ?? "Fehler"); return; }
-      onSuccess(`Einladung an ${email} gesendet.`);
+      const json = await res.json().catch(() => null) as { data: unknown; error: string | null } | null;
+      if (!res.ok || !json || json.error) { setError(json?.error ?? `Fehler ${res.status}`); return; }
+      onSuccess(`Einladung an ${trimmedName} gesendet.`);
       onClose();
+    } catch {
+      // Ohne catch bleibt der Modal bei einem Netzwerkfehler stumm stehen.
+      setError("Netzwerkfehler — Einladung nicht gesendet.");
     } finally {
       setLoading(false);
     }
@@ -152,12 +159,24 @@ function InviteModal({
         <h3 className="text-base font-bold text-white mb-5">Mitglied einladen</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <label className="block text-xs font-semibold text-[#7B8299] mb-1.5">Name</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={e => { setName(e.target.value); if (error) setError(""); }}
+              placeholder="Vor- und Nachname"
+              className={iCls}
+              autoFocus
+            />
+          </div>
+          <div>
             <label className="block text-xs font-semibold text-[#7B8299] mb-1.5">E-Mail</label>
             <input
               type="email"
               required
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); if (error) setError(""); }}
               placeholder="name@firma.ch"
               className={iCls}
             />
@@ -290,7 +309,7 @@ function MembersPanel({
             >
               <option value="">Mitglied hinzufügen…</option>
               {available.map(u => (
-                <option key={u.id} value={u.id}>{u.email}</option>
+                <option key={u.id} value={u.id}>{u.name ? `${u.name} (${u.email})` : u.email}</option>
               ))}
             </select>
             <button
@@ -658,9 +677,10 @@ export default function OrgAdminPage() {
             ) : (
               <div className="bg-[#172540] border border-[rgba(60,63,68,0.5)] rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[520px]">
+                <table className="w-full text-sm min-w-[640px]">
                   <thead>
                     <tr className="border-b border-[rgba(60,63,68,0.4)] bg-[rgba(23,37,64,0.5)]">
+                      <th className="text-left text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest px-5 py-3">Name</th>
                       <th className="text-left text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest px-5 py-3">E-Mail</th>
                       <th className="text-left text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest px-5 py-3">Rolle</th>
                       <th className="text-left text-[10px] font-semibold text-[#7B8299] uppercase tracking-widest px-5 py-3 hidden sm:table-cell">Beigetreten</th>
@@ -670,7 +690,8 @@ export default function OrgAdminPage() {
                   <tbody>
                     {users.map((u, i) => (
                       <tr key={u.id} className={`hover:bg-[#1E2D4A]/60 transition-colors ${i < users.length - 1 ? "border-b border-[rgba(60,63,68,0.3)]" : ""}`}>
-                        <td className="px-5 py-3.5 font-medium text-white">{u.email}</td>
+                        <td className="px-5 py-3.5 font-medium text-white">{u.name ?? "—"}</td>
+                        <td className="px-5 py-3.5 text-[#ABAEBB]">{u.email}</td>
                         <td className="px-5 py-3.5">
                           <select
                             value={u.role}
