@@ -43,7 +43,11 @@ export async function middleware(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
 
     const { pathname } = request.nextUrl;
-    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/auth/callback");
+    // Der Callback muss immer durchlaufen — auch mit bestehender Session, sonst
+    // geht ein Einladungs-/Passwort-Link verloren, wenn im selben Browser noch
+    // jemand angemeldet ist.
+    const isCallbackRoute = pathname.startsWith("/auth/callback");
+    const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/register") || isCallbackRoute;
     const isLandingRoute = pathname === "/";
     const isAdmin        = ADMIN_EMAILS.has(user?.email ?? "");
 
@@ -60,7 +64,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (user && (isAuthRoute || isLandingRoute)) {
+    if (user && !isCallbackRoute && (isAuthRoute || isLandingRoute)) {
       const url = request.nextUrl.clone();
       url.pathname = isAdmin ? "/admin" : "/dashboard";
       return NextResponse.redirect(url);

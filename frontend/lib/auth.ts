@@ -77,7 +77,27 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     .eq("id", user.id)
     .limit(1);
 
-  const row = rows?.[0] ?? null;
+  let row = rows?.[0] ?? null;
+
+  // Selbstheilung: Eine eingeladene Person hat ein Auth-Konto, aber (noch)
+  // keine users-Zeile — etwa weil der Upsert beim Einladen fehlschlug. Ohne
+  // Zeile bekommt sie überall "Nicht eingeloggt".
+  //
+  // WICHTIG: Die Zuordnung wird aus `app_metadata` gelesen, NICHT aus
+  // `user_metadata`. `user_metadata` kann jede angemeldete Person selbst
+  // beschreiben (supabase.auth.updateUser({ data })) bzw. beim Registrieren
+  // frei mitgeben (signUp({ options: { data } })) — daraus Organisation und
+  // Rolle abzuleiten wäre eine Rechteausweitung: eine beliebige Person könnte
+  // sich als org_admin einer fremden Organisation eintragen lassen.
+  // `app_metadata` ist nur mit dem Service-Key beschreibbar und wird
+  // ausschliesslich von POST /api/v1/admin/invite gesetzt.
+  if (!row) {
+    row = await healMissingUserRow(admin, user.id, email, {
+      ...(user.app_metadata ?? {}),
+      // Der Name ist kein Recht — der darf aus den User-Metadaten kommen.
+      full_name: (user.user_metadata ?? {}).full_name,
+    });
+  }
 
   if (!row) return null;
 
@@ -87,6 +107,47 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     org_id: row.org_id,
     role:   (row.role as UserRole) ?? "member",
   };
+}
+
+const INVITE_ROLES: UserRole[] = ["org_admin", "project_manager", "member"];
+
+/**
+ * Legt die fehlende users-Zeile aus der Einladung an (`org_id` +
+ * `invited_role` in `app_metadata`, gesetzt von POST /api/v1/admin/invite —
+ * nur mit Service-Key beschreibbar).
+ * Gibt null zurück, wenn keine verwertbare Einladung vorhanden ist — dann
+ * bleibt es beim bisherigen Verhalten ("Nicht eingeloggt").
+ */
+async function healMissingUserRow(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  email: string,
+  metadata: Record<string, unknown>,
+): Promise<{ org_id: string; role: string } | null> {
+  const orgId = typeof metadata.org_id === "string" ? metadata.org_id : null;
+  if (!orgId) return null;
+
+  const invitedRole = typeof metadata.invited_role === "string" ? metadata.invited_role : "member";
+  const role: UserRole = INVITE_ROLES.includes(invitedRole as UserRole) ? (invitedRole as UserRole) : "member";
+  const name = typeof metadata.full_name === "string" ? metadata.full_name.trim() : "";
+
+  const { data: org } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("id", orgId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!org) return null;
+
+  const baseRow = { id: userId, org_id: orgId, email, role };
+  let error = (await admin.from("users").upsert({ ...baseRow, name: name || null }, { onConflict: "id" })).error;
+  if (error && (error.code === "PGRST204" || error.code === "42703")) {
+    // Migration 20260901000001_users_name.sql noch nicht eingespielt.
+    error = (await admin.from("users").upsert(baseRow, { onConflict: "id" })).error;
+  }
+  if (error) return null;
+
+  return { org_id: orgId, role };
 }
 
 export function requireRole(user: AuthUser | null, ...roles: UserRole[]): boolean {

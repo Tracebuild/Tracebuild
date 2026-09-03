@@ -1,3 +1,4 @@
+import AuthHashRedirect from "@/components/auth/AuthHashRedirect";
 import SmoothScrollProvider from "@/components/landing/redesign/SmoothScrollProvider";
 import AmbientField from "@/components/landing/redesign/AmbientField";
 import Navbar from "@/components/landing/redesign/Navbar";
@@ -13,6 +14,9 @@ import Footer from "@/components/landing/redesign/Footer";
 export default function LandingPage() {
   return (
     <SmoothScrollProvider>
+      {/* Fängt Einladungs-/Passwort-Links ab, die Supabase auf die Site-URL
+          zurückfallen lässt, und reicht sie an /auth/callback weiter. */}
+      <AuthHashRedirect />
       <div className="tb-landing">
         <a href="#tb-main" className="tb-skip">Zum Inhalt springen</a>
         <AmbientField />
