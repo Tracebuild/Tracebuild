@@ -17,6 +17,7 @@ export default function FinalCta() {
         textAlign: "center",
         padding: "var(--tb-section-y) var(--tb-gutter)",
         overflow: "hidden",
+        background: "var(--tb-canvas)",
       }}
     >
       <div style={{ position: "absolute", inset: 0, opacity: 0.5 }}>
@@ -55,7 +56,7 @@ export default function FinalCta() {
           }}
           style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}
         >
-          <GradientButton href="#kontakt">Demo anfragen →</GradientButton>
+          <GradientButton href="#kontakt">Loslegen →</GradientButton>
           <GhostButton href="mailto:jonas@tracebuild.ch">Mit uns sprechen</GhostButton>
         </motion.div>
       </motion.div>

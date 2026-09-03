@@ -1,4 +1,5 @@
 import SmoothScrollProvider from "@/components/landing/redesign/SmoothScrollProvider";
+import AmbientField from "@/components/landing/redesign/AmbientField";
 import Navbar from "@/components/landing/redesign/Navbar";
 import Hero from "@/components/landing/redesign/Hero";
 import ProblemSolution from "@/components/landing/redesign/ProblemSolution";
@@ -14,6 +15,7 @@ export default function LandingPage() {
     <SmoothScrollProvider>
       <div className="tb-landing">
         <a href="#tb-main" className="tb-skip">Zum Inhalt springen</a>
+        <AmbientField />
         <div className="tb-grain" />
         <Navbar />
         <main id="tb-main">
