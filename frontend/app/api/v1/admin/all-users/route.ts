@@ -4,9 +4,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export interface OrgUser {
   id: string;
   email: string;
+  name: string | null;
   role: string;
   createdAt: string;
   status: "pending" | "active";
+}
+
+interface UserRow {
+  id: string;
+  email: string;
+  role: string;
+  org_id: string;
+  created_at: string;
+  name?: string | null;
 }
 
 export interface OrgUsersGroup {
@@ -25,7 +35,9 @@ export async function GET() {
 
   const [{ data: orgs, error: orgsError }, { data: users, error: usersError }, { data: authList, error: authError }] = await Promise.all([
     admin.from("organizations").select("id, name").is("deleted_at", null),
-    admin.from("users").select("id, email, role, org_id, created_at"),
+    // select("*") statt fester Spaltenliste: bleibt lauffähig, auch wenn die
+    // Migration für users.name noch nicht eingespielt ist.
+    admin.from("users").select("*"),
     admin.auth.admin.listUsers({ perPage: 1000 }),
   ]);
 
@@ -37,20 +49,23 @@ export async function GET() {
     (authList?.users ?? []).filter(u => u.last_sign_in_at).map(u => u.id)
   );
 
+  const rows = (users ?? []) as UserRow[];
+
   const groups: OrgUsersGroup[] = (orgs ?? [])
     .map(org => ({
       orgId: org.id as string,
       orgName: org.name as string,
-      users: (users ?? [])
+      users: rows
         .filter(u => u.org_id === org.id)
         .map(u => ({
-          id: u.id as string,
-          email: u.email as string,
-          role: u.role as string,
-          createdAt: u.created_at as string,
-          status: (signedInIds.has(u.id as string) ? "active" : "pending") as "pending" | "active",
+          id: u.id,
+          email: u.email,
+          name: (u.name ?? "").trim() || null,
+          role: u.role,
+          createdAt: u.created_at,
+          status: (signedInIds.has(u.id) ? "active" : "pending") as "pending" | "active",
         }))
-        .sort((a, b) => a.email.localeCompare(b.email)),
+        .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email)),
     }))
     .sort((a, b) => a.orgName.localeCompare(b.orgName));
 

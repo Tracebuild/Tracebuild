@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import AuthHashRedirect from "@/components/auth/AuthHashRedirect";
 
 // ── Particle engine ────────────────────────────────────────────────────────────
 const N = 800;
@@ -531,6 +532,9 @@ export default function LandingPage() {
 
   return (
     <>
+      {/* Fängt Einladungs-/Passwort-Links ab, die Supabase auf die Site-URL
+          zurückfallen lässt, und reicht sie an /auth/callback weiter. */}
+      <AuthHashRedirect />
       <style>{`
         body { margin:0; overflow-x:hidden; background:linear-gradient(150deg,#0a1a24 0%,#0a1420 45%,#070b14 100%) fixed; }
         .lp-nav-link { font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; color:#9a9ba3; font-weight:500; text-decoration:none; transition:color .2s; }

@@ -9,6 +9,7 @@ import AuthBackButton from "../AuthBackButton";
 export default function SetPasswordPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [account, setAccount]     = useState<{ name: string; email: string } | null>(null);
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
   const [error, setError]         = useState<string | null>(null);
@@ -17,6 +18,11 @@ export default function SetPasswordPage() {
   useEffect(() => {
     createClient().auth.getUser().then(({ data }) => {
       if (!data.user) { router.replace("/login"); return; }
+      const meta = data.user.user_metadata ?? {};
+      setAccount({
+        name: typeof meta.full_name === "string" ? meta.full_name : "",
+        email: data.user.email ?? "",
+      });
       setChecking(false);
     });
   }, [router]);
@@ -25,15 +31,20 @@ export default function SetPasswordPage() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 6) { setError("Das Passwort muss mindestens 6 Zeichen lang sein."); return; }
+    if (password.length < 8) { setError("Das Passwort muss mindestens 8 Zeichen lang sein."); return; }
     if (password !== confirm) { setError("Die Passwörter stimmen nicht überein."); return; }
 
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) { setError(error.message); setLoading(false); return; }
-    router.push("/dashboard");
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) { setError(error.message); setLoading(false); return; }
+      // Voller Reload: die users-Zeile (Org + Rolle) wird serverseitig gelesen.
+      window.location.replace("/dashboard");
+    } catch {
+      setError("Das Passwort konnte nicht gespeichert werden. Bitte erneut versuchen.");
+      setLoading(false);
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -71,8 +82,15 @@ export default function SetPasswordPage() {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 32 }}>
           <Image src="/Logo-new.png" alt="TraceBuild" width={533} height={400} style={{ height: 44, width: "auto", objectFit: "contain" }} priority />
           <div style={{ marginTop: 20, textAlign: "center" }}>
-            <h1 style={{ fontSize: 24, fontWeight: 600, color: "#fff", margin: 0, letterSpacing: "-0.02em" }}>Passwort festlegen</h1>
-            <p style={{ fontSize: 14, color: "#9a9ba3", margin: "6px 0 0" }}>Lege ein Passwort fest, um dein Konto zu aktivieren</p>
+            <h1 style={{ fontSize: 24, fontWeight: 600, color: "#fff", margin: 0, letterSpacing: "-0.02em" }}>
+              {account?.name ? `Willkommen, ${account.name}` : "Passwort festlegen"}
+            </h1>
+            <p style={{ fontSize: 14, color: "#9a9ba3", margin: "6px 0 0" }}>
+              Lege ein Passwort fest, um dein Konto zu aktivieren
+            </p>
+            {account?.email && (
+              <p style={{ fontSize: 13, color: "#6b6d78", margin: "4px 0 0" }}>{account.email}</p>
+            )}
           </div>
         </div>
 
