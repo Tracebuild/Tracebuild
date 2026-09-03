@@ -16,8 +16,9 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "KI Analyse Plattform",
-  description: "Automatische Prüfung von Bauplänen gegen Normen und Vorschriften",
+  title: "TraceBuild — Baueingaben gegen jede Norm prüfen",
+  description:
+    "TraceBuild prüft Eingabepläne automatisch gegen SIA-Normen und kantonales Baurecht — jede Fundstelle nachvollziehbar. Dazu eine zentrale, laufend aktualisierte Normen-Datenbank.",
 };
 
 export default function RootLayout({
