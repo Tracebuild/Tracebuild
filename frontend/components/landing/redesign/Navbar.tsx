@@ -9,8 +9,7 @@ import { GradientButton } from "./primitives";
 import { EASE_OUT } from "@/lib/landing/motion";
 
 const LINKS = [
-  { href: "#produkt", label: "Produkt" },
-  { href: "#normen-datenbank", label: "Normen-Datenbank" },
+  { href: "#produkt", label: "Produktvorschau" },
   { href: "#preise", label: "Preise" },
   { href: "#kontakt", label: "Team" },
 ];
@@ -200,7 +199,7 @@ export default function Navbar() {
           </Link>
           <span className="tb-nav-demo">
             <GradientButton href="#kontakt" onClick={() => {}}>
-              Demo anfragen
+              Loslegen
             </GradientButton>
           </span>
           <button

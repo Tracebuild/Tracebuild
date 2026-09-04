@@ -61,16 +61,14 @@ const FOUNDERS = [
     name: "Jonas Jud",
     role: "Mitgründer · Produkt & Normen",
     email: "jonas@tracebuild.ch",
-    quote:
-      "Ich habe zu viele Abende mit dem Abgleich von Bauordnungen verbracht. TraceBuild ist das Werkzeug, das ich damals gebraucht hätte.",
+    blurb: "Kümmert sich ums Produkt und darum, welche Normen und Vorschriften reingehören.",
   },
   {
     initials: "LT",
     name: "Livio Thoma",
     role: "Mitgründer · Technik",
     email: "livio@tracebuild.ch",
-    quote:
-      "Präzision ist kein Feature, das man später einbaut. Sie ist die Grundlage — von der ersten Zeile Code an.",
+    blurb: "Baut die Technik dahinter — von der Zeichnungserkennung bis zur Auswertung.",
   },
 ];
 
@@ -86,7 +84,7 @@ export default function TeamContact() {
           transition={{ duration: 0.6, ease: EASE_OUT }}
           style={{ fontSize: "clamp(26px,3.4vw,44px)", margin: "18px 0 48px", maxWidth: 620 }}
         >
-          Zwei Gründer, die Ihr Projekt persönlich begleiten.
+          Die zwei hinter TraceBuild.
         </motion.h2>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "clamp(40px,7vw,96px)" }}>
@@ -143,8 +141,8 @@ export default function TeamContact() {
               <div style={{ direction: "ltr" }}>
                 <h3 style={{ fontSize: "clamp(22px,2.4vw,32px)", margin: 0 }}>{f.name}</h3>
                 <p style={{ margin: "6px 0 20px", fontSize: 13.5, color: "var(--tb-text-tertiary)" }}>{f.role}</p>
-                <p style={{ margin: 0, fontSize: "clamp(16px,1.5vw,20px)", lineHeight: 1.6, color: "var(--tb-text-bright)", maxWidth: 520 }}>
-                  &bdquo;{f.quote}&ldquo;
+                <p style={{ margin: 0, fontSize: "clamp(15px,1.4vw,18px)", lineHeight: 1.6, color: "var(--tb-text-secondary)", maxWidth: 480 }}>
+                  {f.blurb}
                 </p>
                 <a
                   href={`mailto:${f.email}`}

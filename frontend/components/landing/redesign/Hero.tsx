@@ -41,6 +41,7 @@ export default function Hero() {
         justifyContent: "center",
         padding: "clamp(120px, 20vh, 200px) var(--tb-gutter) 80px",
         overflow: "hidden",
+        background: "var(--tb-canvas)",
       }}
     >
       <motion.div style={{ position: "absolute", inset: 0, opacity: prefersReduced ? 1 : fieldOpacity }}>
@@ -76,8 +77,9 @@ export default function Hero() {
             textWrap: "balance" as React.CSSProperties["textWrap"],
           }}
         >
-          <WordReveal text="Baueingaben, die beim ersten Mal" delay={0.15} />{" "}
-          <WordReveal text="sitzen." accentWord="sitzen" delay={0.15 + 0.04 * 6} />
+          <WordReveal text="Zeichnungen prüfen," accentWord="prüfen" delay={0.15} />
+          <br />
+          <WordReveal text="Normen einhalten." delay={0.15 + 0.04 * 2} />
         </h1>
 
         <motion.p
@@ -92,9 +94,9 @@ export default function Hero() {
             margin: "26px auto 0",
           }}
         >
-          TraceBuild prüft Ihre Eingabepläne automatisch gegen SIA-Normen und kantonales
-          Baurecht — und hält jede Fundstelle nachvollziehbar fest. Dazu eine zentrale,
-          laufend aktualisierte Normen-Datenbank.
+          TraceBuild liest Ihre Zeichnungen, gleicht sie mit geltenden Normen und
+          Vorschriften ab und zeigt jede Abweichung — klar dargestellt und
+          nachvollziehbar belegt.
         </motion.p>
 
         <motion.div
@@ -109,8 +111,8 @@ export default function Hero() {
             marginTop: 34,
           }}
         >
-          <GradientButton href="#kontakt">Demo anfragen →</GradientButton>
-          <GhostButton href="#normen-datenbank">Normen-Datenbank ansehen</GhostButton>
+          <GradientButton href="#kontakt">Loslegen →</GradientButton>
+          <GhostButton href="#produkt">Produktvorschau</GhostButton>
         </motion.div>
 
         <motion.p

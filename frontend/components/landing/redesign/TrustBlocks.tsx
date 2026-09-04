@@ -111,21 +111,21 @@ const BLOCKS = [
   },
   {
     visual: <DocStack />,
-    h: "Jede Prüfung ist ein nachvollziehbares Protokoll.",
-    p: "Zeitstempel, Versionierung und lückenloser Verlauf jeder Fundstelle. Export als PDF für Behörde und Bauherrschaft — jederzeit reproduzierbar.",
-    proof: "Revisionssicherer Verlauf · signierter PDF-Export",
+    h: "Ergebnisse, die man sofort versteht.",
+    p: "Jede Prüfung wird übersichtlich dargestellt — sortiert, verortet und einfach zu interpretieren. Kein Wühlen in Listen, kein Rätselraten, was gemeint ist.",
+    proof: "Klare Übersicht · Export als PDF",
   },
   {
     visual: <Timeline />,
-    h: "Ändert sich eine Norm, wissen Sie es zuerst.",
-    p: "TraceBuild überwacht SIA- und kantonale Änderungen und markiert betroffene Projekte. Mit Diff-Ansicht und Änderungsprotokoll je Norm.",
-    proof: "Monitoring SIA + 26 Kantone · Änderungs-Alerts",
+    h: "Ändert sich was, sagen wir Bescheid.",
+    p: "Wir behalten Normen und Vorschriften im Blick, damit Sie es nicht müssen. Wird für Ihr Projekt etwas relevant, hören Sie von uns — bevor es zum Problem wird.",
+    proof: "Wir schauen hin · Sie bekommen Bescheid",
   },
   {
     visual: <Monogram />,
-    h: "Sie sprechen mit einem Menschen, der Baueingaben kennt.",
-    p: "Eine benannte Ansprechperson, kein Ticket-System. Persönliches Onboarding und eine zugesagte Reaktionszeit — auch wenn es dringend wird.",
-    proof: "Fester Kontakt · Reaktionszeit < 1 Werktag",
+    h: "Sie schreiben uns, wir helfen.",
+    p: "Kein Ticket-System, keine Warteschleife. Wir kennen nicht jede Vorschrift auswendig — aber wir packen mit an, wo wir können, und melden uns schnell.",
+    proof: "Fester Kontakt · Antwort < 1 Werktag",
   },
 ];
 

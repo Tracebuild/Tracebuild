@@ -255,6 +255,33 @@ h1, h2, h3, h4, h5, h6 {
   50%       { transform: translateY(7px); opacity: 1; }
 }
 
+/* ─── Landing redesign · ambient light field ──────────── */
+/* Large blurred colour blobs drifting behind the mid-page sections.
+   transform / opacity only — blur is baked per layer, not animated.
+   Long eased periods (18–26s) with negative delays so no two align. */
+
+@keyframes tbAmbientDrift1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(6%, -5%, 0) scale(1.14); }
+}
+@keyframes tbAmbientDrift2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%       { transform: translate3d(-7%, 4%, 0) scale(1.2); }
+}
+@keyframes tbAmbientDrift3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%       { transform: translate3d(4%, 6%, 0) scale(1.1); }
+  66%       { transform: translate3d(-5%, -3%, 0) scale(1.16); }
+}
+@keyframes tbAmbientDrift4 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.1); }
+  50%       { transform: translate3d(5%, 5%, 0) scale(1); }
+}
+@keyframes tbAmbientSheen {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ─── Utility classes ─────────────────────────────────── */
 
 @layer utilities {
@@ -286,6 +313,12 @@ h1, h2, h3, h4, h5, h6 {
     animation: slowSpin 42s linear infinite;
   }
 
+  .tb-ambient-blob {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+  }
+
   .scrollbar-dark::-webkit-scrollbar              { width: 5px; }
   .scrollbar-dark::-webkit-scrollbar-track        { background: transparent; }
   .scrollbar-dark::-webkit-scrollbar-thumb        { background: rgba(133,166,233,0.22); border-radius: 3px; }
@@ -301,5 +334,11 @@ h1, h2, h3, h4, h5, h6 {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Ambient field: freeze drift entirely, keep the static coloured wash */
+  .tb-ambient-blob,
+  .tb-ambient-sheen {
+    animation: none !important;
   }
 }

@@ -16,9 +16,9 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "TraceBuild — Baueingaben gegen jede Norm prüfen",
+  title: "TraceBuild — Zeichnungen prüfen, Normen einhalten",
   description:
-    "TraceBuild prüft Eingabepläne automatisch gegen SIA-Normen und kantonales Baurecht — jede Fundstelle nachvollziehbar. Dazu eine zentrale, laufend aktualisierte Normen-Datenbank.",
+    "TraceBuild liest Ihre Zeichnungen, gleicht sie mit geltenden Normen und Vorschriften ab und zeigt jede Abweichung — klar dargestellt und nachvollziehbar belegt.",
 };
 
 export default function RootLayout({
